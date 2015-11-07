@@ -1,0 +1,33 @@
+
+
+name: mkn.ram
+version: master
+
+profiles:
+  - name: c
+    include: ./inc
+    dependencies:
+      - name: mkn.kul
+        version: master
+        scm: http://www.github.com/mkn/mkn.kul.git
+  - parent: c
+    name: nixc    
+    include: ./os/nixish/inc
+    source:  ./os/nixish/src
+  - parent: nixc
+    name: nix  
+    os: nix
+    mode: shared
+    args: -fPIC
+  - parent: nixc
+    name: bsd
+    os: bsd
+  - parent: c
+    name: win  
+    os: win
+    include: ./os/${OS}/inc
+    source:  ./os/${OS}/src
+  - name: test  
+    self: ${OS}
+    mode: none
+    main: test.cpp
