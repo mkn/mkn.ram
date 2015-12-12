@@ -3,31 +3,26 @@
 name: mkn.ram
 version: master
 
-profiles:
-  - name: c
-    include: ./inc
-    dependencies:
+profile:
+  - name: build
+    inc: ./inc
+    dep:
       - name: mkn.kul
         version: master
         scm: http://www.github.com/mkn/mkn.kul.git
-  - parent: c
-    name: nixc    
-    include: ./os/nixish/inc
-    source:  ./os/nixish/src
-  - parent: nixc
-    name: nix  
-    os: nix
-    mode: shared
-    args: -fPIC
-  - parent: nixc
-    name: bsd
-    os: bsd
-  - parent: c
-    name: win  
-    os: win
-    include: ./os/${OS}/inc
-    source:  ./os/${OS}/src
-  - name: test  
-    self: ${OS}
+    if_inc:
+        bsd: ./os/nixish/inc
+        nix: ./os/nixish/inc
+        win: ./os/win/inc
+    if_src:
+        bsd: ./os/nixish/src
+        nix: ./os/nixish/src
+        win: ./os/win/src
+
+  - name: debug
+    parent: build
+
+  - name: test
+    parent: build
     mode: none
     main: test.cpp
