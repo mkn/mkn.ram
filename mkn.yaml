@@ -1,7 +1,8 @@
 
 
 name: mkn.ram
-version: master
+
+parent: build
 
 profile:
   - name: build
@@ -9,18 +10,12 @@ profile:
     dep:
       - name: mkn.kul
         version: master
-        scm: http://www.github.com/mkn/mkn.kul.git
     if_inc:
         bsd: ./os/nixish/inc
         nix: ./os/nixish/inc
         win: ./os/win/inc
     if_src:
-        bsd: ./os/nixish/src
-        nix: ./os/nixish/src
         win: ./os/win/src
-
-  - name: debug
-    parent: build
 
   - name: test
     parent: build

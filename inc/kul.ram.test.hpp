@@ -32,50 +32,77 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_TEST_HPP_
 
 #include "kul/http.hpp"
+#ifndef _WIN32
+#include "kul/https.hpp"
+#endif
+#include "kul/html4.hpp"
+
+#include "kul/signal.hpp"
 
 namespace kul{ namespace ram{
 
 class TestHTTPServer : public kul::http::Server{
+	private:
+		void operator()(){
+			start();
+		}
 	public:
-		TestHTTPServer() : kul::http::Server(6666){}
+		const kul::http::AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts){
+            kul::http::_1_1Response r;
+            r.body("HTTP PROVIDED BY KUL");
+            return kul::http::Server::response(r);
+        }
+		TestHTTPServer() : kul::http::Server(8888){}
+		friend class kul::ThreadRef<TestHTTPServer>;
 };
+
+// self signed https crt/key with openssl
+// https://developer.salesforce.com/blogs/developer-relations/2011/05/generating-valid-self-signed-certificates.html
+class TestHTTPSServer : public kul::https::Server{
+	private:
+		void operator()(){
+			start();
+		}
+	protected:
+		const kul::http::AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts){
+            kul::http::_1_1Response r;
+            r.body("HTTPS PROVIDED BY OPENSSL");
+            return kul::http::Server::response(r);
+        }
+	public:
+		TestHTTPSServer() : kul::https::Server(8888, "server.crt", "server.key"){}
+		friend class kul::ThreadRef<TestHTTPSServer>;
+};
+
 class Get : public kul::http::_1_1GetRequest{
 	public:
 		void handle(const kul::hash::map::S2S& h, const std::string& b){
-			KOUT(NON) << "GET  " << b;
+			KLOG(INF) << "GET RESPONSE:\n" << b;
 		}
 };
-class Post : public kul::http::_1_1GetRequest{
+class Post : public kul::http::_1_1PostRequest{
 	public:
 		void handle(const kul::hash::map::S2S& h, const std::string& b){
-			KOUT(NON) << "POST " << b;
-		}
-};
-class TestHTTPThread{
-	private:
-		TestHTTPServer& s;
-	public:
-		TestHTTPThread(TestHTTPServer& serv) : s(serv){}
-		void operator()(){
-			s.start();
+			KLOG(INF) << "POST RESPONSE:\n" << b;
 		}
 };
 
 class Test{
 	public:
 		Test(){
+			kul::Signal s;
 			TestHTTPServer serv;
-			TestHTTPThread http(serv);
-			kul::Ref<TestHTTPThread> ref(http);
+			kul::Ref<TestHTTPServer> ref(serv);
 			kul::Thread t(ref);
 			t.run();
 			kul::this_thread::sleep(1000);
 			if(t.exception()) std::rethrow_exception(t.exception());
-			Get() .send("localhost", "index.html", 6666);
-			Post().send("localhost", "index.html", 6666);
-			Get() .send("google.com", "", 80);
+			Post().send("localhost", "index.html", 8888);
+			if(t.exception()) std::rethrow_exception(t.exception());
+			Get() .send("localhost", "index.html", 8888);
+			if(t.exception()) std::rethrow_exception(t.exception());
 			serv.stop();
-			t.join();
+			Get() .send("google.com", "", 80);
 		}
 };
 

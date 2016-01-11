@@ -75,7 +75,7 @@ void kul::http::Server::stop(){
 	if(q) CloseHandle(q);
 }
 
-void kul::http::Server::initialiseReponse(HTTP_RESPONSE& response, int status, PSTR reason){
+void kul::http::Server::initialiseReponse(HTTP_RESPONSE& response, const uint16_t& status, PSTR reason){
 	RtlZeroMemory(&response, sizeof(response));
 	response.StatusCode		= 200;
 	response.pReason		= "OK";
@@ -138,11 +138,11 @@ bool kul::http::Server::post(PHTTP_REQUEST req){
 			result = HttpReceiveRequestEntityBody(this->q, req->RequestId, 0, rstr, EntityBufferLength, &bytes, NULL);
 			switch(result){
 				case NO_ERROR:
-					for(int i = 0; i < bytes; i++) atts += rstr[i];
+					for(ULONG i = 0; i < bytes; i++) atts += rstr[i];
 					break;
 				case ERROR_HANDLE_EOF:
 				{
-					for(int i = 0; i < bytes; i++) atts += rstr[i];
+					for(ULONG i = 0; i < bytes; i++) atts += rstr[i];
 					sprintf_s(szContentLength, MAX_ULONG_STR, "%lu", bytes);
 					addKnownHeader(response, HttpHeaderContentLength, szContentLength);
 					result = HttpSendHttpResponse(this->q, req->RequestId,
@@ -182,7 +182,7 @@ void kul::http::Server::postClean(PUCHAR rstr){
 	if(rstr) wFreeM(rstr);
 }
 
-void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const int& p){
+void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) KEXCEPT(Exception, "WSAStartup failed");
 	SOCKET sock = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
@@ -212,7 +212,7 @@ void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& re
 	WSACleanup();
 }
 
-void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const int& p){
+void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) KEXCEPT(Exception, "WSAStartup failed");
 	SOCKET sock = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);
@@ -227,10 +227,10 @@ void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& r
 	std::string req(toString(h, res));
 	::send(sock, req.c_str(), req.size(), 0);
 	char buffer[10000];
-	int nDataLength;
+	int16_t nDataLength;
 	std::string s;
 	while((nDataLength = recv(sock, buffer, 10000, 0)) > 0){
-		int i = 0;
+		uint16_t i = 0;
 		while (buffer[i] >= 32 || buffer[i] == '\n' || buffer[i] == '\r') {
 			s += buffer[i];//do something with buffer[i]
 			i += 1;

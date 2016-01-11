@@ -72,7 +72,7 @@ class Server : public kul::http::AServer{
 		bool get(PHTTP_REQUEST pRequest);
 		bool post(PHTTP_REQUEST pRequest);
 
-		void initialiseReponse(HTTP_RESPONSE& response, int status, PSTR reason);
+		void initialiseReponse(HTTP_RESPONSE& response, const uint16_t& status, PSTR reason);
 		void addKnownHeader(HTTP_RESPONSE& response, _HTTP_HEADER_ID headerID, PSTR rawValue);
 		void postClean(PUCHAR rstr);
 		static const LPVOID wAlloc(ULONG& u){ return HeapAlloc(GetProcessHeap(), 0, u); }
@@ -97,13 +97,8 @@ class Server : public kul::http::AServer{
 		bool started(){ return q != NULL; }
 		void stop();
 
-		virtual const std::pair<kul::hash::set::String, std::string> handle(const std::string& res, kul::hash::map::S2S atts){
-			using namespace std;
-			stringstream ss;
-			ss << res << " : ";	
-			for(const pair<string, string> p : atts) ss << p.first << "=" << p.second << " ";
-			return pair<kul::hash::set::String, string>(
-				kul::hash::set::String(), res + " : " + ss.str());
+		virtual const AResponse response(const std::string& res, kul::hash::map::S2S atts){
+            return _1_1Response(r);
 		}
 };
 
