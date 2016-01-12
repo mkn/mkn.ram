@@ -92,6 +92,8 @@ class Test{
 		Test(){
 			kul::Signal s;
 			TestHTTPServer serv;
+			auto l = [&serv](int16_t){ serv.stop(); };
+			s.intr(l).segv(l);
 			kul::Ref<TestHTTPServer> ref(serv);
 			kul::Thread t(ref);
 			t.run();
