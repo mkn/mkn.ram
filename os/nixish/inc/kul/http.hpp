@@ -50,7 +50,7 @@ namespace kul{ namespace http{
 
 class Requester{
     public:
-        static std::stringstream send(const std::string& h, const std::string& req, const uint16_t& p){
+        static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss){
             int32_t sck = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
             if (sck < 0) KEXCEPT(kul::http::Exception, "Error opening socket");
             struct sockaddr_in servAddr;
@@ -86,7 +86,6 @@ class Requester{
             if(e < 0) KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
             ::send(sck, req.c_str(), req.size(), 0); 
             char buffer[_KUL_HTTP_REQUEST_BUFFER_];
-            std::stringstream ss;
             struct timeval tv;
             fd_set fds;
             int iof = -1;
@@ -116,7 +115,6 @@ class Requester{
                 r = 1;
             }while(1);
             ::close(sck);
-            return ss;
         }
 };
 
@@ -292,7 +290,9 @@ class Server : public kul::http::AServer{
 
 inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
     try{
-        handle(Requester::send(h, toString(h, res), p).str());
+        std::stringstream ss;
+        Requester::send(h, toString(h, res), p, ss);
+        handle(ss.str());
     }catch(const kul::Exception& e){
         KEXCEPT(Exception, "HTTP GET failed with host: " + h);
     }
@@ -300,7 +300,9 @@ inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::str
 
 inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
     try{
-        handle(Requester::send(h, toString(h, res), p).str());
+        std::stringstream ss;
+        Requester::send(h, toString(h, res), p, ss);
+        handle(ss.str());
     }catch(const kul::Exception& e){
         KEXCEPT(Exception, "HTTP POST failed with host: " + h);
     }
