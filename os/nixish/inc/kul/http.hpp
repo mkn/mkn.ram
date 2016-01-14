@@ -197,12 +197,16 @@ class Server : public kul::http::AServer{
                         std::vector<std::string> bits;
                         kul::String::split(l, ':', bits);
                         kul::String::trim(bits[0]);
-                        kul::String::trim(bits[1]);
-                        if(*bits[1].rbegin() == '\r') bits[1].pop_back();
+                        std::stringstream sv;
+                        if(bits.size() > 1) sv << bits[1];
+                        for(size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
+                        std::string v(sv.str());
+                        kul::String::trim(v);
+                        if(*v.rbegin() == '\r') v.pop_back();
                         if(bits[0] == "Cookie")
-                            req->cookie(bits[1]);
+                            req->cookie(v);
                         else
-                            req->header(bits[0], bits[1]);
+                            req->header(bits[0], v);
                     }
                     std::stringstream ss1;
                     while(std::getline(ss, l)) ss1 << l;
