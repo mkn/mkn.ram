@@ -36,18 +36,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace http{
 
+
+typedef kul::hash::map::S2S Headers;
+typedef kul::hash::set::String Cookies;
+
 class Exception : public kul::Exception{
     public:
         Exception(const char*f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s){}
 };
 
-class ARequest{
+class Sendable{
+    protected:
+        Headers hs;
+        Cookies cs;
+        std::string b;
+    public:
+        void cookie(const std::string& k){ this->cs.insert(k); }
+        const Cookies& cookies() const { return cs; }
+        void header(const std::string& k, const std::string& v){ this->hs.insert(k, v); }
+        const Headers& headers() const { return hs; }
+        void body(const std::string& b){ this->b = b; }
+        const std::string& body() const { return b; }
+        bool header(const std::string& s){
+            return hs.count(s);
+        }
+};
+
+class ARequest : public Sendable{
     protected:
         kul::hash::map::S2S atts;
         kul::hash::set::String mis;
         virtual const std::string method() const = 0;
         virtual const std::string version() const = 0;
-        virtual const std::string toString(const std::string& host, const std::string& res) const = 0;
+        virtual const std::string toString(const std::string& host, const std::string& res) = 0;
         virtual void handle(const kul::hash::map::S2S& h, const std::string& s){
             printf("%s", s.c_str());
         }
@@ -73,7 +94,12 @@ class ARequest{
                 b.erase(0, b.find("\n") + 1);
             }
             handle(h, b);
-        }       
+        }
+        const ARequest& request(ARequest& r) const {
+            if(!r.header("Connection"))     r.header("Connection", "close");
+            if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
+            return r; 
+        }
     public:
         ARequest(bool text = 1) { if(text) mime("text/html");}
         virtual ~ARequest(){}
@@ -98,19 +124,23 @@ class _1_1GetRequest : public A1_1Request{
     private:
         const std::string method() const { return "GET";}
     protected:
-        virtual const std::string toString(const std::string& host, const std::string& res) const{
-            std::string s(method() + " /" + res);
-            if(atts.size() > 0) s = s + "?";
-            for(const std::pair<std::string, std::string>& p : atts) s = s + p.first + "=" + p.second + "&";
-            if(atts.size() > 0) s = s.substr(0, s.size() - 1);
-            s = s + " " + version();
-            s = s + "\r\nHost: " + host;
-            if(mis.size() > 0 ) s = s + "\r\nAccept: ";
-            for(const std::string& m : mis) s = s + m + ", ";
-            if(mis.size() > 0 ) s = s.substr(0, s.size() - 2);
-            s = s + "\r\nContent-Length: 0";
-            s = s + "\r\nConnection: close\r\n\r\n";
-            return s;
+        virtual const std::string toString(const std::string& host, const std::string& res){
+            std::stringstream ss;
+            ss << method() << " /" << res;
+            if(atts.size() > 0) ss << "?";
+            for(const std::pair<std::string, std::string>& p : atts)
+                ss << p.first << "=" << p.second << "&";
+            if(atts.size() > 0) ss.seekp(-1, ss.cur);
+            ss << " " << version();
+            ss << "\r\nHost: " << host;
+            if(mis.size() > 0 ) ss << "\r\nAccept: ";
+            for(const std::string& m : mis) ss << m + ", ";
+            if(mis.size() > 0 ) ss.seekp(-2, ss.cur);
+            request(*this);
+            for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
+            for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
+            ss << "\r\n\r\n";
+            return ss.str();
         };
     public:
         virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
@@ -120,39 +150,38 @@ class _1_1PostRequest : public A1_1Request{
     private:
         const std::string method() const { return "POST";}
     protected:
-        virtual const std::string toString(const std::string& host, const std::string& res) const{
-            std::string s(method() + " /" + res + " " + version());
-            s = s + "\r\nHost: " + host;
-            if(mis.size() > 0 ) s = s + "\r\nAccept: ";
-            for(const std::string& m : mis) s = s + m + ", ";
-            if(mis.size() > 0 ) s = s.substr(0, s.size() - 2);
-            int cs = 0;
-            for(const std::pair<std::string, std::string>& p : atts) cs += p.first.size() + p.second.size() + 1;
-            if(atts.size() > 0) cs += atts.size() - 1;
-            s = s + "\r\nContent-Length: " + std::to_string(cs);
-            s = s + "\r\nConnection: close\r\n\r\n";
-            for(const std::pair<std::string, std::string>& p : atts) s = s + p.first + "=" + p.second + "&";
-            if(atts.size() > 0) s = s.substr(0, s.size() - 1);
-            return s;
-        };
+        virtual const std::string toString(const std::string& host, const std::string& res){
+            std::stringstream ss;
+            ss << method() << " /" << res << " " << version();
+            ss << "\r\nHost: " << host;
+            if(mis.size() > 0 ) ss << "\r\nAccept: ";
+            for(const std::string& m : mis) ss << m << ", ";
+            if(mis.size() > 0 ) ss.seekp(-2, ss.cur);
+            std::stringstream bo;
+            for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
+            if(atts.size() > 0){ bo.seekp(-1, ss.cur); bo << " "; }
+            body(bo.str());
+            request(*this);
+            for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
+            for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
+            ss << "\r\n\r\n";
+            ss << body();
+            return ss.str();
+        }
     public:
         virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
 };
 
-class AResponse{
+class AResponse : public Sendable{
     protected:
         uint16_t s = 200;
-        std::string b, r = "OK";
-        kul::hash::map::S2S hs;
+        std::string r = "OK";
+        Headers hs;
     public:
-        const std::string& body() const { return b; }
-        void body(const std::string& b){ this->b = b; }
         const std::string& reason() const { return r; }
         void reason(const std::string& r){ this->r = r; }
         const uint16_t& status() const { return s; }
         void status(const uint16_t& s){ this->s = s; }
-        void header(const std::string& k, const std::string& v){ this->hs.insert(k, v); }
-        const kul::hash::map::S2S& headers() const { return hs; }
         virtual const std::string version() const { return "HTTP/1.1"; }
 };
 
@@ -179,6 +208,12 @@ class AServer{
                 }
             }
         }
+        virtual std::shared_ptr<ARequest> get(){
+            return std::make_shared<_1_1GetRequest>();
+        }
+        virtual std::shared_ptr<ARequest> post(){
+            return std::make_shared<_1_1PostRequest>();
+        }
         virtual AResponse& response(AResponse& r){ return r; }
     public:
         AServer(const uint16_t& p) : p(p), s(kul::Now::MILLIS()){}
@@ -187,7 +222,7 @@ class AServer{
         virtual void start() throw(kul::http::Exception) = 0;
         virtual void stop() = 0;
         
-        virtual const AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts) = 0;
+        virtual const AResponse response(const std::string& res, const ARequest& req) = 0;
         const uint64_t  up()   const { return s - kul::Now::MILLIS(); }
         const uint16_t& port() const { return p; }
 };

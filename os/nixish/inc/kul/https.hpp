@@ -78,56 +78,32 @@ class Server : public kul::http::Server{
                 close(newsockfd); 
                 return; 
             }
-            std::string b(buffer);
-            if(b.empty()){ 
-                KLOG(ERR) << "Malformed request found: " << b; 
-                close(newsockfd); 
-                return; 
+            // std::string b(buffer);
+            // if(b.empty()){ 
+            //     KLOG(ERR) << "Malformed request found: " << b; 
+            //     close(newsockfd); 
+            //     return; 
+            // }
+            try{
+                std::string res;
+                std::shared_ptr<kul::http::ARequest> req = handle(std::string(buffer), res);
+                const kul::http::AResponse& rs(response(res, *req.get()));
+                std::stringstream ss;
+                ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
+                for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
+                for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
+                ss << kul::os::EOL() << rs.body();;
+                const std::string& ret(ss.str());
+                e = SSL_write(ssl, ret.c_str(), ret.length());
+            }catch(const kul::http::Exception& e1){
+                KERR << e1.what(); 
+                e = -1;
             }
-            kul::hash::map::S2S hs;
-            std::stringstream ss(b);
-            std::string l;
-            std::string r;
-            std::getline(ss, r);
-            while(std::getline(ss, l)){
-                if(l.size() <= 1) break;
-                std::vector<std::string> bits;
-                kul::String::split(l, ':', bits);
-                hs.insert(bits[0], bits[1]);
-            }
-            std::vector<std::string> lines = kul::String::lines(b); 
-            std::vector<std::string> l0; 
-            kul::String::split(r, ' ', l0);
-            if(!l0.size()){ KLOG(ERR) << "Malformed request found: " << b; close(newsockfd); return; }
-            std::string s(l0[1]);
-            std::string a;
-            if(l0[0] == "GET"){
-                if(s.find("?") != std::string::npos){
-                    a = s.substr(s.find("?") + 1);
-                    s = s.substr(0, s.find("?"));
-                }
-            }else 
-            if(l0[0] == "POST") while(std::getline(ss, l)) a += l;
-            //}else if(l0[0].compare("HEAD") == 0){
-            else{ 
-                KLOG(ERR) << "HTTPS Server request type not handled: " << l0[0]; 
-                close(newsockfd); 
-                return; 
-            }
-
-            kul::hash::map::S2S atts;
-            asAttributes(a, atts);
-            const kul::http::AResponse& rs(response(s, hs, atts));
-            ss.str(std::string());
-            ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
-            for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
-            ss << kul::os::EOL() << rs.body();;
-            const std::string& ret(ss.str());
-            e = SSL_write(ssl, ret.c_str(), ret.length());
-            if (e < 0) KLOG(ERR) << "Error replying to host";
+            if(e < 0) KLOG(ERR) << "Error replying to host";
             close(newsockfd);
         }
     public:
+        Server(const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(443), crt(c), key(k){}
         Server(const short& p, const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(p), crt(c), key(k){}
         ~Server(){
             if(s){
@@ -151,7 +127,7 @@ class Server : public kul::http::Server{
                 KEXCEPTION("HTTPS Server SSL_CTX_check_private_key failed");
             kul::http::Server::start();
         }
-        void stop() throw(kul::http::Exception){
+        void stop(){
             ERR_free_strings();
             EVP_cleanup();
             if(ssl){

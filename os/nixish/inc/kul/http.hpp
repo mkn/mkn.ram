@@ -131,60 +131,31 @@ class Server : public kul::http::AServer{
                 printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(serv_addr.sin_addr) , ntohs(serv_addr.sin_port));
                 close(fd);
                 close(i);
-                FD_CLR(newsockfd, &bfds);
+                FD_CLR(fd, &bfds);
                 if(i > 0) clients[i] = 0;
             }else{
                 buffer[read] = '\0';
-                std::string b(buffer);
-                kul::hash::map::S2S hs;
-                kul::hash::map::S2S atts;
-                std::stringstream ss(b);
-                std::string l;
-                std::string r;
-                std::getline(ss, r);
-                while(std::getline(ss, l)){
-                    if(l.size() <= 1) break;
-                    std::vector<std::string> bits;
-                    kul::String::split(l, ':', bits);
-                    hs.insert(bits[0], bits[1]);
+                std::string res;
+                try{
+                    std::shared_ptr<ARequest> req = handle(std::string(buffer), res);
+                    const AResponse& rs(response(res, *req.get()));
+                    std::stringstream ss;
+                    ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
+                    for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
+                    for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
+                    ss << kul::os::EOL() << rs.body() << "\r\n" << '\0';
+                    const std::string& ret(ss.str());
+                    e = ::send(fd, ret.c_str(), ret.length(), 0);
+                }catch(const kul::http::Exception& e1){
+                    KERR << e1.what(); 
+                    e = -1;
                 }
-                std::vector<std::string> lines = kul::String::lines(b); 
-                std::vector<std::string> l0; 
-                kul::String::split(r, ' ', l0);
-                if(!l0.size()){ 
-                    KLOG(ERR) << "Malformed request found: " << b; 
-                    close(fd);
-                    if(i > 0) clients[i] = 0;
-                    return; 
-                }
-                std::string s(l0[1]);
-                std::string a;
-                if(l0[0] == "GET"){
-                    if(s.find("?") != std::string::npos){
-                        a = s.substr(s.find("?") + 1);
-                        s = s.substr(0, s.find("?"));
-                    }
-                }else 
-                if(l0[0] == "POST") while(std::getline(ss, l)) { KLOG(INF); a += l; }
-                //}else if(l0[0].compare("HEAD") == 0){
-                else {
-                    KLOG(ERR) << "HTTP Server request type not handled: " << l0[0]; 
-                    close(fd); 
-                    if(i > 0) clients[i] = 0;
-                    return;
-                }
-                asAttributes(a, atts);
-                const AResponse& rs(response(s, hs, atts));
-                std::stringstream sr;
-                sr << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
-                for(const auto& h : rs.headers()) sr << h.first << ": " << h.second << kul::os::EOL();
-                sr << kul::os::EOL() << rs.body() << kul::os::EOL();// << '\0';
-                const std::string ret(sr.str());
-                e = ::send(fd, ret.c_str(), ret.length(), 0);
                 if(e < 0){
                     close(fd);
                     if(i > 0) clients[i] = 0;
-                    KLOG(ERR) << "Error replying to host";
+                    FD_CLR(fd, &bfds);
+                    KLOG(ERR) << "Error replying to host error: " << e;
+                    KLOG(ERR) << "Error replying to host errno: " << errno;
                 }
             }
         }
@@ -196,6 +167,56 @@ class Server : public kul::http::AServer{
         int16_t max_fd = 0, sd = 0;
         socklen_t clilen;
         struct sockaddr_in serv_addr, cli_addr;
+        virtual const std::shared_ptr<ARequest> handle(const std::string& b, std::string& res){
+            std::string a;
+            std::shared_ptr<ARequest> req;
+            {
+                std::stringstream ss(b);
+                {
+                    std::string r;
+                    std::string l;
+                    std::getline(ss, r);
+                    std::vector<std::string> lines = kul::String::lines(b); 
+                    std::vector<std::string> l0; 
+                    kul::String::split(r, ' ', l0);
+                    if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
+                    std::string s(l0[1]);
+                    if(l0[0] == "GET"){
+                        req = get();
+                        if(s.find("?") != std::string::npos){
+                            a = s.substr(s.find("?") + 1);
+                            s = s.substr(0, s.find("?"));
+                        }
+                    }else 
+                    if(l0[0] == "POST") req = post();
+                    else KEXCEPTION("HTTP Server request type not handled: " + l0[0]); 
+                    res = s;
+                }
+                {
+                    std::string l;
+                    while(std::getline(ss, l)){
+                        if(l.size() <= 1) break;
+                        std::vector<std::string> bits;
+                        kul::String::split(l, ':', bits);
+                        kul::String::trim(bits[0]);
+                        kul::String::trim(bits[1]);
+                        if(*bits[1].rbegin() == '\r') bits[1].pop_back();
+                        if(bits[0] == "Cookie")
+                            req->cookie(bits[1]);
+                        else
+                            req->header(bits[0], bits[1]);
+                    }
+                    std::stringstream ss1;
+                    while(std::getline(ss, l)) ss1 << l;
+                    if(a.empty()) a = ss1.str();
+                    else req->body(ss1.str());
+                }
+            }
+            kul::hash::map::S2S atts;
+            asAttributes(a, atts);
+            for(const auto& att : atts) req->attribute(att.first, att.second);
+            return req;
+        }
         virtual void loop() throw(kul::http::Exception){
             fds = bfds;
 
@@ -213,7 +234,7 @@ class Server : public kul::http::AServer{
                 if(newsockfd < 0) KEXCEPTION("HTTP Server error on accept");
               
                 printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , 
-                    newsockfd , inet_ntoa(serv_addr.sin_addr) , ntohs(serv_addr.sin_port));
+                    newsockfd , inet_ntoa(cli_addr.sin_addr) , ntohs(cli_addr.sin_port));
                 receive(newsockfd);
                 FD_SET(newsockfd, &bfds);
                 for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++)
@@ -230,24 +251,27 @@ class Server : public kul::http::AServer{
                     }
         }
 
-        virtual AResponse& response(AResponse& r) const { 
-            if(!r.headers().count("Content-Type"))   r.header("Content-Type", "text/html");
-            if(!r.headers().count("Date"))           r.header("Date", kul::DateTime::NOW());
-            if(!r.headers().count("Connection"))     r.header("Connection", "close");
-            if(!r.headers().count("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
+        virtual AResponse& response(AResponse& r) const {
+            if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
+            if(!r.header("Connection"))     r.header("Connection", "close");
+            if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
+            if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
             return r; 
         }
     public:
-        Server(const short& p, const std::string& w = "localhost") : AServer(p){}
+        Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
         virtual void start() throw(kul::http::Exception){
             sockfd = socket(AF_INET, SOCK_STREAM, 0);
+            int iso = 1;
+            setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
             if (sockfd < 0) KEXCEPTION("HTTP Server error opening socket");
             bzero((char *) &serv_addr, sizeof(serv_addr));
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_addr.s_addr = INADDR_ANY;
             serv_addr.sin_port = !kul::byte::isBigEndian() ? htons(this->port()) : kul::byte::LittleEndian::UINT32(this->port());
-            if (bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) < 0)
-                KEXCEPTION("HTTP Server error on binding");
+            int16_t e = 0;
+            if ((e = bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr))) < 0)
+                KEXCEPTION("HTTP Server error on binding, errno: " + std::to_string(errno));
             listen(sockfd, 5);
             clilen = sizeof(cli_addr);
             s = 1;
@@ -259,7 +283,7 @@ class Server : public kul::http::AServer{
             for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++) shutdown(clients[i], SHUT_RDWR);
             s = false;
         }
-        virtual const AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts){
+        virtual const AResponse response(const std::string& res, const ARequest& req){
             _1_1Response r;
             return response(r);
         }

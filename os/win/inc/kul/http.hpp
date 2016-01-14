@@ -78,7 +78,7 @@ class Server : public kul::http::AServer{
 		static const LPVOID wAlloc(ULONG& u){ return HeapAlloc(GetProcessHeap(), 0, u); }
 		static const bool wFreeM(LPVOID a){ return HeapFree(GetProcessHeap(), 0, a); }
 	public:
-		Server(const short& p, const std::string& s = "localhost") : AServer(p), q(NULL), url("http://" + s + ":" + std::to_string(p) + "/"){
+		Server(const short& p = 80, const std::string& s = "localhost") : AServer(p), q(NULL), url("http://" + s + ":" + std::to_string(p) + "/"){
 			ULONG r = 0;
 			r = HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_SERVER, NULL);
 			if(r != NO_ERROR) KEXCEPT(Exception, "HttpInitialize failed: " + std::to_string(r));

@@ -32,12 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_TEST_HPP_
 
 #include "kul/http.hpp"
-#ifndef _WIN32
-#include "kul/https.hpp"
-#endif
 #include "kul/html4.hpp"
 
 #include "kul/signal.hpp"
+
+#ifndef  _KUL_HTTP_TEST_PORT_
+#define  _KUL_HTTP_TEST_PORT_ 8888
+#endif /*_KUL_HTTP_TEST_PORT_*/
 
 namespace kul{ namespace ram{
 
@@ -47,31 +48,13 @@ class TestHTTPServer : public kul::http::Server{
 			start();
 		}
 	public:
-		const kul::http::AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts){
+		const kul::http::AResponse response(const std::string& res, const kul::http::ARequest& req){
             kul::http::_1_1Response r;
             r.body("HTTP PROVIDED BY KUL");
             return kul::http::Server::response(r);
         }
-		TestHTTPServer() : kul::http::Server(8888){}
+		TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
 		friend class kul::ThreadRef<TestHTTPServer>;
-};
-
-// self signed https crt/key with openssl
-// https://developer.salesforce.com/blogs/developer-relations/2011/05/generating-valid-self-signed-certificates.html
-class TestHTTPSServer : public kul::https::Server{
-	private:
-		void operator()(){
-			start();
-		}
-	protected:
-		const kul::http::AResponse response(const std::string& res, const kul::hash::map::S2S& hs, const kul::hash::map::S2S& atts){
-            kul::http::_1_1Response r;
-            r.body("HTTPS PROVIDED BY OPENSSL");
-            return kul::http::Server::response(r);
-        }
-	public:
-		TestHTTPSServer() : kul::https::Server(8888, "server.crt", "server.key"){}
-		friend class kul::ThreadRef<TestHTTPSServer>;
 };
 
 class Get : public kul::http::_1_1GetRequest{
@@ -99,9 +82,10 @@ class Test{
 			t.run();
 			kul::this_thread::sleep(1000);
 			if(t.exception()) std::rethrow_exception(t.exception());
-			Post().send("localhost", "index.html", 8888);
+			// kul::this_thread::sleep(100000);
+			Post().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
 			if(t.exception()) std::rethrow_exception(t.exception());
-			Get() .send("localhost", "index.html", 8888);
+			Get() .send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
 			if(t.exception()) std::rethrow_exception(t.exception());
 			serv.stop();
 			Get() .send("google.com", "", 80);
