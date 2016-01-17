@@ -74,7 +74,7 @@ class Server : public kul::http::Server{
             bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
             e = SSL_read(ssl, buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
             if (e <= 0){ 
-                short se;
+                short se = 0;
                 SSL_get_error(ssl, se);
                 if(se) KLOG(ERR) << "SSL_get_error: " << SSL_get_error;
                 e = -1;
