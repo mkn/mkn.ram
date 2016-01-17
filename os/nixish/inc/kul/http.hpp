@@ -126,7 +126,7 @@ class Server : public kul::http::AServer{
             int16_t e = 0, read = ::read(fd, buffer, _KUL_HTTP_READ_BUFFER_ - 1);
             if(read == 0){
                 getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
-                printf("Host disconnected , ip %s , port %d \n" , inet_ntoa(serv_addr.sin_addr) , ntohs(serv_addr.sin_port));
+                KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
                 close(fd);
                 close(i);
                 FD_CLR(fd, &bfds);

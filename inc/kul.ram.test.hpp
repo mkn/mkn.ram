@@ -82,7 +82,6 @@ class Test{
 			t.run();
 			kul::this_thread::sleep(1000);
 			if(t.exception()) std::rethrow_exception(t.exception());
-			// kul::this_thread::sleep(100000);
 			Post().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
 			if(t.exception()) std::rethrow_exception(t.exception());
 			Get() .send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);

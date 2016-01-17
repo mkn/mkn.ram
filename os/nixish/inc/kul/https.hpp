@@ -70,45 +70,37 @@ class Server : public kul::http::Server{
             }else KLOG(ERR) << "Client does not have certificate.";
 
             int16_t e;
-            char buffer[256];
-            bzero(buffer,256);
-            e = SSL_read(ssl, buffer, 255);
-            if (e < 0){ 
-                KLOG(ERR) << "ERROR reading from socket"; 
-                close(newsockfd); 
-                return; 
-            }
-            // std::string b(buffer);
-            // if(b.empty()){ 
-            //     KLOG(ERR) << "Malformed request found: " << b; 
-            //     close(newsockfd); 
-            //     return; 
-            // }
-            try{
-                std::string res;
-                std::shared_ptr<kul::http::ARequest> req = handle(std::string(buffer), res);
-                const kul::http::AResponse& rs(response(res, *req.get()));
-                std::stringstream ss;
-                ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
-                for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
-                for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
-                ss << kul::os::EOL() << rs.body();;
-                const std::string& ret(ss.str());
-                e = SSL_write(ssl, ret.c_str(), ret.length());
-            }catch(const kul::http::Exception& e1){
-                KERR << e1.what(); 
+            char buffer[_KUL_HTTPS_READ_BUFFER_];
+            bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
+            e = SSL_read(ssl, buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
+            if (e <= 0){ 
+                short se;
+                SSL_get_error(ssl, se);
+                if(se) KLOG(ERR) << "SSL_get_error: " << SSL_get_error;
                 e = -1;
-            }
-            if(e < 0) KLOG(ERR) << "Error replying to host";
+            }else
+                try{
+                    std::string res;
+                    std::shared_ptr<kul::http::ARequest> req = handle(std::string(buffer), res);
+                    const kul::http::AResponse& rs(response(res, *req.get()));
+                    std::stringstream ss;
+                    ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
+                    for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
+                    for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
+                    ss << kul::os::EOL() << rs.body();;
+                    const std::string& ret(ss.str());
+                    e = SSL_write(ssl, ret.c_str(), ret.length());
+                }catch(const kul::http::Exception& e1){
+                    KERR << e1.what(); 
+                    e = -1;
+                }
             close(newsockfd);
         }
     public:
         Server(const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(443), crt(c), key(k){}
         Server(const short& p, const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(p), crt(c), key(k){}
         ~Server(){
-            if(s){
-                stop();
-            }
+            if(s) stop();
         }
         void start() throw(kul::http::Exception){
             if(!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
