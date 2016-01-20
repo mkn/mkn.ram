@@ -54,22 +54,6 @@ class Page{
 		std::shared_ptr<const std::string> str;
 		std::shared_ptr<Tag> h, b;
 		Page() : h(std::make_shared<tag::Head>()), b(std::make_shared<tag::Body>()){}
-		void replace(std::string& s, const std::string& f, const std::string& r){
-			size_t p = s.find(f);
-			while(p != std::string::npos){
-				s.replace(p, f.size(), r);
-				p = s.find(f, p + r.size()) ;
-			}
-		}
-		std::string& esc(std::string& s){
-			replace(s, "&" , "&amp;");
-			replace(s, "<" , "&lt;");
-			replace(s, ">" , "&gt;");
-			replace(s, "\"", "&quot;");
-			replace(s, "'" , "&#x27;");
-			replace(s, "/" , "&#x2F;");
-			return s;
-		}
 	public:
 		template <class T>
 		Page& body(const std::shared_ptr<T>& t){
@@ -80,29 +64,12 @@ class Page{
 			h->tags.push_back(t); return *this;
 		}
 		virtual const std::string* render(){
-			c++;
-			switch(c){
-				case 0:{
-					std::stringstream ss;
-					ss << _KUL_HTML_DOC_TYPE_ << "\n" << "<html>";
-					str = std::make_shared<std::string>(ss.str());
-				}break;
-				case 1:
-					return h->render();
-					break;
-				case 2:
-					return b->render();
-					break;
-				case 3:{
-					std::stringstream ss;
-					ss << x << "</html>";
-					str = std::make_shared<std::string>(ss.str());
-				}break;
-				default: {
-					c = -1;
-					return 0;
-				}
-			}
+			std::stringstream ss;
+			ss << _KUL_HTML_DOC_TYPE_ << "\n" << "<html>";
+			ss << *h->render();
+			ss << *b->render();
+			ss << x << "</html>";
+			str = std::make_shared<std::string>(ss.str());
 			return str.get();
 		}
 

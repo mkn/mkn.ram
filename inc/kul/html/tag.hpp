@@ -38,7 +38,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kul/html/def.hpp"
 
-namespace kul{ namespace html4{
+namespace kul{ 
+
+class HTML{
+	private:
+		static void replace(std::string& s, const std::string& f, const std::string& r){
+			size_t p = s.find(f);
+			while(p != std::string::npos){
+				s.replace(p, f.size(), r);
+				p = s.find(f, p + r.size()) ;
+			}
+		}
+	public:
+		static std::string& ESC(std::string& s){
+			replace(s, "&" , "&amp;");
+			replace(s, "<" , "&lt;");
+			replace(s, ">" , "&gt;");
+			replace(s, "\"", "&quot;");
+			replace(s, "'" , "&#x27;");
+			replace(s, "/" , "&#x2F;");
+			return s;
+		}
+};
+
+namespace html4{
 
 class Page;
 
@@ -53,10 +76,10 @@ class Tag{
 		Tag(){}
 		Tag(const std::string& v) : v(v){}
 		virtual const std::string* render(){
-			int t = 1;
+			uint16_t t = 1;
 			return render(t);
 		}
-		virtual const std::string* render(int tab){
+		virtual const std::string* render(uint16_t tab){
 			std::stringstream ss;
 #ifdef _KUL_HTML_FORMATED_
 			ss << "\n";
@@ -96,6 +119,7 @@ class Tag{
 			return *this;
 		}
 		Tag& br();
+		Tag& esc(const std::string& t);
 		Tag& text(const std::string& t);
 		friend class Page;
 };
@@ -142,23 +166,38 @@ class CheckList : public Tag{};
 class Text : public Tag{
 	public:
 		Text(const std::string& n) : Tag(n){}
-		virtual const std::string* render(int tab){
+		virtual const std::string* render(uint16_t tab){
 			std::stringstream ss;
 #ifdef _KUL_HTML_FORMATED_
 			ss << "\n";
-			for(int i = 0; i < tab; i++) ss << "\t";
+			for(uint16_t i = 0; i < tab; i++) ss << "\t";
 #endif /* _KUL_HTML_FORMATED_ */
 			ss << v;
 			str = std::make_unique<std::string>(ss.str());
 			return str.get();
 		}
-}; 
+};
+namespace esc{
+class Text : public kul::html4::Text{
+	public:
+		Text(const std::string& n) : kul::html4::Text(n){
+			kul::HTML::ESC(v);
+		}
+		virtual const std::string* render(uint16_t tab){
+			return kul::html4::Text::render(tab);
+		}
+};
+} 
 
 }// END NAMESPACE html4
 }// END NAMESPACE kul
 
 inline kul::html4::Tag& kul::html4::Tag::br(){
 	tags.push_back(std::make_shared<tag::Named>("br"));
+	return *this;
+}
+inline kul::html4::Tag& kul::html4::Tag::esc(const std::string& t){
+	tags.push_back(std::make_shared<esc::Text>(t));
 	return *this;
 }
 inline kul::html4::Tag& kul::html4::Tag::text(const std::string& t){
