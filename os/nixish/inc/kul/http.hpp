@@ -135,7 +135,17 @@ class Server : public kul::http::AServer{
                 buffer[read] = '\0';
                 std::string res;
                 try{
-                    std::shared_ptr<ARequest> req = handle(std::string(buffer), res);
+                    std::string s(buffer);
+                    std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
+                    std::vector<char> allowed = {'G', 'P', '/', 'H'};
+                    bool f = 0;
+                    for(const auto& ch : allowed){
+                        f = c.find(ch) != std::string::npos;
+                        if(f) break;
+                    }
+                    if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
+                    
+                    std::shared_ptr<ARequest> req = handle(s, res);
                     const AResponse& rs(response(res, *req.get()));
                     std::stringstream ss;
                     ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
@@ -144,8 +154,9 @@ class Server : public kul::http::AServer{
                     ss << kul::os::EOL() << rs.body() << "\r\n" << '\0';
                     const std::string& ret(ss.str());
                     e = ::send(fd, ret.c_str(), ret.length(), 0);
+
                 }catch(const kul::http::Exception& e1){
-                    KERR << e1.what(); 
+                    KERR << e1.stack(); 
                     e = -1;
                 }
                 if(e < 0){
