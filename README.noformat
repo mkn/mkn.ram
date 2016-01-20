@@ -1,12 +1,12 @@
 kul
 ===
 
-C++ Kommon usage library
+C++ Remote Applications Management
 
-Convenience library providing cross platform threading/process management/io ops/logging
+Convenience library providing cross platform http/https services
 
 How to use:
-view tst/kul.test.hpp
+view tst/kul.ram.test.hpp
 
 License
 
