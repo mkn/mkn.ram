@@ -76,7 +76,7 @@ class Server : public kul::http::Server{
             if (e <= 0){ 
                 short se = 0;
                 SSL_get_error(ssl, se);
-                if(se) KLOG(ERR) << "SSL_get_error: " << SSL_get_error;
+                if(se) KLOG(ERR) << "SSL_get_error: " << se;
                 e = -1;
             }else
                 try{
@@ -105,7 +105,6 @@ class Server : public kul::http::Server{
         void start() throw(kul::http::Exception){
             if(!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
             if(!key) KEXCEPTION("HTTPS Server key file does not exist: " + key.full());
-            SSL_load_error_strings();
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_ssl_algorithms();
@@ -131,6 +130,126 @@ class Server : public kul::http::Server{
         }
 };
 
+class ARequest;
+class Requester;
+class SSLReqHelper{
+    private:
+        SSL_CTX *ctx;
+        SSLReqHelper(){
+            SSL_library_init();
+            SSL_load_error_strings();
+            OpenSSL_add_all_algorithms();
+            ctx = SSL_CTX_new(TLSv1_2_client_method());
+            if ( ctx == NULL ) {
+                ERR_print_errors_fp(stderr);
+                abort();
+                KEXCEPTION("HTTPS Request SSL_CTX FAILED");
+            }
+        }
+        ~SSLReqHelper(){
+            SSL_CTX_free(ctx);
+        }
+        static SSLReqHelper& INSTANCE(){
+            static SSLReqHelper i;
+            return i;
+        }
+        friend class ARequest;
+        friend class Requester;
+
+};
+
+class ARequest{
+    protected:
+        SSL *ssl = {0};
+        ARequest() : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx)){}
+        ~ARequest(){
+            SSL_free(ssl);
+        }
+};
+
+class Requester{
+    public:
+        static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
+            // int32_t sck = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            int32_t sck = socket(PF_INET, SOCK_STREAM, 0);
+            if (sck < 0) KEXCEPT(kul::http::Exception, "Error opening socket");
+            struct sockaddr_in servAddr;
+            memset(&servAddr, 0, sizeof(servAddr));
+            servAddr.sin_family   = AF_INET;
+            int e = 0;
+            servAddr.sin_port = !kul::byte::isBigEndian() ? htons(p) : kul::byte::LittleEndian::UINT32(p);
+            if(h == "localhost" || h == "127.0.0.1"){   
+                servAddr.sin_addr.s_addr = INADDR_ANY;
+                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
+            }
+            else if(inet_pton(AF_INET, &h[0], &(servAddr.sin_addr))){
+                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
+            }
+            else{
+                std::string ip;
+                struct addrinfo hints, *servinfo, *next;
+                struct sockaddr_in *in;
+                memset(&hints, 0, sizeof hints);
+                hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
+                hints.ai_socktype = SOCK_STREAM;
+                if ((e = getaddrinfo(h.c_str(), 0, &hints, &servinfo)) != 0) 
+                    KEXCEPT(kul::http::Exception, "getaddrinfo failed for host: " + h);
+                for(next = servinfo; next != NULL; next = next->ai_next){
+                    in = (struct sockaddr_in *) next->ai_addr;
+                    ip = inet_ntoa(in->sin_addr);
+                    servAddr.sin_addr.s_addr = inet_addr(&ip[0]);
+                    if(ip == "0.0.0.0") continue;
+                    if((e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr))) == 0) break;
+                }
+                freeaddrinfo(servinfo);
+            }
+            if(e < 0) KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
+            SSL_set_fd(ssl, sck);
+            if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
+            SSL_write(ssl, req.c_str(), req.size());
+            char buffer[_KUL_HTTPS_REQUEST_BUFFER_];
+            do{
+                int16_t d = SSL_read(ssl, buffer, _KUL_HTTPS_REQUEST_BUFFER_ - 1);
+                if (d == 0) break; 
+                if (d < 0){ 
+                    short se = 0;
+                    SSL_get_error(ssl, se);
+                    if(se) KLOG(ERR) << "SSL_get_error: " << se;
+                    break;
+                }
+                for(uint16_t i = 0; i < d; i++) ss << buffer[i];
+            }while(1);
+            ::close(sck);
+        }
+};
+
+class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
+    public:
+        void send(const std::string& h, const std::string& res, const uint16_t& p){
+            try{
+                std::stringstream ss;
+                KLOG(DBG) << toString(h, res);
+                Requester::send(h, toString(h, res), p, ss, ssl);
+                handle(ss.str());
+            }catch(const kul::Exception& e){
+                KEXCEPT(Exception, "HTTP GET failed with host: " + h);
+            }
+        }
+};
+
+class _1_1PostRequest : public http::_1_1PostRequest, https::ARequest{
+    public:
+        void send(const std::string& h, const std::string& res, const uint16_t& p){
+            try{
+                std::stringstream ss;
+                KLOG(DBG) << toString(h, res);
+                Requester::send(h, toString(h, res), p, ss, ssl);
+                handle(ss.str());
+            }catch(const kul::Exception& e){
+                KEXCEPT(Exception, "HTTP POST failed with host: " + h);
+            }
+        }
+};
 
 }}
 #endif /* _KUL_HTTPS_HPP_ */

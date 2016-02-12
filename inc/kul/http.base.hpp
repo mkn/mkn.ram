@@ -65,10 +65,9 @@ class Sendable{
 class ARequest : public Sendable{
     protected:
         kul::hash::map::S2S atts;
-        kul::hash::set::String mis;
-        virtual const std::string method() const = 0;
-        virtual const std::string version() const = 0;
-        virtual const std::string toString(const std::string& host, const std::string& res) = 0;
+        virtual std::string method() const = 0;
+        virtual std::string version() const = 0;
+        virtual std::string toString(const std::string& host, const std::string& res) = 0;
         virtual void handle(const kul::hash::map::S2S& h, const std::string& s){
             printf("%s", s.c_str());
         }
@@ -98,18 +97,14 @@ class ARequest : public Sendable{
         const ARequest& request(ARequest& r) const {
             if(!r.header("Connection"))     r.header("Connection", "close");
             if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
+            if(!r.header("Accept"))         r.header("Accept", "text/html");
             return r; 
         }
     public:
-        ARequest(bool text = 1) { if(text) mime("text/html");}
         virtual ~ARequest(){}
         virtual void send(const std::string& host, const std::string& res, const uint16_t& port) = 0;
         ARequest& attribute(const std::string& k, const std::string& v){
             atts[k] = v;
-            return *this;
-        }
-        ARequest& mime(const std::string& m){
-            mis.insert(m);
             return *this;
         }
         const kul::hash::map::S2S&  attributes() const { return atts; }
@@ -117,14 +112,13 @@ class ARequest : public Sendable{
 
 class A1_1Request : public ARequest{
     protected:
-        const std::string version() const{ return "HTTP/1.1";}
+        std::string version() const { return "HTTP/1.1";}
 };
 
 class _1_1GetRequest : public A1_1Request{
-    private:
-        const std::string method() const { return "GET";}
     protected:
-        virtual const std::string toString(const std::string& host, const std::string& res){
+        virtual std::string method() const { return "GET";}
+        virtual std::string toString(const std::string& host, const std::string& res){
             std::stringstream ss;
             ss << method() << " /" << res;
             if(atts.size() > 0) ss << "?";
@@ -133,9 +127,6 @@ class _1_1GetRequest : public A1_1Request{
             if(atts.size() > 0) ss.seekp(-1, ss.cur);
             ss << " " << version();
             ss << "\r\nHost: " << host;
-            if(mis.size() > 0 ) ss << "\r\nAccept: ";
-            for(const std::string& m : mis) ss << m + ", ";
-            if(mis.size() > 0 ) ss.seekp(-2, ss.cur);
             request(*this);
             for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
             for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
@@ -147,25 +138,22 @@ class _1_1GetRequest : public A1_1Request{
 };
 
 class _1_1PostRequest : public A1_1Request{
-    private:
-        const std::string method() const { return "POST";}
     protected:
-        virtual const std::string toString(const std::string& host, const std::string& res){
+        virtual std::string method() const { return "POST";}
+        virtual std::string toString(const std::string& host, const std::string& res){
             std::stringstream ss;
             ss << method() << " /" << res << " " << version();
             ss << "\r\nHost: " << host;
-            if(mis.size() > 0 ) ss << "\r\nAccept: ";
-            for(const std::string& m : mis) ss << m << ", ";
-            if(mis.size() > 0 ) ss.seekp(-2, ss.cur);
             std::stringstream bo;
             for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
-            if(atts.size() > 0){ bo.seekp(-1, ss.cur); bo << " "; }
+            if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }
+            if(body().size()) bo << "\r\n" << body();
             body(bo.str());
             request(*this);
             for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
             for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
             ss << "\r\n\r\n";
-            ss << body();
+            if(body().size()) ss << body();
             return ss.str();
         }
     public:
@@ -182,12 +170,12 @@ class AResponse : public Sendable{
         void reason(const std::string& r){ this->r = r; }
         const uint16_t& status() const { return s; }
         void status(const uint16_t& s){ this->s = s; }
-        virtual const std::string version() const { return "HTTP/1.1"; }
+        virtual std::string version() const { return "HTTP/1.1"; }
 };
 
 class  _1_1Response : public AResponse{
     public:
-        const std::string version() const { return "HTTP/1.1"; }
+        std::string version() const { return "HTTP/1.1"; }
 };
 
 class AServer{
@@ -214,7 +202,7 @@ class AServer{
         virtual std::shared_ptr<ARequest> post(){
             return std::make_shared<_1_1PostRequest>();
         }
-        virtual AResponse& response(AResponse& r){ return r; }
+        virtual AResponse& response(AResponse& r) const { return r; }
     public:
         AServer(const uint16_t& p) : p(p), s(kul::Now::MILLIS()){}
         virtual ~AServer(){}

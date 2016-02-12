@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
 #include "kul/io.hpp"
-#include "kul/http.hpp"
+#include "kul/https.hpp"
 
 #include <json/reader.h>
 #include <json/writer.h>
@@ -49,12 +49,13 @@ class Exception : public kul::Exception{
 };
 }// END NAMESPACE gist
 
-class Post : public kul::http::_1_1PostRequest{
+class Create : public kul::https::_1_1PostRequest{
     private:
         Json::Value j;
         bool f = 0;
     public:
         void handle(const kul::hash::map::S2S& h, const std::string& b){
+            KLOG(DBG) << b;
             Json::Reader reader;
             f = !reader.parse(b.c_str(), j);
             if(!f) KLOG(DBG) << j;
@@ -62,34 +63,50 @@ class Post : public kul::http::_1_1PostRequest{
         bool fail(){ return f; }
         const Json::Value json(){ return j; }
 };
+
+class Delete : public kul::https::_1_1GetRequest{
+    protected:
+        std::string method() const { return "DELETE"; }
+    public:
+        void handle(const kul::hash::map::S2S& h, const std::string& b){
+            KLOG(DBG) << b;
+        }
+};
+
 class Gist{
 
     public:
-        static std::string CREATE(const std::string& desc, const std::vector<kul::File>& files, bool pub = 0) throw(Exception) {
+        static std::string CREATE(const std::string& ua, const std::string& d, const std::vector<kul::File>& fs, bool pub = 0) throw(Exception) {
             Json::Value json;
-            json["description"] = desc;
+            json["description"] = d;
             if(pub) json["public"] = true;
-            for(const auto& f : files){
+            Json::Value files;
+            for(const auto& f : fs){
                 std::stringstream ss;
                 const std::string* s = 0;
                 kul::io::Reader r(f);
                 while((s = r.readLine())) ss << *s;
                 Json::Value content;
                 content["content"] = ss.str();
-                Json::Value file;
-                file[f.name()].append(content);
-                json["files"].append(file);
+                files[f.name()] = content;
             }
+            json["files"] = files;
             std::stringstream ss;
             ss << Json::FastWriter().write(json);
-            Post p;
+            Create p;
+            p.header("Accept", "application/json");
+            p.header("User-Agent", ua);
             p.body(ss.str());
             p.send("api.github.com", "gists", 443);
             if(p.fail()) KEXCEPTION("Post JSON response failed to parse");
-            for(const auto& a : p.json()) return a["id"].asString();
-            KEXCEPTION("Post JSON resposne is empty");
+            return p.json()["id"].asString();
         }
-        static void DELETE(const std::string& id){}
+        static void DELETE(const std::string& ua, const std::string& id){
+            Delete p;
+            p.header("Accept", "application/json");
+            p.header("User-Agent", ua);
+            p.send("api.github.com", "gists/"+id, 443);
+        }
 };
 
 }// END NAMESPACE git
