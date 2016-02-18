@@ -86,7 +86,13 @@ class Server : public kul::http::Server{
                     std::stringstream ss;
                     ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
                     for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
-                    for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
+                    for(const auto& p : rs.cookies()){
+                        ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
+                        if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
+                        if(p.second.httpOnly()) ss << "httponly; ";
+                        if(p.second.secure()) ss << "secure; ";
+                        ss << kul::os::EOL();
+                    }
                     ss << kul::os::EOL() << rs.body();;
                     const std::string& ret(ss.str());
                     e = SSL_write(ssl, ret.c_str(), ret.length());

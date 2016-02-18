@@ -55,6 +55,12 @@ class Page{
 		std::shared_ptr<Tag> h, b;
 		Page() : h(std::make_shared<tag::Head>()), b(std::make_shared<tag::Body>()){}
 	public:
+		Tag& body(){
+			return *b.get();
+		}
+		Page& body(Tag& t){
+			b.reset(&t); return *this;
+		}
 		template <class T>
 		Page& body(const std::shared_ptr<T>& t){
 			b->tags.push_back(t); return *this;

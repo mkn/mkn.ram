@@ -150,7 +150,13 @@ class Server : public kul::http::AServer{
                     std::stringstream ss;
                     ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
                     for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
-                    for(const auto& c : rs.cookies()) ss << "Set-Cookie: " << c << kul::os::EOL();
+                    for(const auto& p : rs.cookies()){
+                        ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
+                        if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
+                        if(p.second.httpOnly()) ss << "httponly; ";
+                        if(p.second.secure()) ss << "secure; ";
+                        ss << kul::os::EOL();
+                    }
                     ss << kul::os::EOL() << rs.body() << "\r\n" << '\0';
                     const std::string& ret(ss.str());
                     e = ::send(fd, ret.c_str(), ret.length(), 0);
@@ -214,8 +220,16 @@ class Server : public kul::http::AServer{
                         std::string v(sv.str());
                         kul::String::trim(v);
                         if(*v.rbegin() == '\r') v.pop_back();
-                        if(bits[0] == "Cookie")
-                            req->cookie(v);
+                        if(bits[0] == "Cookie"){
+                            for(const auto& coo : kul::String::split(v, ';')){
+                                if(coo.find("=") == std::string::npos) req->cookie(coo, "");
+                                else{
+                                    std::vector<std::string> kv;
+                                    kul::String::escSplit(coo, '=', kv);
+                                    req->cookie(kv[0], kv[1]);
+                                }
+                            }
+                        }
                         else
                             req->header(bits[0], v);
                     }

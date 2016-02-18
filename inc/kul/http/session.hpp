@@ -38,11 +38,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace http{
 
-class ASession{
+class Session{
 	private:
 		uint64_t c;
 	public:
-		ASession() : c(kul::Now::MILLIS()){}
+		Session() : c(kul::Now::MILLIS()){}
 		void refresh(){ 
 			this->c = kul::Now::MILLIS(); 
 		}
@@ -51,45 +51,56 @@ class ASession{
 		}
 };
 
-class ASessionServer{
+class SessionServer{
 	protected:
 		kul::Mutex mutex;
-		kul::Ref<ASessionServer> ref;
+		kul::Ref<SessionServer> ref;
 		kul::Thread th1;
-		kul::hash::map::S2T<ASession> sss;
+		kul::hash::map::S2T<std::shared_ptr<Session>> sss;
 		virtual void operator()(){
 			while(true){
 				{
 					kul::ScopeLock lock(mutex);
 					std::vector<std::string> erase;
-					for(const auto& p : sss) if(p.second.expired()) erase.push_back(p.first);					
+					for(const auto& p : sss) if(p.second->expired()) erase.push_back(p.first);					
 					for(const std::string& e : erase) sss.erase(e);
 				}
 				kul::this_thread::sleep(10000);
 			}
 		}
 	public:
-		ASessionServer() : ref(*this), th1(ref){
+		SessionServer() : ref(*this), th1(ref){
 			sss.setDeletedKey("DELETED");
 			th1.run();
 		}
-		bool hasSession(const std::string& id) const {
+		template <class T = Session>
+		T& get(const std::string& id){
+			return (*sss.find(id)).second;
+		}
+		bool has(const std::string& id) const {
 			return sss.count(id);
 		}
-		void addSession(const std::string& id, const ASession& ss){
-			if(!sss.count(id)) sss.insert(id, ss);
+		template <class T = Session>
+		T add(const std::string& id, const std::shared_ptr<Session>& s){
+			sss.insert(id, s);
+			return get(id);
+		}
+		template <class T = Session>
+		T add(const std::string& id){
+			sss.insert(id, std::make_shared<T>());
+			return get(id);
 		}
 		void refresh(const std::string& id){
-			if(sss.count(id)){
+			if(has(id)){
 				kul::ScopeLock lock(mutex);
-				if(sss.count(id)) (*sss.find(id)).second.refresh();
+				if(sss.count(id)) (*sss.find(id)).second->refresh();
 			}
 		}
 		void shutdown(){
 			kul::ScopeLock lock(mutex);
 			th1.interrupt();
 		}
-		friend class kul::ThreadRef<ASessionServer>;
+		friend class kul::ThreadRef<SessionServer>;
 };
 
 

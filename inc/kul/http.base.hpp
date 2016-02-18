@@ -36,23 +36,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace http{
 
-
 typedef kul::hash::map::S2S Headers;
-typedef kul::hash::set::String Cookies;
 
 class Exception : public kul::Exception{
     public:
         Exception(const char*f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s){}
 };
 
+class Cookie{
+    private:    
+        bool h = 0, s = 0;
+        std::string p, v;
+    public:
+        Cookie(){}
+        Cookie(const std::string& v) : v(v){}
+        Cookie& path(const std::string& p){ this->p = p; return *this; }
+        const std::string& path() const { return p; }
+        const std::string& value() const { return v; }
+        Cookie& httpOnly(bool h){ this->h = h; return *this;  }
+        bool httpOnly() const { return h; }
+        Cookie& secure(bool s){ this->s = s; return *this; }
+        bool secure() const { return s; }
+};
+
 class Sendable{
     protected:
         Headers hs;
-        Cookies cs;
         std::string b;
     public:
-        void cookie(const std::string& k){ this->cs.insert(k); }
-        const Cookies& cookies() const { return cs; }
         void header(const std::string& k, const std::string& v){ this->hs.insert(k, v); }
         const Headers& headers() const { return hs; }
         void body(const std::string& b){ this->b = b; }
@@ -64,6 +75,7 @@ class Sendable{
 
 class ARequest : public Sendable{
     protected:
+        kul::hash::map::S2S cs;
         kul::hash::map::S2S atts;
         virtual std::string method() const = 0;
         virtual std::string version() const = 0;
@@ -102,6 +114,8 @@ class ARequest : public Sendable{
         }
     public:
         virtual ~ARequest(){}
+        void cookie(const std::string& k, const std::string& v) { this->cs.insert(k, v); }
+        const kul::hash::map::S2S& cookies() const { return cs; }
         virtual void send(const std::string& host, const std::string& res, const uint16_t& port) = 0;
         ARequest& attribute(const std::string& k, const std::string& v){
             atts[k] = v;
@@ -129,7 +143,10 @@ class _1_1GetRequest : public A1_1Request{
             ss << "\r\nHost: " << host;
             request(*this);
             for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-            for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
+            if(cookies().size()){
+                ss << "\r\nCookie: ";
+                for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
+            }
             ss << "\r\n\r\n";
             return ss.str();
         };
@@ -151,7 +168,10 @@ class _1_1PostRequest : public A1_1Request{
             body(bo.str());
             request(*this);
             for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-            for(const auto& c : cookies()) ss << "\r\nCookie: " << c;
+            if(cookies().size()){
+                ss << "\r\nCookie: ";
+                for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
+            }
             ss << "\r\n\r\n";
             if(body().size()) ss << body();
             return ss.str();
@@ -165,7 +185,10 @@ class AResponse : public Sendable{
         uint16_t s = 200;
         std::string r = "OK";
         Headers hs;
+        kul::hash::map::S2T<Cookie> cs;
     public:
+        void cookie(const std::string& k, const Cookie& c){ cs.insert(k, c); }
+        const kul::hash::map::S2T<Cookie>& cookies() const { return cs; }
         const std::string& reason() const { return r; }
         void reason(const std::string& r){ this->r = r; }
         const uint16_t& status() const { return s; }
