@@ -46,10 +46,12 @@ class Exception : public kul::Exception{
 class Cookie{
     private:    
         bool h = 0, s = 0;
-        std::string p, v;
+        std::string d, p, v;
     public:
         Cookie(){}
         Cookie(const std::string& v) : v(v){}
+        Cookie& domain(const std::string& d){ this->d = d; return *this; }
+        const std::string& domain() const { return d; }
         Cookie& path(const std::string& p){ this->p = p; return *this; }
         const std::string& path() const { return p; }
         const std::string& value() const { return v; }
@@ -80,9 +82,7 @@ class ARequest : public Sendable{
         virtual std::string method() const = 0;
         virtual std::string version() const = 0;
         virtual std::string toString(const std::string& host, const std::string& res) = 0;
-        virtual void handle(const kul::hash::map::S2S& h, const std::string& s){
-            printf("%s", s.c_str());
-        }
+        virtual void handle(const kul::hash::map::S2S& h, const std::string& s){}
         void handle(std::string b){
             kul::hash::map::S2S h;
             std::string line;

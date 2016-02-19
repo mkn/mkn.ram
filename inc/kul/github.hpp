@@ -41,40 +41,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <json/reader.h>
 #include <json/writer.h>
 
-namespace kul{ namespace git{ namespace gist{
+namespace kul{ namespace github{ 
 
 class Exception : public kul::Exception{
     public:
         Exception(const char*f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s){}
 };
-}// END NAMESPACE gist
 
-class Create : public kul::https::_1_1PostRequest{
+class JsonResponse{
     private:
         Json::Value j;
         bool f = 0;
     public:
         void handle(const kul::hash::map::S2S& h, const std::string& b){
-            KLOG(DBG) << b;
             Json::Reader reader;
             f = !reader.parse(b.c_str(), j);
-            if(!f) KLOG(DBG) << j;
         }
         bool fail(){ return f; }
         const Json::Value json(){ return j; }
 };
 
-class Delete : public kul::https::_1_1GetRequest{
-    protected:
-        std::string method() const { return "DELETE"; }
+class JsonGet : public kul::https::_1_1GetRequest, public JsonResponse{
     public:
-        void handle(const kul::hash::map::S2S& h, const std::string& b){
-            KLOG(DBG) << b;
-        }
+        JsonGet(){
+            header("Accept", "application/json");
+        }  
+        void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
+};
+class JsonPost : public kul::https::_1_1PostRequest, public JsonResponse{
+    public:
+        JsonPost(){
+            header("Accept", "application/json");
+        }  
+        void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
 };
 
 class Gist{
-
     public:
         static std::string CREATE(const std::string& ua, const std::string& d, const std::vector<kul::File>& fs, bool pub = 0) throw(Exception) {
             Json::Value json;
@@ -93,23 +95,16 @@ class Gist{
             json["files"] = files;
             std::stringstream ss;
             ss << Json::FastWriter().write(json);
-            Create p;
-            p.header("Accept", "application/json");
+            JsonPost p;
             p.header("User-Agent", ua);
             p.body(ss.str());
-            p.send("api.github.com", "gists", 443);
+            p.send("api.github.com", "gists");
             if(p.fail()) KEXCEPTION("Post JSON response failed to parse");
             return p.json()["id"].asString();
         }
-        static void DELETE(const std::string& ua, const std::string& id){
-            Delete p;
-            p.header("Accept", "application/json");
-            p.header("User-Agent", ua);
-            p.send("api.github.com", "gists/"+id, 443);
-        }
 };
 
-}// END NAMESPACE git
+}// END NAMESPACE github
 }// END NAMESPACE kul
 
 

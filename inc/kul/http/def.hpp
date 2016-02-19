@@ -35,6 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define   _KUL_HTTP_SESSION_TTL_ 600  // seconds
 #endif /* _KUL_HTTP_SESSION_TTL_ */
 
+#ifndef   _KUL_HTTP_SESSION_CHECK_
+#define   _KUL_HTTP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
+#endif /* _KUL_HTTP_SESSION_CHECK_ */
+
 #ifndef   _KUL_HTTP_READ_BUFFER_
 #define   _KUL_HTTP_READ_BUFFER_ 1025 
 #endif /* _KUL_HTTP_READ_BUFFER_ */

@@ -75,11 +75,8 @@ class Tag{
 		virtual const std::string& value() const { return v; }
 		Tag(){}
 		Tag(const std::string& v) : v(v){}
-		virtual const std::string* render(){
-			uint16_t t = 1;
-			return render(t);
-		}
-		virtual const std::string* render(uint16_t tab){
+
+		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			std::stringstream ss;
 #ifdef _KUL_HTML_FORMATED_
 			ss << "\n";
@@ -139,7 +136,7 @@ class Named : public Tag{
 	public:
 		Named(const std::string& n) : n(n){}
 		Named(const std::string& n, const std::string& v) : Tag(v), n(n){}
-		void value(const std::string& s) { this->v = s; }
+		Named& value(const std::string& s) { this->v = s; return *this; }
 };
 
 class Label : public Tag{
@@ -149,11 +146,32 @@ class Label : public Tag{
 		Label(const std::string& v) : Tag(v){}
 };
 
-class TextBox : public Tag{}; 
+class TextBox : public Tag{
+	protected:
+		const std::string tag() const   { return "input"; }
+	public:
+		TextBox(const std::string& n){ 
+			attribute("name"  , n); 
+			attribute("type", "text"); 
+		}
+}; 
 
 class TextArea : public Tag{};
 
-class DropDown : public Tag{};
+class Select : public Tag{
+	public:
+		Select(const std::string& n){
+			attribute("id"  , n);
+			attribute("name", n);
+		}
+		Select& option(const std::string& k, const std::string& v){
+			std::shared_ptr<Named> o = std::make_shared<Named>("option");
+			o->attribute("value", k); 
+			o->value(v); 
+			tag(o);
+			return *this;
+		}
+};
 
 class Radio : public Tag{};
 
@@ -161,12 +179,32 @@ class CheckBox : public Tag{};
 
 class CheckList : public Tag{};
 
+enum FormMethod{ NONE = 0, POST, GET };
+
+class Form : public Tag{
+	private:
+		std::string s = "Submit";
+		FormMethod me = FormMethod::NONE;
+	public:
+		Form(const std::string& n, const FormMethod = FormMethod::POST){
+			attribute("name"  , n);
+		}
+		Form& button(const std::string& n, const std::string& v = "Submit", bool h = 0){
+			std::shared_ptr<Named> b = std::make_shared<Named>("input");
+			b->value(v).attribute("name", n).attribute("type", "submit"); 
+			if(h) b->attribute("style", "position: absolute; left: -9999px; width: 1px; height: 1px;")
+				    .attribute("tabindex", "-1");
+			tag(b);
+			return *this;
+		}
+};
+
 }// END NAMESPACE tag
 
 class Text : public Tag{
 	public:
 		Text(const std::string& n) : Tag(n){}
-		virtual const std::string* render(uint16_t tab){
+		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			std::stringstream ss;
 #ifdef _KUL_HTML_FORMATED_
 			ss << "\n";
@@ -183,7 +221,7 @@ class Text : public kul::html4::Text{
 		Text(const std::string& n) : kul::html4::Text(n){
 			kul::HTML::ESC(v);
 		}
-		virtual const std::string* render(uint16_t tab){
+		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			return kul::html4::Text::render(tab);
 		}
 };

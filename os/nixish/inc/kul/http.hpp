@@ -152,6 +152,7 @@ class Server : public kul::http::AServer{
                     for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
                     for(const auto& p : rs.cookies()){
                         ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
+                        if(p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
                         if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
                         if(p.second.httpOnly()) ss << "httponly; ";
                         if(p.second.secure()) ss << "secure; ";

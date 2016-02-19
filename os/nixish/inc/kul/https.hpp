@@ -88,6 +88,7 @@ class Server : public kul::http::Server{
                     for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
                     for(const auto& p : rs.cookies()){
                         ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
+                        if(p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
                         if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
                         if(p.second.httpOnly()) ss << "httponly; ";
                         if(p.second.secure()) ss << "secure; ";
@@ -231,7 +232,7 @@ class Requester{
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
     public:
-        void send(const std::string& h, const std::string& res, const uint16_t& p){
+        void send(const std::string& h, const std::string& res, const uint16_t& p = 443){
             try{
                 std::stringstream ss;
                 KLOG(DBG) << toString(h, res);
@@ -245,7 +246,7 @@ class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::ARequest{
     public:
-        void send(const std::string& h, const std::string& res, const uint16_t& p){
+        void send(const std::string& h, const std::string& res, const uint16_t& p = 443){
             try{
                 std::stringstream ss;
                 KLOG(DBG) << toString(h, res);
