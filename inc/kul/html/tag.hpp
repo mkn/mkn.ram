@@ -83,7 +83,10 @@ class Tag{
 			for(int i = 0; i < tab; i++) ss << "\t";
 #endif /* _KUL_HTML_FORMATED_ */
 			ss << "<" << tag();
-			for(const auto& p : atts) ss << " " << p.first << "=\"" << p.second << "\"";
+			for(const auto& p : atts){
+				ss << " " << p.first;
+				if(p.second.size()) ss << "=\"" << p.second << "\"";
+			}
 			if(tags.size() || v.size())
 				ss << ">";
 			else
@@ -107,11 +110,11 @@ class Tag{
 			return str.get();
 		}
 	public:
-		Tag& attribute(const std::string& k, const std::string& v){
+		Tag& attribute(const std::string& k, const std::string& v = ""){
 			atts.push_back(std::make_pair(k, v));
 			return *this;
 		}
-		Tag& tag(const std::shared_ptr<Tag>& b){
+		Tag& add(const std::shared_ptr<Tag>& b){
 			tags.push_back(b);
 			return *this;
 		}
@@ -146,9 +149,12 @@ class Label : public Tag{
 		Label(const std::string& v) : Tag(v){}
 };
 
-class TextBox : public Tag{
+class InputTag : public Tag{
 	protected:
 		const std::string tag() const   { return "input"; }
+};
+
+class TextBox : public InputTag{
 	public:
 		TextBox(const std::string& n){ 
 			attribute("name"  , n); 
@@ -168,7 +174,7 @@ class Select : public Tag{
 			std::shared_ptr<Named> o = std::make_shared<Named>("option");
 			o->attribute("value", k); 
 			o->value(v); 
-			tag(o);
+			add(o);
 			return *this;
 		}
 };
@@ -179,23 +185,88 @@ class CheckBox : public Tag{};
 
 class CheckList : public Tag{};
 
+class Button : public InputTag{
+	public:
+		Button(const std::string& n, const std::string& v = "Submit", bool h = 0){
+			this->v = v;
+			attribute("name", n).attribute("type", "submit"); 
+			if(h)  attribute("style", "position: absolute; left: -9999px; width: 1px; height: 1px;")
+				   .attribute("tabindex", "-1");
+		}
+};
+
 enum FormMethod{ NONE = 0, POST, GET };
 
 class Form : public Tag{
 	private:
-		std::string s = "Submit";
 		FormMethod me = FormMethod::NONE;
+	protected:
+		const std::string tag() const   { return "form"; }
 	public:
 		Form(const std::string& n, const FormMethod = FormMethod::POST){
 			attribute("name"  , n);
 		}
 		Form& button(const std::string& n, const std::string& v = "Submit", bool h = 0){
-			std::shared_ptr<Named> b = std::make_shared<Named>("input");
-			b->value(v).attribute("name", n).attribute("type", "submit"); 
-			if(h) b->attribute("style", "position: absolute; left: -9999px; width: 1px; height: 1px;")
-				    .attribute("tabindex", "-1");
-			tag(b);
+			add(std::make_shared<Button>(n, v, h));
 			return *this;
+		}
+};
+
+class TableRow : public Tag{
+	protected:
+		const std::string tag() const   { return "tr"; }
+};
+
+class TableData : public Tag{
+	protected:
+		const std::string tag() const   { return "td"; }
+	public:
+		TableData(const std::string& v = "") : Tag(v){}
+};
+
+class Table;
+class TableColumn : public Tag{
+	protected:
+		std::vector<std::shared_ptr<Tag>> tds;
+		const std::string tag() const   { return "th"; }
+	public:
+		TableColumn(const std::string& v = "") : Tag(v){}
+		TableColumn& data(const std::string& td){
+			tds.push_back(std::make_shared<TableData>(td)); 
+			return *this;
+		}
+		TableColumn& data(const std::shared_ptr<Tag>& td){
+			tds.push_back(td); 
+			return *this;
+		}
+		friend class Table;
+};
+
+class Table : public Tag{
+	private:
+		bool sh = 1;
+		std::vector<std::shared_ptr<TableColumn>> cols;
+	protected:
+		const std::string tag() const { return "table"; }
+	public:
+		Table(bool sh = 1) : sh(sh){}
+		std::shared_ptr<TableColumn>& column(const std::string& v = ""){
+			cols.push_back(std::make_shared<TableColumn>(v));
+			return cols[cols.size() - 1];
+		}
+		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
+			if(sh){
+				std::shared_ptr<TableRow> row = std::make_shared<TableRow>();
+				for(auto& h : cols) row->add(h);
+				add(row);
+			}
+			if(cols.size())
+				for(size_t i = 0; i < cols[0]->tds.size(); i++){
+					std::shared_ptr<TableRow> row = std::make_shared<TableRow>();
+					for(const auto& c : cols) if(i < c->tds.size()) row->add(c->tds[i]);
+					add(row);
+				}
+			return Tag::render(tab);
 		}
 };
 
