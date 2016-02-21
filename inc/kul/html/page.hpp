@@ -52,14 +52,15 @@ class Page{
 		uint16_t c = -1;
 		const std::string t = "", x = "";
 		std::shared_ptr<const std::string> str;
-		std::shared_ptr<Tag> h, b;
+		std::shared_ptr<tag::Head> h;
+		std::shared_ptr<tag::Body> b;
 		Page() : h(std::make_shared<tag::Head>()), b(std::make_shared<tag::Body>()){}
 	public:
 		Tag& body(){
 			return *b.get();
 		}
-		Page& body(Tag& t){
-			b.reset(&t); return *this;
+		Page& body(const std::shared_ptr<tag::Body>& t){
+			b = t; return *this;
 		}
 		template <class T>
 		Page& body(const std::shared_ptr<T>& t){
@@ -68,8 +69,8 @@ class Page{
 		Tag& head(){
 			return *h.get();
 		}
-		Page& head(Tag& t){
-			h.reset(&t); return *this;
+		Page& head(const std::shared_ptr<tag::Head>& t){
+			h = t; return *this;
 		}
 		template <class T>
 		Page& head(const std::shared_ptr<T>& t){
