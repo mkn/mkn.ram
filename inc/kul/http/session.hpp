@@ -95,7 +95,7 @@ class SessionServer{
             if(s && !s->expired()) s->c -= 5;
             return sss.count(id);
         }
-        S& add(const std::string& id, const std::shared_ptr<Session>& s){
+        S& add(const std::string& id, const std::shared_ptr<S>& s){
             kul::ScopeLock lock(mutex);
             sss.insert(id, s);
             return *get(id);
