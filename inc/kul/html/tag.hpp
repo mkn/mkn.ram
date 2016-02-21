@@ -139,7 +139,6 @@ class Named : public Tag{
 	public:
 		Named(const std::string& n) : n(n){}
 		Named(const std::string& n, const std::string& v) : Tag(v), n(n){}
-		Named& value(const std::string& s) { this->v = s; return *this; }
 };
 
 class Label : public Tag{
@@ -171,9 +170,8 @@ class Select : public Tag{
 			attribute("name", n);
 		}
 		Select& option(const std::string& k, const std::string& v){
-			std::shared_ptr<Named> o = std::make_shared<Named>("option");
+			std::shared_ptr<Named> o = std::make_shared<Named>("option", v);
 			o->attribute("value", k); 
-			o->value(v); 
 			add(o);
 			return *this;
 		}
@@ -195,16 +193,20 @@ class Button : public InputTag{
 		}
 };
 
-enum FormMethod{ NONE = 0, POST, GET };
+enum FormMethod{ POST = 0, GET };
 
 class Form : public Tag{
 	private:
-		FormMethod me = FormMethod::NONE;
+		FormMethod me;
 	protected:
 		const std::string tag() const   { return "form"; }
 	public:
 		Form(const std::string& n, const FormMethod = FormMethod::POST){
-			attribute("name"  , n);
+			if(me == FormMethod::POST)
+				attribute("method", "post");
+			else
+				attribute("method", "get");
+			attribute("name", n);
 		}
 		Form& button(const std::string& n, const std::string& v = "Submit", bool h = 0){
 			add(std::make_shared<Button>(n, v, h));
