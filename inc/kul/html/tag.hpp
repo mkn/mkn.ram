@@ -201,7 +201,7 @@ class Form : public Tag{
 	protected:
 		const std::string tag() const   { return "form"; }
 	public:
-		Form(const std::string& n, const FormMethod = FormMethod::POST){
+		Form(const std::string& n, const FormMethod& me = FormMethod::POST){
 			if(me == FormMethod::POST)
 				attribute("method", "post");
 			else
