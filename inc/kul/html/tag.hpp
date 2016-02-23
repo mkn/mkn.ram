@@ -196,12 +196,11 @@ class Button : public InputTag{
 enum FormMethod{ POST = 0, GET };
 
 class Form : public Tag{
-	private:
-		FormMethod me;
 	protected:
+		FormMethod me;
 		const std::string tag() const   { return "form"; }
 	public:
-		Form(const std::string& n, const FormMethod& me = FormMethod::POST){
+		Form(const std::string& n, const FormMethod& me = FormMethod::POST) : me(me){
 			if(me == FormMethod::POST)
 				attribute("method", "post");
 			else
