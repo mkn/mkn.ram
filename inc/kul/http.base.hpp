@@ -61,6 +61,16 @@ class Cookie{
         bool secure() const { return s; }
 };
 
+class Connection{
+    private:
+        const std::string i;
+        const uint8_t p;
+    public:
+        Connection(const std::string i, const uint8_t p) : i(i), p(p){}
+        const std::string& ip() const { return i; }
+        const uint8_t&   port() const { return p; } 
+};
+
 class Sendable{
     protected:
         Headers hs;
@@ -202,6 +212,8 @@ class  _1_1Response : public AResponse{
 };
 
 class AServer{
+    private:
+        std::vector<std::function<void(const Connection&)>> co, di;
     protected:
         uint16_t p;
         uint64_t s;
@@ -226,6 +238,18 @@ class AServer{
             return std::make_shared<_1_1PostRequest>();
         }
         virtual AResponse& response(AResponse& r) const { return r; }
+        void onConnect(const std::function<void(const Connection&)>& f){
+            co.push_back(f);
+        }
+        void onConnect(const Connection& c){
+            for(const auto& f : co) f(c);
+        }
+        void onDisconnect(const std::function<void(const Connection&)>& f){
+            di.push_back(f);
+        }
+        void onDisconnect(const Connection& c){
+            for(const auto& f : di) f(c);
+        }
     public:
         AServer(const uint16_t& p) : p(p), s(kul::Now::MILLIS()){}
         virtual ~AServer(){}

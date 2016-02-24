@@ -69,6 +69,8 @@ class Server : public kul::http::Server{
                 X509_free(cc);
             }else KLOG(ERR) << "Client does not have certificate.";
 
+            KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
+            onConnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
             int16_t e;
             char buffer[_KUL_HTTPS_READ_BUFFER_];
             bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
@@ -102,6 +104,8 @@ class Server : public kul::http::Server{
                     e = -1;
                 }
             close(newsockfd);
+            KOUT(DBG) << "Disconnect , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
+            onDisconnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
         }
     public:
         Server(const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(443), crt(c), key(k){}

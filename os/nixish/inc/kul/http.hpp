@@ -127,6 +127,7 @@ class Server : public kul::http::AServer{
             if(read == 0){
                 getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
                 KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
+                onDisconnect(Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
                 close(fd);
                 close(i);
                 FD_CLR(fd, &bfds);
@@ -261,8 +262,9 @@ class Server : public kul::http::AServer{
                 newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
                 if(newsockfd < 0) KEXCEPTION("HTTP Server error on accept");
               
-                printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , 
-                    newsockfd , inet_ntoa(cli_addr.sin_addr) , ntohs(cli_addr.sin_port));
+                KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
+
+                onConnect(Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
                 receive(newsockfd);
                 FD_SET(newsockfd, &bfds);
                 for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++)
