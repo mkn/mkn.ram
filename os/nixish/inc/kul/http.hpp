@@ -157,6 +157,8 @@ class Server : public kul::http::AServer{
                         if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
                         if(p.second.httpOnly()) ss << "httponly; ";
                         if(p.second.secure()) ss << "secure; ";
+                        if(p.second.secure()) ss << "secure; ";
+                        if(p.second.expires()) ss << "expires=Sat, 25-Apr-2015 13:31:44 GMT; maxage=-1; ";
                         ss << kul::os::EOL();
                     }
                     ss << kul::os::EOL() << rs.body() << "\r\n" << '\0';
@@ -224,11 +226,14 @@ class Server : public kul::http::AServer{
                         if(*v.rbegin() == '\r') v.pop_back();
                         if(bits[0] == "Cookie"){
                             for(const auto& coo : kul::String::split(v, ';')){
-                                if(coo.find("=") == std::string::npos) req->cookie(coo, "");
-                                else{
+                                if(coo.find("=") == std::string::npos){
+                                    req->cookie(coo, "");
+                                    KERR << kul::LogMan::INSTANCE().str(__FILE__, __LINE__, kul::log::mode::ERR) 
+                                        << "Cookie without equals sign, skipping";
+                                }else{
                                     std::vector<std::string> kv;
                                     kul::String::escSplit(coo, '=', kv);
-                                    req->cookie(kv[0], kv[1]);
+                                    if(kv[1].size()) req->cookie(kv[0], kv[1]);
                                 }
                             }
                         }

@@ -94,6 +94,7 @@ class Server : public kul::http::Server{
                         if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
                         if(p.second.httpOnly()) ss << "httponly; ";
                         if(p.second.secure()) ss << "secure; ";
+                        if(p.second.expires()) ss << "expires=Sat, 25-Apr-2015 13:31:44 GMT; maxage=-1; ";
                         ss << kul::os::EOL();
                     }
                     ss << kul::os::EOL() << rs.body();;

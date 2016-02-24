@@ -45,10 +45,9 @@ class Exception : public kul::Exception{
 
 class Cookie{
     private:    
-        bool h = 0, s = 0;
+        bool e = 0, h = 0, s = 0;
         std::string d, p, v;
     public:
-        Cookie(){}
         Cookie(const std::string& v) : v(v){}
         Cookie& domain(const std::string& d){ this->d = d; return *this; }
         const std::string& domain() const { return d; }
@@ -59,6 +58,11 @@ class Cookie{
         bool httpOnly() const { return h; }
         Cookie& secure(bool s){ this->s = s; return *this; }
         bool secure() const { return s; }
+        bool expires() const { return e; }
+        void invalidate(){
+            v = "";
+            e = 1;
+        }
 };
 
 class Connection{
