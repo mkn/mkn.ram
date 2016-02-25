@@ -118,6 +118,7 @@ class Tag{
 			tags.push_back(b);
 			return *this;
 		}
+		size_t size() const { return tags.size(); }
 		Tag& br();
 		Tag& esc(const std::string& t);
 		Tag& text(const std::string& t);
