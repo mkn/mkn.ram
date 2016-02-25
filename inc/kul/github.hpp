@@ -54,11 +54,14 @@ class JsonResponse{
         bool f = 0;
     public:
         void handle(const kul::hash::map::S2S& h, const std::string& b){
+            std::vector<std::string> lines;
+            kul::String::lines(b, lines);
+            std::string json = lines.size() == 1 ? b : lines[1];
             Json::Reader reader;
-            f = !reader.parse(b.c_str(), j);
+            f = !reader.parse(json.c_str(), j);
         }
         bool fail(){ return f; }
-        const Json::Value json(){ return j; }
+        const Json::Value& json(){ return j; }
 };
 
 class JsonGet : public kul::https::_1_1GetRequest, public JsonResponse{

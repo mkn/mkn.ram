@@ -98,16 +98,15 @@ class SessionServer{
         S& add(const std::string& id, const std::shared_ptr<S>& s){
             kul::ScopeLock lock(mutex);
             sss.insert(id, s);
-            return *get(id);
+            return *(*sss.find(id)).second.get();
         }
         S& add(const std::string& id){
-            kul::ScopeLock lock(mutex);
-            sss.insert(id, std::make_shared<S>());
-            return *get(id);
+            return add(id, std::make_shared<S>());
         }
         void refresh(const std::string& id){
             kul::ScopeLock lock(mutex);
-            if(has(id)) if(sss.count(id)) (*sss.find(id)).second->refresh();
+            S* s = (*sss.find(id)).second.get();
+            if(s && !s->expired()) (*sss.find(id)).second->refresh();
         }
         void shutdown(){
             kul::ScopeLock lock(mutex);
