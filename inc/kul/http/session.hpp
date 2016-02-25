@@ -84,15 +84,18 @@ class SessionServer{
             th1.run();
         }
         S* get(const std::string& id){
+            S* s = 0;
             kul::ScopeLock lock(mutex);
-            S* s = (*sss.find(id)).second.get();
+            if(sss.find(count)) s = (*sss.find(id)).second.get();
             if(s && !s->expired()) s->c -= 5;
             return s;
         }
         bool has(const std::string& id) {
             kul::ScopeLock lock(mutex);
-            S* s = (*sss.find(id)).second.get();
-            if(s && !s->expired()) s->c -= 5;
+            if(sss.find(count)){
+                S& s = *(*sss.find(id)).second.get();
+                if(!s.expired()) s.c -= 5;
+            }
             return sss.count(id);
         }
         S& add(const std::string& id, const std::shared_ptr<S>& s){
@@ -104,8 +107,9 @@ class SessionServer{
             return add(id, std::make_shared<S>());
         }
         void refresh(const std::string& id){
+            S* s = 0;
             kul::ScopeLock lock(mutex);
-            S* s = (*sss.find(id)).second.get();
+            if(sss.find(count)) s = (*sss.find(id)).second.get();
             if(s && !s->expired()) (*sss.find(id)).second->refresh();
         }
         void shutdown(){
