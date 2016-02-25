@@ -165,6 +165,8 @@ class TextBox : public InputTag{
 class TextArea : public Tag{};
 
 class Select : public Tag{
+	protected:
+		const std::string tag() const   { return "select"; }
 	public:
 		Select(const std::string& n){
 			attribute("id"  , n);
@@ -252,9 +254,10 @@ class Table : public Tag{
 		const std::string tag() const { return "table"; }
 	public:
 		Table(bool sh = 1) : sh(sh){}
-		std::shared_ptr<TableColumn>& column(const std::string& v = ""){
-			cols.push_back(std::make_shared<TableColumn>(v));
-			return cols[cols.size() - 1];
+		TableColumn& column(const std::string& v = ""){
+			auto tc = std::make_shared<TableColumn>(v);
+			cols.push_back(tc);
+			return *tc.get();
 		}
 		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			if(sh){
