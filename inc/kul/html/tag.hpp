@@ -189,8 +189,7 @@ class CheckList : public Tag{};
 class Button : public InputTag{
 	public:
 		Button(const std::string& n, const std::string& v = "Submit", bool h = 0){
-			this->v = v;
-			attribute("name", n).attribute("type", "submit"); 
+			attribute("name", n).attribute("value", v).attribute("type", "submit"); 
 			if(h)  attribute("style", "position: absolute; left: -9999px; width: 1px; height: 1px;")
 				   .attribute("tabindex", "-1");
 		}
