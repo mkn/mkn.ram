@@ -98,7 +98,7 @@ class SessionServer{
         S& add(const std::string& id, const std::shared_ptr<S>& s){
             kul::ScopeLock lock(mutex);
             sss.insert(id, s);
-            return *(*sss.find(id)).second.get();
+            return *s.get();
         }
         S& add(const std::string& id){
             return add(id, std::make_shared<S>());
