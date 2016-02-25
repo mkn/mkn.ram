@@ -213,6 +213,13 @@ class Form : public Tag{
 			add(std::make_shared<Button>(n, v, h));
 			return *this;
 		}
+		Form& hidden(const std::string& n, const std::string& v){
+			auto h = std::make_shared<Named>("input");
+			h->attribute("name", n);
+			h->attribute("value", v);
+			add(h);
+			return *this;
+		}
 };
 
 class TableRow : public Tag{
