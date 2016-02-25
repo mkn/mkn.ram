@@ -86,13 +86,13 @@ class SessionServer{
         S* get(const std::string& id){
             S* s = 0;
             kul::ScopeLock lock(mutex);
-            if(sss.find(count)) s = (*sss.find(id)).second.get();
+            if(sss.count(id)) s = (*sss.find(id)).second.get();
             if(s && !s->expired()) s->c -= 5;
             return s;
         }
         bool has(const std::string& id) {
             kul::ScopeLock lock(mutex);
-            if(sss.find(count)){
+            if(sss.count(id)){
                 S& s = *(*sss.find(id)).second.get();
                 if(!s.expired()) s.c -= 5;
             }
@@ -109,7 +109,7 @@ class SessionServer{
         void refresh(const std::string& id){
             S* s = 0;
             kul::ScopeLock lock(mutex);
-            if(sss.find(count)) s = (*sss.find(id)).second.get();
+            if(sss.count(id)) s = (*sss.find(id)).second.get();
             if(s && !s->expired()) (*sss.find(id)).second->refresh();
         }
         void shutdown(){
