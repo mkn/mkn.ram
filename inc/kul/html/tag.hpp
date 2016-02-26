@@ -215,6 +215,7 @@ class Form : public Tag{
 		}
 		Form& hidden(const std::string& n, const std::string& v){
 			auto h = std::make_shared<Named>("input");
+			h->attribute("type", "hidden");
 			h->attribute("name", n);
 			h->attribute("value", v);
 			add(h);
