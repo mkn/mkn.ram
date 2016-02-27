@@ -85,20 +85,8 @@ class Server : public kul::http::Server{
                     std::string res;
                     std::shared_ptr<kul::http::ARequest> req = handle(std::string(buffer), res);
                     const kul::http::AResponse& rs(response(res, *req.get()));
-                    std::stringstream ss;
-                    ss << rs.version() << " " << rs.status() << " " << rs.reason() << kul::os::EOL();
-                    for(const auto& h : rs.headers()) ss << h.first << ": " << h.second << kul::os::EOL();
-                    for(const auto& p : rs.cookies()){
-                        ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
-                        if(p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
-                        if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
-                        if(p.second.httpOnly()) ss << "httponly; ";
-                        if(p.second.secure()) ss << "secure; ";
-                        if(p.second.expires()) ss << "expires=Sat, 25-Apr-2015 13:31:44 GMT; maxage=-1; ";
-                        ss << kul::os::EOL();
-                    }
-                    ss << kul::os::EOL() << rs.body();;
-                    const std::string& ret(ss.str());
+                    std::string ret;
+                    rs.toString(ret);
                     e = SSL_write(ssl, ret.c_str(), ret.length());
                 }catch(const kul::http::Exception& e1){
                     KERR << e1.what(); 

@@ -45,23 +45,26 @@ class Exception : public kul::Exception{
 
 class Cookie{
     private:    
-        bool e = 0, h = 0, s = 0;
-        std::string d, p, v;
+        bool h = 0, i = 0, s = 0;
+        std::string d, p, v, x;
     public:
         Cookie(const std::string& v) : v(v){}
         Cookie& domain(const std::string& d){ this->d = d; return *this; }
         const std::string& domain() const { return d; }
         Cookie& path(const std::string& p){ this->p = p; return *this; }
+        const std::string& expires() const { return x; }
+        Cookie& expires(const std::string& x){ this->x = x; return *this; }
         const std::string& path() const { return p; }
         const std::string& value() const { return v; }
         Cookie& httpOnly(bool h){ this->h = h; return *this;  }
         bool httpOnly() const { return h; }
         Cookie& secure(bool s){ this->s = s; return *this; }
         bool secure() const { return s; }
-        bool expires() const { return e; }
+        bool invalidated() const { return i; }
         void invalidate(){
             v = "";
-            e = 1;
+            x = "";
+            i = 1;
         }
 };
 
@@ -208,7 +211,34 @@ class AResponse : public Sendable{
         const uint16_t& status() const { return s; }
         void status(const uint16_t& s){ this->s = s; }
         virtual std::string version() const { return "HTTP/1.1"; }
+        std::string toString()const {
+            std::string s;
+            toString(s);
+            return s;
+        }
+        virtual void toString(std::string& s) const {
+            std::stringstream ss;
+            ss << version() << " " << s << " " << r << kul::os::EOL();
+            for(const auto& h : headers()) ss << h.first << ": " << h.second << kul::os::EOL();
+            for(const auto& p : cookies()){
+                ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
+                if(p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
+                if(p.second.path().size()) ss << "path=" << p.second.path() << "; ";
+                if(p.second.httpOnly()) ss << "httponly; ";
+                if(p.second.secure()) ss << "secure; ";
+                if(p.second.invalidated()) ss << "expires=Sat, 25-Apr-2015 13:31:44 GMT; maxage=-1; ";
+                else
+                if(p.second.expires().size()) ss << "expires=" << p.second.expires() << "; ";
+                ss << kul::os::EOL();
+            }
+            ss << kul::os::EOL() << body() << "\r\n" << '\0';
+            s = ss.str();
+        }
+        friend std::ostream& operator<<(std::ostream&, const AResponse&);
 };
+inline std::ostream& operator<<(std::ostream &s, const AResponse& r){
+    return s << r.toString();
+}
 
 class  _1_1Response : public AResponse{
     public:
