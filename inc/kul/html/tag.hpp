@@ -101,11 +101,12 @@ class Tag{
 #endif /* _KUL_HTML_FORMATED_ */
 						);
 #ifdef _KUL_HTML_FORMATED_
+			if(tags.size()) ss << "\n";
 			if(tags.size()) for(int i = 0; i < tab - 1; i++) ss << "\t";
-			if(tags.size() || v.size()) ss << "</" << tag() << ">" << "\n";
-#else
-			if(tags.size() || v.size()) ss << "</" << tag() << ">";
 #endif /* _KUL_HTML_FORMATED_ */
+			if(tags.size() || v.size()) ss << "</" << tag() << ">";
+// #ifdef _KUL_HTML_FORMATED_
+// #endif /* _KUL_HTML_FORMATED_ */
 			str = std::make_unique<std::string>(ss.str());
 			return str.get();
 		}

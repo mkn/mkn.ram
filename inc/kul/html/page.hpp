@@ -78,10 +78,13 @@ class Page{
 		}
 		virtual const std::string* render(){
 			std::stringstream ss;
-			ss << _KUL_HTML_DOC_TYPE_ << "\n" << "<html>";
+#if defined(_KUL_HTML_DOC_TYPE_)
+			ss << _KUL_HTML_DOC_TYPE_ << "\n";
+#endif
+			ss << "<html>";
 			ss << *h->render();
 			ss << *b->render();
-			ss << x << "</html>";
+			ss << x << "\n</html>";
 			str = std::make_shared<std::string>(ss.str());
 			return str.get();
 		}
