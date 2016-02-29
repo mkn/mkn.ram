@@ -183,7 +183,12 @@ class Select : public Tag{
 
 class Radio : public Tag{};
 
-class CheckBox : public Tag{};
+class CheckBox : public InputTag{
+	public:
+		CheckBox(const std::string& n, const std::string& v){
+			attribute("name", n).attribute("value", v).attribute("type", "checkbox"); 
+		}
+};
 
 class CheckList : public Tag{};
 
