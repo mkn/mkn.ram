@@ -55,7 +55,7 @@ class JsonResponse{
     public:
         void handle(const kul::hash::map::S2S& h, const std::string& b){
             std::vector<std::string> lines;
-            kul::String::lines(b, lines);
+            kul::String::LINES(b, lines);
             std::string json = lines.size() == 1 ? b : lines[1];
             Json::Reader reader;
             f = !reader.parse(json.c_str(), j);

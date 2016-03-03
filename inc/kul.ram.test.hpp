@@ -54,7 +54,7 @@ class TestHTTPServer : public kul::http::Server{
             return kul::http::Server::response(r);
         }
 		TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
-		friend class kul::ThreadRef<TestHTTPServer>;
+		friend class kul::Thread;
 };
 
 class Get : public kul::http::_1_1GetRequest{
@@ -77,8 +77,7 @@ class Test{
 			TestHTTPServer serv;
 			auto l = [&serv](int16_t){ serv.stop(); };
 			s.intr(l).segv(l);
-			kul::Ref<TestHTTPServer> ref(serv);
-			kul::Thread t(ref);
+			kul::Thread t(std::ref(serv));
 			t.run();
 			kul::this_thread::sleep(1000);
 			if(t.exception()) std::rethrow_exception(t.exception());

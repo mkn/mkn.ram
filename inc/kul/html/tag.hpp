@@ -185,8 +185,9 @@ class Radio : public Tag{};
 
 class CheckBox : public InputTag{
 	public:
-		CheckBox(const std::string& n, const std::string& v){
-			attribute("name", n).attribute("value", v).attribute("type", "checkbox"); 
+		CheckBox(const std::string& n, const std::string& v, bool c = 0){
+			if(c) attribute("checked");
+			attribute("name", n).attribute("value", v).attribute("type", "checkbox");
 		}
 };
 

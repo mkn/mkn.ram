@@ -182,9 +182,9 @@ class Server : public kul::http::AServer{
                     std::string r;
                     std::string l;
                     std::getline(ss, r);
-                    std::vector<std::string> lines = kul::String::lines(b); 
+                    std::vector<std::string> lines = kul::String::LINES(b); 
                     std::vector<std::string> l0; 
-                    kul::String::split(r, ' ', l0);
+                    kul::String::SPLIT(r, ' ', l0);
                     if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
                     std::string s(l0[1]);
                     if(l0[0] == "GET"){
@@ -203,23 +203,23 @@ class Server : public kul::http::AServer{
                     while(std::getline(ss, l)){
                         if(l.size() <= 1) break;
                         std::vector<std::string> bits;
-                        kul::String::split(l, ':', bits);
-                        kul::String::trim(bits[0]);
+                        kul::String::SPLIT(l, ':', bits);
+                        kul::String::TRIM(bits[0]);
                         std::stringstream sv;
                         if(bits.size() > 1) sv << bits[1];
                         for(size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
                         std::string v(sv.str());
-                        kul::String::trim(v);
+                        kul::String::TRIM(v);
                         if(*v.rbegin() == '\r') v.pop_back();
                         if(bits[0] == "Cookie"){
-                            for(const auto& coo : kul::String::split(v, ';')){
+                            for(const auto& coo : kul::String::SPLIT(v, ';')){
                                 if(coo.find("=") == std::string::npos){
                                     req->cookie(coo, "");
                                     KERR << kul::LogMan::INSTANCE().str(__FILE__, __LINE__, kul::log::mode::ERR) 
                                         << "Cookie without equals sign, skipping";
                                 }else{
                                     std::vector<std::string> kv;
-                                    kul::String::escSplit(coo, '=', kv);
+                                    kul::String::ESC_SPLIT(coo, '=', kv);
                                     if(kv[1].size()) req->cookie(kv[0], kv[1]);
                                 }
                             }

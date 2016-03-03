@@ -63,7 +63,6 @@ template <class S = Session>
 class SessionServer{
     protected:
         kul::Mutex mutex;
-        kul::Ref<SessionServer> ref;
         kul::Thread th1;
         kul::hash::map::S2T<std::shared_ptr<S>> sss;
         virtual void operator()(){
@@ -79,7 +78,7 @@ class SessionServer{
             }
         }
     public:
-        SessionServer() : ref(*this), th1(ref){
+        SessionServer() : th1(std::ref(*this)){
             sss.setDeletedKey("DELETED");
             th1.run();
         }
@@ -116,7 +115,7 @@ class SessionServer{
             kul::ScopeLock lock(mutex);
             th1.interrupt();
         }
-        friend class kul::ThreadRef<SessionServer>;
+        friend class kul::Thread;
 };
 
 

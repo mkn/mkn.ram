@@ -111,11 +111,11 @@ class ARequest : public Sendable{
                 }
                 if(line.find(":") != std::string::npos){
                     std::vector<std::string> bits;
-                    kul::String::split(line, ':', bits);
+                    kul::String::SPLIT(line, ':', bits);
                     std::string l(bits[0]);
                     std::string r(bits[1]);
-                    kul::String::trim(l);
-                    kul::String::trim(r);
+                    kul::String::TRIM(l);
+                    kul::String::TRIM(r);
                     h.insert(l, r);
                 }else
                     h.insert(line, "");
@@ -255,10 +255,10 @@ class AServer{
             if(a.size() > 0){
                 if(a[0] == '?') a = a.substr(1);
                 std::vector<std::string> bits;
-                kul::String::split(a, '&', bits);
+                kul::String::SPLIT(a, '&', bits);
                 for(const std::string& p : bits){
                     if(p.find("=") != std::string::npos){
-                        std::vector<std::string> bits = kul::String::split(p, '=');
+                        std::vector<std::string> bits = kul::String::SPLIT(p, '=');
                         atts[bits[0]] = bits[1];
                     }else
                         atts[p] = "";
