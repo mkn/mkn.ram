@@ -96,9 +96,6 @@ class ARequest : public Sendable{
     protected:
         kul::hash::map::S2S cs;
         kul::hash::map::S2S atts;
-        virtual std::string method() const = 0;
-        virtual std::string version() const = 0;
-        virtual std::string toString(const std::string& host, const std::string& res) = 0;
         virtual void handle(const kul::hash::map::S2S& h, const std::string& s){}
         void handle(std::string b){
             kul::hash::map::S2S h;
@@ -131,6 +128,9 @@ class ARequest : public Sendable{
         }
     public:
         virtual ~ARequest(){}
+        virtual std::string method() const = 0;
+        virtual std::string version() const = 0;
+        virtual std::string toString(const std::string& host, const std::string& res) = 0;
         void cookie(const std::string& k, const std::string& v) { this->cs.insert(k, v); }
         const kul::hash::map::S2S& cookies() const { return cs; }
         virtual void send(const std::string& host, const std::string& res, const uint16_t& port) = 0;
