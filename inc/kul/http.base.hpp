@@ -147,7 +147,7 @@ class A1_1Request : public ARequest{
 };
 
 class _1_1GetRequest : public A1_1Request{
-    protected:
+    public:
         virtual std::string method() const { return "GET";}
         virtual std::string toString(const std::string& host, const std::string& res){
             std::stringstream ss;
@@ -167,12 +167,11 @@ class _1_1GetRequest : public A1_1Request{
             ss << "\r\n\r\n";
             return ss.str();
         };
-    public:
         virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
 };
 
 class _1_1PostRequest : public A1_1Request{
-    protected:
+    public:
         virtual std::string method() const { return "POST";}
         virtual std::string toString(const std::string& host, const std::string& res){
             std::stringstream ss;
@@ -193,7 +192,6 @@ class _1_1PostRequest : public A1_1Request{
             if(body().size()) ss << body();
             return ss.str();
         }
-    public:
         virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
 };
 

@@ -57,7 +57,13 @@ class Server : public kul::http::Server{
             SSL_set_fd(ssl, newsockfd);
             //Here is the SSL Accept portion.  Now all reads and writes must use SSL
             int16_t ssl_err = SSL_accept(ssl);
-            if(ssl_err <= 0) KEXCEPTION("HTTPS Server SSL ERROR on SSL_ACCEPT error: " + std::to_string(ssl_err ));
+            if(ssl_err <= 0){
+                short se = 0;
+                SSL_get_error(ssl, se);
+                KERR << "HTTPS Server SSL ERROR on SSL_ACCEPT error: " << se;
+                close(newsockfd);
+                return;
+            }
 
             KLOG(DBG) << "SSL_get_cipher: " << SSL_get_cipher(ssl);
             cc = SSL_get_peer_certificate (ssl);
