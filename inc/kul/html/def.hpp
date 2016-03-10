@@ -31,9 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_HTML_DEF_HPP_
 #define _KUL_HTML_DEF_HPP_
 
-#ifndef _KUL_HTML_FORMATED_
+#ifdef _KUL_HTML_FORMAT_
 #define _KUL_HTML_FORMATED_ 1  // boolean for pretty priting HTML
-#endif /* _KUL_HTML_FORMATED_ */
+#else
+#define _KUL_HTML_FORMATED_ 0
+#endif /* _KUL_HTML_FORMAT_ */
 
 #ifndef _KUL_HTML_DOC_TYPE_
 #define _KUL_HTML_DOC_TYPE_ "<!DOCTYPE html>"

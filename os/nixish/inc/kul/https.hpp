@@ -49,6 +49,7 @@ class Server : public kul::http::Server{
         SSL *ssl = {0};
         SSL_CTX *ctx = {0};
         kul::File crt, key;
+        const std::string cs;
         virtual void loop() throw(kul::http::Exception){
             int32_t newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
             if(newsockfd < 0) KEXCEPTION("HTTPS Server error on accept");
@@ -103,12 +104,17 @@ class Server : public kul::http::Server{
             onDisconnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
         }
     public:
-        Server(const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(443), crt(c), key(k){}
-        Server(const short& p, const kul::File& c, const kul::File& k, const std::string& w = "localhost") : kul::http::Server(p), crt(c), key(k){}
+        Server(const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(443), crt(c), key(k), cs(cs){}
+        Server(const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(p), crt(c), key(k), cs(cs){}
         ~Server(){
             if(s) stop();
         }
-        void start() throw(kul::http::Exception){
+        void setChain(const kul::File& f){
+            if(!f) KEXCEPTION("HTTPS Server chain file does not exist: " + crt.full());
+            if(SSL_CTX_use_certificate_chain_file(ctx, f.mini().c_str()) <= 0)
+                KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
+        }
+        Server& init(){
             if(!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
             if(!key) KEXCEPTION("HTTPS Server key file does not exist: " + key.full());
             SSL_library_init();
@@ -122,7 +128,9 @@ class Server : public kul::http::Server{
                 KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
             if (!SSL_CTX_check_private_key(ctx))
                 KEXCEPTION("HTTPS Server SSL_CTX_check_private_key failed");
-            kul::http::Server::start();
+            if(!cs.empty() && !SSL_CTX_set_cipher_list(ctx, cs.c_str()))
+                KEXCEPTION("HTTPS Server SSL_CTX_set_cipher_listctx failed");
+            return *this;
         }
         void stop(){
             ERR_free_strings();

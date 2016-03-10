@@ -78,10 +78,10 @@ class Tag{
 
 		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			std::stringstream ss;
-#ifdef _KUL_HTML_FORMATED_
+#ifdef _KUL_HTML_FORMAT_
 			ss << "\n";
 			for(int i = 0; i < tab; i++) ss << "\t";
-#endif /* _KUL_HTML_FORMATED_ */
+#endif /* _KUL_HTML_FORMAT_ */
 			ss << "<" << tag();
 			for(const auto& p : atts){
 				ss << " " << p.first;
@@ -96,17 +96,17 @@ class Tag{
 			if(tags.size())
 				for(const auto& t : tags)
 					ss << *t->render(
-#ifdef _KUL_HTML_FORMATED_
+#ifdef _KUL_HTML_FORMAT_
 						tab
-#endif /* _KUL_HTML_FORMATED_ */
+#endif /* _KUL_HTML_FORMAT_ */
 						);
-#ifdef _KUL_HTML_FORMATED_
+#ifdef _KUL_HTML_FORMAT_
 			if(tags.size()) ss << "\n";
 			if(tags.size()) for(int i = 0; i < tab - 1; i++) ss << "\t";
-#endif /* _KUL_HTML_FORMATED_ */
+#endif /* _KUL_HTML_FORMAT_ */
 			if(tags.size() || v.size()) ss << "</" << tag() << ">";
-// #ifdef _KUL_HTML_FORMATED_
-// #endif /* _KUL_HTML_FORMATED_ */
+// #ifdef _KUL_HTML_FORMAT_
+// #endif /* _KUL_HTML_FORMAT_ */
 			str = std::make_unique<std::string>(ss.str());
 			return str.get();
 		}
@@ -296,10 +296,10 @@ class Text : public Tag{
 		Text(const std::string& n) : Tag(n){}
 		virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_){
 			std::stringstream ss;
-#ifdef _KUL_HTML_FORMATED_
+#ifdef _KUL_HTML_FORMAT_
 			ss << "\n";
 			for(uint16_t i = 0; i < tab; i++) ss << "\t";
-#endif /* _KUL_HTML_FORMATED_ */
+#endif /* _KUL_HTML_FORMAT_ */
 			ss << v;
 			str = std::make_unique<std::string>(ss.str());
 			return str.get();
