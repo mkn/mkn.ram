@@ -92,7 +92,6 @@ class Server : public kul::http::Server{
                 if(se) KLOG(ERR) << "SSL_get_error: " << se;
                 e = -1;
             }else
-                cnt << buffer;
                 try{
                     std::string res;
                     std::shared_ptr<kul::http::ARequest> req = handle(cnt.str(), res);
