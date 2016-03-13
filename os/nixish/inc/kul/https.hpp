@@ -81,16 +81,21 @@ class Server : public kul::http::Server{
             int16_t e;
             char buffer[_KUL_HTTPS_READ_BUFFER_];
             bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
-            e = SSL_read(ssl, buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
-            if (e <= 0){ 
+            std::stringstream cnt;
+            do{
+                e = SSL_read(ssl, buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
+                if(e) cnt << buffer;
+            }while(e == (_KUL_HTTPS_READ_BUFFER_ - 1));
+            if (e < 0){ 
                 short se = 0;
                 SSL_get_error(ssl, se);
                 if(se) KLOG(ERR) << "SSL_get_error: " << se;
                 e = -1;
             }else
+                cnt << buffer;
                 try{
                     std::string res;
-                    std::shared_ptr<kul::http::ARequest> req = handle(std::string(buffer), res);
+                    std::shared_ptr<kul::http::ARequest> req = handle(cnt.str(), res);
                     const kul::http::AResponse& rs(response(res, *req.get()));
                     std::string ret;
                     rs.toString(ret);

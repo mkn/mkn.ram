@@ -182,7 +182,6 @@ class Server : public kul::http::AServer{
                     std::string r;
                     std::string l;
                     std::getline(ss, r);
-                    std::vector<std::string> lines = kul::String::LINES(b); 
                     std::vector<std::string> l0; 
                     kul::String::SPLIT(r, ' ', l0);
                     if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
@@ -230,7 +229,7 @@ class Server : public kul::http::AServer{
                     std::stringstream ss1;
                     while(std::getline(ss, l)) ss1 << l;
                     if(a.empty()) a = ss1.str();
-                    else req->body(ss1.str());
+                    req->body(ss1.str());
                 }
             }
             kul::hash::map::S2S atts;
