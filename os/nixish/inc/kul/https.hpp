@@ -80,9 +80,10 @@ class Server : public kul::http::Server{
             onConnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
             int16_t e;
             char buffer[_KUL_HTTPS_READ_BUFFER_];
-            bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
+            
             std::stringstream cnt;
             do{
+                bzero(buffer,_KUL_HTTPS_READ_BUFFER_);
                 e = SSL_read(ssl, buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
                 if(e) cnt << buffer;
             }while(e == (_KUL_HTTPS_READ_BUFFER_ - 1));
