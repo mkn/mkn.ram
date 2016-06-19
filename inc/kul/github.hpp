@@ -88,7 +88,7 @@ class Gist{
             Json::Value files;
             for(const auto& f : fs){
                 std::stringstream ss;
-                const std::string* s = 0;
+                const char* s = 0;
                 kul::io::Reader r(f);
                 while((s = r.readLine())) ss << *s;
                 Json::Value content;
