@@ -50,7 +50,7 @@ class Server : public kul::http::Server{
         SSL_CTX *ctx = {0};
         kul::File crt, key;
         const std::string cs;
-        virtual void loop() throw(kul::http::Exception){
+        virtual void loop() throw(kul::tcp::Exception) override{
             int32_t newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
             if(newsockfd < 0) KEXCEPTION("HTTPS Server error on accept");
 
@@ -77,7 +77,7 @@ class Server : public kul::http::Server{
             }else KLOG(ERR) << "Client does not have certificate.";
 
             KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
-            onConnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
+            onConnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
             int16_t e;
             char buffer[_KUL_HTTPS_READ_BUFFER_];
             std::stringstream cnt;
@@ -105,7 +105,7 @@ class Server : public kul::http::Server{
                 }
             close(newsockfd);
             KOUT(DBG) << "Disconnect , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
-            onDisconnect(kul::http::Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
+            onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
         }
     public:
         Server(const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(443), crt(c), key(k), cs(cs){}
@@ -136,7 +136,8 @@ class Server : public kul::http::Server{
                 KEXCEPTION("HTTPS Server SSL_CTX_set_cipher_listctx failed");
             return *this;
         }
-        void stop(){
+        virtual void stop() override {
+            s = 0;
             ERR_free_strings();
             EVP_cleanup();
             if(ssl){
@@ -151,6 +152,8 @@ class Server : public kul::http::Server{
 class ARequest;
 class Requester;
 class SSLReqHelper{
+    friend class ARequest;
+    friend class Requester;
     private:
         SSL_CTX *ctx;
         SSLReqHelper(){
@@ -171,8 +174,6 @@ class SSLReqHelper{
             static SSLReqHelper i;
             return i;
         }
-        friend class ARequest;
-        friend class Requester;
 
 };
 
@@ -188,40 +189,11 @@ class ARequest{
 class Requester{
     public:
         static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
-            // int32_t sck = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-            int32_t sck = socket(PF_INET, SOCK_STREAM, 0);
-            if (sck < 0) KEXCEPT(kul::http::Exception, "Error opening socket");
-            struct sockaddr_in servAddr;
-            memset(&servAddr, 0, sizeof(servAddr));
-            servAddr.sin_family   = AF_INET;
-            int e = 0;
-            servAddr.sin_port = !kul::byte::isBigEndian() ? htons(p) : kul::byte::LittleEndian::UINT32(p);
-            if(h == "localhost" || h == "127.0.0.1"){   
-                servAddr.sin_addr.s_addr = INADDR_ANY;
-                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-            }
-            else if(inet_pton(AF_INET, &h[0], &(servAddr.sin_addr))){
-                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-            }
-            else{
-                std::string ip;
-                struct addrinfo hints, *servinfo, *next;
-                struct sockaddr_in *in;
-                memset(&hints, 0, sizeof hints);
-                hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
-                hints.ai_socktype = SOCK_STREAM;
-                if ((e = getaddrinfo(h.c_str(), 0, &hints, &servinfo)) != 0) 
-                    KEXCEPT(kul::http::Exception, "getaddrinfo failed for host: " + h);
-                for(next = servinfo; next != NULL; next = next->ai_next){
-                    in = (struct sockaddr_in *) next->ai_addr;
-                    ip = inet_ntoa(in->sin_addr);
-                    servAddr.sin_addr.s_addr = inet_addr(&ip[0]);
-                    if(ip == "0.0.0.0") continue;
-                    if((e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr))) == 0) break;
-                }
-                freeaddrinfo(servinfo);
-            }
-            if(e < 0) KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
+            int32_t sck = 0;
+            if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0)) 
+                KEXCEPT(kul::http::Exception, "Error opening socket");
+            if(!kul::tcp::Socket<char>::CONNECT(sck, h, p)) 
+                KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
             SSL_set_fd(ssl, sck);
             if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
             SSL_write(ssl, req.c_str(), req.size());
@@ -243,7 +215,7 @@ class Requester{
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
     public:
-        void send(const std::string& h, const std::string& res, const uint16_t& p = 443){
+        void send(const std::string& h, const std::string& res, const uint16_t& p = 443) throw (kul::http::Exception) override{
             try{
                 std::stringstream ss;
                 KLOG(DBG) << toString(h, res);
@@ -257,7 +229,7 @@ class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::ARequest{
     public:
-        void send(const std::string& h, const std::string& res, const uint16_t& p = 443){
+        void send(const std::string& h, const std::string& res, const uint16_t& p = 443) throw (kul::http::Exception) override{
             try{
                 std::stringstream ss;
                 KLOG(DBG) << toString(h, res);

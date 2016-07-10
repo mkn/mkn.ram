@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <netinet/in.h>
 
 #include "kul/log.hpp"
+#include "kul/tcp.hpp"
 #include "kul/byte.hpp"
 #include "kul/time.hpp"
 #include "kul/http/def.hpp"
@@ -48,86 +49,81 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace http{
 
-class Requester{
-    public:
-        static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss){
-            int32_t sck = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-            if (sck < 0) KEXCEPT(kul::http::Exception, "Error opening socket");
-            struct sockaddr_in servAddr;
-            memset(&servAddr, 0, sizeof(servAddr));
-            servAddr.sin_family   = AF_INET;
-            int e = 0;
-            servAddr.sin_port = !kul::byte::isBigEndian() ? htons(p) : kul::byte::LittleEndian::UINT32(p);
-            if(h == "localhost" || h == "127.0.0.1"){   
-                servAddr.sin_addr.s_addr = INADDR_ANY;
-                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-            }
-            else if(inet_pton(AF_INET, &h[0], &(servAddr.sin_addr))){
-                e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-            }
-            else{
-                std::string ip;
-                struct addrinfo hints, *servinfo, *next;
-                struct sockaddr_in *in;
-                memset(&hints, 0, sizeof hints);
-                hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
-                hints.ai_socktype = SOCK_STREAM;
-                if ((e = getaddrinfo(h.c_str(), 0, &hints, &servinfo)) != 0) 
-                    KEXCEPT(kul::http::Exception, "getaddrinfo failed for host: " + h);
-                for(next = servinfo; next != NULL; next = next->ai_next){
-                    in = (struct sockaddr_in *) next->ai_addr;
-                    ip = inet_ntoa(in->sin_addr);
-                    servAddr.sin_addr.s_addr = inet_addr(&ip[0]);
-                    if(ip == "0.0.0.0") continue;
-                    if((e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr))) == 0) break;
-                }
-                freeaddrinfo(servinfo);
-            }
-            if(e < 0) KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
-            ::send(sck, req.c_str(), req.size(), 0); 
-            char buffer[_KUL_HTTP_REQUEST_BUFFER_];
-            struct timeval tv;
-            fd_set fds;
-            int iof = -1;
-            bool r = 0;
-            do{
-                uint16_t d = 0;
-                FD_ZERO(&fds);
-                FD_SET(sck, &fds);
-                tv.tv_sec = 1;
-                tv.tv_usec = 500;
-                e = select(sck+1, &fds, NULL, NULL, &tv);
-                if(e < 0) KEXCEPTION("Failed to read from Server socket");
-                else 
-                if(e > 0 && FD_ISSET(sck, &fds)) {
-                  if ((iof = fcntl(sck, F_GETFL, 0)) != -1) fcntl(sck, F_SETFL, iof | O_NONBLOCK);
-                  d = recv(sck, buffer, _KUL_HTTP_REQUEST_BUFFER_, 0);
-                  for(uint16_t i = 0; i < d; i++) ss << buffer[i];
-                  if (iof != -1) fcntl(sck, F_SETFL, iof);
-                  r = 1;
-                }else if(e == 0 && !FD_ISSET(sck, &fds)){
-                    d = recv(sck, buffer, _KUL_HTTP_REQUEST_BUFFER_, 0);
-                    if(!r && !d) KEXCEPTION("Failed to read from Server socket");
-                    for(uint16_t i = 0; i < d; i++) ss << buffer[i];
-                    r = 1;
-                }
-                if (d == 0 || (d < _KUL_HTTP_REQUEST_BUFFER_ && r)) break;
-                r = 1;
-            }while(1);
-            ::close(sck);
-        }
-};
-
 class Server : public kul::http::AServer{
-    private:
-        void receive(const uint16_t& fd, int16_t i = -1){
+    protected:
+        virtual const std::shared_ptr<ARequest> handle(const std::string& b, std::string& res){
+             std::string a;
+             std::shared_ptr<ARequest> req;
+             {
+                 std::stringstream ss(b);
+                 {
+                     std::string r;
+                     std::string l;
+                     std::getline(ss, r);
+                     std::vector<std::string> l0; 
+                     kul::String::SPLIT(r, ' ', l0);
+                     if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
+                     std::string s(l0[1]);
+                     if(l0[0] == "GET"){
+                         req = get();
+                         if(s.find("?") != std::string::npos){
+                             a = s.substr(s.find("?") + 1);
+                             s = s.substr(0, s.find("?"));
+                         }
+                     }else 
+                     if(l0[0] == "POST") req = post();
+                     else KEXCEPTION("HTTP Server request type not handled: " + l0[0]); 
+                     res = s;
+                 }
+                 {
+                     std::string l;
+                     while(std::getline(ss, l)){
+                         if(l.size() <= 1) break;
+                         std::vector<std::string> bits;
+                         kul::String::SPLIT(l, ':', bits);
+                         kul::String::TRIM(bits[0]);
+                         std::stringstream sv;
+                         if(bits.size() > 1) sv << bits[1];
+                         for(size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
+                         std::string v(sv.str());
+                         kul::String::TRIM(v);
+                         if(*v.rbegin() == '\r') v.pop_back();
+                         if(bits[0] == "Cookie"){
+                             for(const auto& coo : kul::String::SPLIT(v, ';')){
+                                 if(coo.find("=") == std::string::npos){
+                                     req->cookie(coo, "");
+                                     KERR << kul::LogMan::INSTANCE().str(__FILE__, __LINE__, kul::log::mode::ERR) 
+                                         << "Cookie without equals sign, skipping";
+                                 }else{
+                                     std::vector<std::string> kv;
+                                     kul::String::ESC_SPLIT(coo, '=', kv);
+                                     if(kv[1].size()) req->cookie(kv[0], kv[1]);
+                                 }
+                             }
+                         }
+                         else
+                             req->header(bits[0], v);
+                     }
+                     std::stringstream ss1;
+                     while(std::getline(ss, l)) ss1 << l;
+                     if(a.empty()) a = ss1.str();
+                     req->body(ss1.str());
+                 }
+             }
+             kul::hash::map::S2S atts;
+             asAttributes(a, atts);
+             for(const auto& att : atts) req->attribute(att.first, att.second);
+             return req;
+         }
+
+        virtual void receive(const uint16_t& fd, int16_t i = -1){
             char buffer[_KUL_HTTP_READ_BUFFER_];
             bzero(buffer, _KUL_HTTP_READ_BUFFER_);
             int16_t e = 0, read = ::read(fd, buffer, _KUL_HTTP_READ_BUFFER_ - 1);
             if(read == 0){
                 getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
                 KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
-                onDisconnect(Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
+                onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
                 close(fd);
                 close(i);
                 FD_CLR(fd, &bfds);
@@ -138,7 +134,7 @@ class Server : public kul::http::AServer{
                 try{
                     std::string s(buffer);
                     std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
-                    std::vector<char> allowed = {'G', 'P', '/', 'H'};
+                    std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
                     bool f = 0;
                     for(const auto& ch : allowed){
                         f = c.find(ch) != std::string::npos;
@@ -165,113 +161,6 @@ class Server : public kul::http::AServer{
                 }
             }
         }
-    protected:
-        bool s = 0;
-        uint16_t clients[_KUL_HTTP_MAX_CLIENT_] = {0};
-        fd_set bfds, fds;
-        int32_t sockfd, newsockfd;
-        int16_t max_fd = 0, sd = 0;
-        socklen_t clilen;
-        struct sockaddr_in serv_addr, cli_addr;
-        virtual const std::shared_ptr<ARequest> handle(const std::string& b, std::string& res){
-            std::string a;
-            std::shared_ptr<ARequest> req;
-            {
-                std::stringstream ss(b);
-                {
-                    std::string r;
-                    std::string l;
-                    std::getline(ss, r);
-                    std::vector<std::string> l0; 
-                    kul::String::SPLIT(r, ' ', l0);
-                    if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
-                    std::string s(l0[1]);
-                    if(l0[0] == "GET"){
-                        req = get();
-                        if(s.find("?") != std::string::npos){
-                            a = s.substr(s.find("?") + 1);
-                            s = s.substr(0, s.find("?"));
-                        }
-                    }else 
-                    if(l0[0] == "POST") req = post();
-                    else KEXCEPTION("HTTP Server request type not handled: " + l0[0]); 
-                    res = s;
-                }
-                {
-                    std::string l;
-                    while(std::getline(ss, l)){
-                        if(l.size() <= 1) break;
-                        std::vector<std::string> bits;
-                        kul::String::SPLIT(l, ':', bits);
-                        kul::String::TRIM(bits[0]);
-                        std::stringstream sv;
-                        if(bits.size() > 1) sv << bits[1];
-                        for(size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
-                        std::string v(sv.str());
-                        kul::String::TRIM(v);
-                        if(*v.rbegin() == '\r') v.pop_back();
-                        if(bits[0] == "Cookie"){
-                            for(const auto& coo : kul::String::SPLIT(v, ';')){
-                                if(coo.find("=") == std::string::npos){
-                                    req->cookie(coo, "");
-                                    KERR << kul::LogMan::INSTANCE().str(__FILE__, __LINE__, kul::log::mode::ERR) 
-                                        << "Cookie without equals sign, skipping";
-                                }else{
-                                    std::vector<std::string> kv;
-                                    kul::String::ESC_SPLIT(coo, '=', kv);
-                                    if(kv[1].size()) req->cookie(kv[0], kv[1]);
-                                }
-                            }
-                        }
-                        else
-                            req->header(bits[0], v);
-                    }
-                    std::stringstream ss1;
-                    while(std::getline(ss, l)) ss1 << l;
-                    if(a.empty()) a = ss1.str();
-                    req->body(ss1.str());
-                }
-            }
-            kul::hash::map::S2S atts;
-            asAttributes(a, atts);
-            for(const auto& att : atts) req->attribute(att.first, att.second);
-            return req;
-        }
-        virtual void loop() throw(kul::http::Exception){
-            fds = bfds;
-
-            FD_ZERO(&fds);
-            FD_SET(sockfd, &fds);
-            struct timeval tv;
-            tv.tv_sec = 1;
-            tv.tv_usec = 500;
-
-            if(select(_KUL_HTTP_MAX_CLIENT_, &fds, NULL, NULL, &tv) < 0 && errno != EINTR) 
-                KEXCEPTION("HTTP Server error on select");
-
-            if(FD_ISSET(sockfd, &fds)){
-                newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-                if(newsockfd < 0) KEXCEPTION("HTTP Server error on accept");
-              
-                KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
-
-                onConnect(Connection(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port)));
-                receive(newsockfd);
-                FD_SET(newsockfd, &bfds);
-                for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++)
-                    if(clients[i] == 0){
-                        clients[i] = newsockfd;
-                        break;
-                    }
-            }
-            else
-                for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++)
-                    if(FD_ISSET(clients[i], &fds)){
-                        receive(clients[i], i);
-                        break;
-                    }
-        }
-
         virtual AResponse& response(AResponse& r) const {
             if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
             if(!r.header("Connection"))     r.header("Connection", "close");
@@ -281,29 +170,6 @@ class Server : public kul::http::AServer{
         }
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
-        virtual void start() throw(kul::http::Exception){
-            sockfd = socket(AF_INET, SOCK_STREAM, 0);
-            int iso = 1;
-            setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
-            if (sockfd < 0) KEXCEPTION("HTTP Server error opening socket");
-            bzero((char *) &serv_addr, sizeof(serv_addr));
-            serv_addr.sin_family = AF_INET;
-            serv_addr.sin_addr.s_addr = INADDR_ANY;
-            serv_addr.sin_port = !kul::byte::isBigEndian() ? htons(this->port()) : kul::byte::LittleEndian::UINT32(this->port());
-            int16_t e = 0;
-            if ((e = bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr))) < 0)
-                KEXCEPTION("HTTP Server error on binding, errno: " + std::to_string(errno));
-            listen(sockfd, 5);
-            clilen = sizeof(cli_addr);
-            s = 1;
-            while(s) loop();
-        }
-        bool started() const { return s; }
-        virtual void stop(){
-            close(sockfd);
-            for(uint16_t i = 0; i < _KUL_HTTP_MAX_CLIENT_; i++) shutdown(clients[i], SHUT_RDWR);
-            s = false;
-        }
         virtual const AResponse response(const std::string& res, const ARequest& req){
             _1_1Response r;
             return response(r);
@@ -311,24 +177,24 @@ class Server : public kul::http::AServer{
 };
 }}
 
-inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
-    try{
-        std::stringstream ss;
-        Requester::send(h, toString(h, res), p, ss);
-        handle(ss.str());
-    }catch(const kul::Exception& e){
-        KEXCEPT(Exception, "HTTP GET failed with host: " + h);
-    }
+inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const uint16_t& p) throw (kul::http::Exception){
+    kul::tcp::Socket<char> sock; 
+    if(!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string& req(toString(h, res));
+    sock.write(req.c_str(), req.size());
+    char buf[_KUL_TCP_REQUEST_BUFFER_];
+    sock.read(buf);
+    handle(std::string(buf));
 }
 
-inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p){
-    try{
-        std::stringstream ss;
-        Requester::send(h, toString(h, res), p, ss);
-        handle(ss.str());
-    }catch(const kul::Exception& e){
-        KEXCEPT(Exception, "HTTP POST failed with host: " + h);
-    }
+inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p) throw (kul::http::Exception){
+    kul::tcp::Socket<char> sock; 
+    if(!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string& req(toString(h, res));
+    sock.write(req.c_str(), req.size());
+    char buf[_KUL_TCP_REQUEST_BUFFER_];
+    sock.read(buf);
+    handle(std::string(buf));
 }
 
 

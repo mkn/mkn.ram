@@ -1,4 +1,4 @@
-
+#! clean build -dtSp test
 
 name: mkn.ram
 
@@ -9,13 +9,15 @@ profile:
     inc: ./inc
     dep:
       - name: mkn.kul
-        version: master
+        version: 21062015
     if_inc:
         bsd: ./os/nixish/inc
         nix: ./os/nixish/inc
         win: ./os/win/inc
     if_src:
         win: ./os/win/src
+    if_lib:
+        nix: pthread
 
   - name: test
     parent: build

@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_HTTP_BASE_HPP_
 
 #include "kul/map.hpp"
+#include "kul/tcp.hpp"
 #include "kul/string.hpp"
 
 namespace kul{ namespace http{
@@ -68,22 +69,12 @@ class Cookie{
         }
 };
 
-class Connection{
-    private:
-        const std::string i;
-        const uint8_t p;
-    public:
-        Connection(const std::string i, const uint8_t p) : i(i), p(p){}
-        const std::string& ip() const { return i; }
-        const uint8_t&   port() const { return p; } 
-};
-
 class Sendable{
     protected:
         Headers hs;
         std::string b;
     public:
-        void header(const std::string& k, const std::string& v){ this->hs.insert(k, v); }
+        void header(const std::string& k, const std::string& v){ this->hs[k] = v; }
         const Headers& headers() const { return hs; }
         void body(const std::string& b){ this->b = b; }
         const std::string& body() const { return b; }
@@ -167,7 +158,7 @@ class _1_1GetRequest : public A1_1Request{
             ss << "\r\n\r\n";
             return ss.str();
         };
-        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
+        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80) throw (kul::http::Exception) override;
 };
 
 class _1_1PostRequest : public A1_1Request{
@@ -192,7 +183,7 @@ class _1_1PostRequest : public A1_1Request{
             if(body().size()) ss << body();
             return ss.str();
         }
-        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80);
+        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80) throw (kul::http::Exception) override;
 };
 
 class AResponse : public Sendable{
@@ -243,12 +234,8 @@ class  _1_1Response : public AResponse{
         std::string version() const { return "HTTP/1.1"; }
 };
 
-class AServer{
-    private:
-        std::vector<std::function<void(const Connection&)>> co, di;
+class AServer : public kul::tcp::SocketServer<char>{
     protected:
-        uint16_t p;
-        uint64_t s;
         void asAttributes(std::string a, kul::hash::map::S2S& atts){
             if(a.size() > 0){
                 if(a[0] == '?') a = a.substr(1);
@@ -270,28 +257,11 @@ class AServer{
             return std::make_shared<_1_1PostRequest>();
         }
         virtual AResponse& response(AResponse& r) const { return r; }
-        void onConnect(const std::function<void(const Connection&)>& f){
-            co.push_back(f);
-        }
-        void onConnect(const Connection& c){
-            for(const auto& f : co) f(c);
-        }
-        void onDisconnect(const std::function<void(const Connection&)>& f){
-            di.push_back(f);
-        }
-        void onDisconnect(const Connection& c){
-            for(const auto& f : di) f(c);
-        }
     public:
-        AServer(const uint16_t& p) : p(p), s(kul::Now::MILLIS()){}
+        AServer(const uint16_t& p) : kul::tcp::SocketServer<char>(p){}
         virtual ~AServer(){}
-        virtual bool started() const = 0;
-        virtual void start() throw(kul::http::Exception) = 0;
-        virtual void stop() = 0;
         
         virtual const AResponse response(const std::string& res, const ARequest& req) = 0;
-        const uint64_t  up()   const { return s - kul::Now::MILLIS(); }
-        const uint16_t& port() const { return p; }
 };
 
 

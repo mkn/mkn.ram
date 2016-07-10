@@ -31,7 +31,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_TEST_HPP_
 #define _KUL_TEST_HPP_
 
+#include <cstring>
+
+#include "kul/tcp.hpp"
 #include "kul/http.hpp"
+
+#ifdef  _KUL_HTTPS_
+#include "kul/https.hpp"
+#endif//_KUL_HTTPS_
+
 #include "kul/html4.hpp"
 
 #include "kul/signal.hpp"
@@ -57,6 +65,20 @@ class TestHTTPServer : public kul::http::Server{
 		friend class kul::Thread;
 };
 
+class TestSocketServer : public kul::tcp::SocketServer<char>{
+	private:
+		void operator()(){
+			start();
+		}
+	public:
+		bool handle(char* in, char* out) override {
+			std::strcpy(out, "TCP PROVIDED BY KUL");
+        	return true; // if true, close connection
+        }
+		TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_){}
+		friend class kul::Thread;
+};
+
 class Get : public kul::http::_1_1GetRequest{
 	public:
 		void handle(const kul::hash::map::S2S& h, const std::string& b){
@@ -73,20 +95,60 @@ class Post : public kul::http::_1_1PostRequest{
 class Test{
 	public:
 		Test(){
-			kul::Signal s;
-			TestHTTPServer serv;
-			auto l = [&serv](int16_t){ serv.stop(); };
-			s.intr(l).segv(l);
-			kul::Thread t(std::ref(serv));
-			t.run();
-			kul::this_thread::sleep(1000);
-			if(t.exception()) std::rethrow_exception(t.exception());
-			Post().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-			if(t.exception()) std::rethrow_exception(t.exception());
-			Get() .send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-			if(t.exception()) std::rethrow_exception(t.exception());
-			serv.stop();
-			Get() .send("google.com", "", 80);
+			{
+				TestHTTPServer serv;
+				kul::Thread t(std::ref(serv));
+				t.run();
+				kul::this_thread::sleep(1000);
+				if(t.exception()) std::rethrow_exception(t.exception());
+				Post().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+				if(t.exception()) std::rethrow_exception(t.exception());
+				Get().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+				if(t.exception()) std::rethrow_exception(t.exception());
+
+				kul::tcp::Socket<char> sock; 
+				if(!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
+				Get get;
+				std::string req(get.toString("google.com", ""));
+				std::vector<char> v1, v2;
+				KOUT(NON) << "Writing to TCP socket";
+				for(size_t i = 0; i < req.size() / 2; i++) v1.push_back(req.at(i));
+				for(size_t i = req.size() / 2; i < req.size(); i++) v2.push_back(req.at(i));
+				std::string s1(v1.begin(), v1.end()), s2(v2.begin(), v2.end());
+				sock.write(s1.c_str(), s1.size());
+				sock.write(s2.c_str(), s2.size());
+				KOUT(NON) << "Reading from TCP socket";
+			    char buf[_KUL_TCP_REQUEST_BUFFER_];
+			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+			    sock.read(buf);
+				KLOG(INF) << buf;
+
+				sock.close();
+				serv.stop();
+				t.interrupt();
+			}
+			{
+				TestSocketServer serv;
+				kul::Thread t(std::ref(serv));
+				t.run();
+				kul::this_thread::sleep(1000);
+				if(t.exception()) std::rethrow_exception(t.exception());
+
+				kul::tcp::Socket<char> sock; 
+				if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
+
+				const char* c = "socketserver";
+				sock.write(c, strlen(c));
+
+			    char buf[_KUL_TCP_REQUEST_BUFFER_];
+			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+			    sock.read(buf);
+				KLOG(INF) << buf;
+
+				sock.close();
+				serv.stop();
+				t.interrupt();
+			}
 		}
 };
 
