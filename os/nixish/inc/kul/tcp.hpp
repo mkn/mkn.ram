@@ -69,33 +69,27 @@ class Socket : public ASocket<T>{
             }
             return o1;
         }
-        virtual bool read(T* data, const uint16_t& len = _KUL_TCP_REQUEST_BUFFER_) override {
+        virtual uint16_t read(T* data, const uint16_t& len) throw(kul::tcp::Exception) override {
             struct timeval tv;
             fd_set fds;
-            int16_t e = 0, iof = -1;
+            int16_t d = 0, iof = -1;
             bool r = 0;
-            do{
-                uint16_t d = 0;
-                FD_ZERO(&fds);
-                FD_SET(sck, &fds);
-                tv.tv_sec = 1;
-                tv.tv_usec = 500;
-                e = select(sck+1, &fds, NULL, NULL, &tv);
-                if(e < 0) KEXCEPTION("Failed to read from Server socket");
-                else 
-                if(e > 0 && FD_ISSET(sck, &fds)) {
-                  if ((iof = fcntl(sck, F_GETFL, 0)) != -1) fcntl(sck, F_SETFL, iof | O_NONBLOCK);
-                  d = recv(sck, data, len, 0);
-                  if (iof != -1) fcntl(sck, F_SETFL, iof);
-                  r = 1;
-                }else if(e == 0 && !FD_ISSET(sck, &fds)){
-                    d = recv(sck, data, len, 0);
-                    if(!r && !d) KEXCEPTION("Failed to read from Server socket");
-                }
-                if (d == 0 || (d < len && r)) break;
-                r = 1;
-            }while(1);
-            return e >= 0;
+            FD_ZERO(&fds);
+            FD_SET(sck, &fds);
+            tv.tv_sec = 1;
+            tv.tv_usec = 500;
+            d = select(sck+1, &fds, NULL, NULL, &tv);
+            if(d < 0) KEXCEPTION("Failed to read from Server socket");
+            else 
+            if(d > 0 && FD_ISSET(sck, &fds)) {
+              if ((iof = fcntl(sck, F_GETFL, 0)) != -1) fcntl(sck, F_SETFL, iof | O_NONBLOCK);
+              d = recv(sck, data, len, 0);
+              if (iof != -1) fcntl(sck, F_SETFL, iof);
+            }else if(d == 0 && !FD_ISSET(sck, &fds)){
+                d = recv(sck, data, len, 0);
+                if(!r && !d) KEXCEPTION("Failed to read from Server socket");
+            }
+            return d;
         }
         virtual bool write(const T* data, const size_t& len) override {
             ::send(sck, data, len, 0);

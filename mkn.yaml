@@ -5,21 +5,31 @@ name: mkn.ram
 parent: build
 
 profile:
-  - name: build
+  - name: base
     inc: ./inc
-    dep:
-      - name: mkn.kul
-        version: master
     if_inc:
         bsd: ./os/nixish/inc
         nix: ./os/nixish/inc
         win: ./os/win/inc
     if_src:
         win: ./os/win/src
-    if_lib:
-        nix: pthread
+
+  - name: build
+    parent: base
+    dep:
+      - name: mkn.kul
+        version: master
+
+  - name: c++0x
+    parent: base
+    dep:
+      - name: mkn.kul
+        version: master
+        profile: c++0x
 
   - name: test
     parent: build
     mode: none
     main: test.cpp
+    if_lib:
+        nix: pthread
