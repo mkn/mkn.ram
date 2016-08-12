@@ -47,7 +47,7 @@ class ASocket{
 		virtual bool connect(const std::string& host, const int16_t& port)  = 0;
 		virtual bool close()    = 0;
 		virtual uint16_t read(T* data, const uint16_t& len) throw(kul::tcp::Exception) = 0;
-		virtual bool write(const T* data, const uint16_t& len) = 0;
+		virtual int16_t write(const T* data, const uint16_t& len) = 0;
 
 };
 
