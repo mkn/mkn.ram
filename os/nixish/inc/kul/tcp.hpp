@@ -54,7 +54,7 @@ class Socket : public ASocket<T>{
         int32_t sck = 0;
     public:
         virtual ~Socket(){
-            if(open) close();
+            if(this->open) close();
         }
         virtual bool connect(const std::string& host, const int16_t& port) override {
             if(!SOCKET(sck) || !CONNECT(sck, host, port)) return false;
