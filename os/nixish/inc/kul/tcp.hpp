@@ -91,8 +91,8 @@ class Socket : public ASocket<T>{
             }
             return d;
         }
-        virtual bool write(const T* data, const uint16_t& len) override {
-            ::send(sck, data, len, 0);
+        virtual int16_t write(const T* data, const uint16_t& len) override {
+            return ::send(sck, data, len, 0);
         }
 
         static bool SOCKET(int32_t& sck,
