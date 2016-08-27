@@ -120,7 +120,7 @@ class Test{
 				KOUT(NON) << "Reading from TCP socket";
 			    char buf[_KUL_TCP_REQUEST_BUFFER_];
 			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-			    sock.read(buf);
+			    sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
 				KLOG(INF) << buf;
 
 				sock.close();
@@ -142,7 +142,7 @@ class Test{
 
 			    char buf[_KUL_TCP_REQUEST_BUFFER_];
 			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-			    sock.read(buf);
+			    sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
 				KLOG(INF) << buf;
 
 				sock.close();

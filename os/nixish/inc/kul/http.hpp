@@ -183,8 +183,9 @@ inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::str
     const std::string& req(toString(h, res));
     sock.write(req.c_str(), req.size());
     char buf[_KUL_TCP_REQUEST_BUFFER_];
-    sock.read(buf);
-    handle(std::string(buf));
+    std::stringstream ss;
+    while(sock.read(buf, _KUL_TCP_REQUEST_BUFFER_) == _KUL_TCP_REQUEST_BUFFER_) ss << buf;
+    handle(ss.str());
 }
 
 inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p) throw (kul::http::Exception){
@@ -193,8 +194,9 @@ inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::st
     const std::string& req(toString(h, res));
     sock.write(req.c_str(), req.size());
     char buf[_KUL_TCP_REQUEST_BUFFER_];
-    sock.read(buf);
-    handle(std::string(buf));
+    std::stringstream ss;
+    while(sock.read(buf, _KUL_TCP_REQUEST_BUFFER_) == _KUL_TCP_REQUEST_BUFFER_) ss << buf;
+    handle(ss.str());
 }
 
 
