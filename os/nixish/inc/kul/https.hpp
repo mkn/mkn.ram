@@ -94,7 +94,7 @@ class Server : public kul::http::Server{
             }else
                 try{
                     std::string res;
-                    std::shared_ptr<kul::http::ARequest> req = handle(cnt.str(), res);
+                    std::shared_ptr<kul::http::ARequest> req = handleRequest(cnt.str(), res);
                     const kul::http::AResponse& rs(response(res, *req.get()));
                     std::string ret;
                     rs.toString(ret);
