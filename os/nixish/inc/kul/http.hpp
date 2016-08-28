@@ -92,8 +92,7 @@ class Server : public kul::http::AServer{
                              for(const auto& coo : kul::String::SPLIT(v, ';')){
                                  if(coo.find("=") == std::string::npos){
                                      req->cookie(coo, "");
-                                     KERR << kul::LogMan::INSTANCE().str(__FILE__, __LINE__, kul::log::mode::ERR) 
-                                         << "Cookie without equals sign, skipping";
+                                     KOUT(ERR) << "Cookie without equals sign, skipping";
                                  }else{
                                      std::vector<std::string> kv;
                                      kul::String::ESC_SPLIT(coo, '=', kv);
