@@ -87,7 +87,7 @@ class ARequest : public Sendable{
     protected:
         kul::hash::map::S2S cs;
         kul::hash::map::S2S atts;
-        virtual void handle(const kul::hash::map::S2S& h, const std::string& s){}
+        virtual void handleResponse(const kul::hash::map::S2S& h, const std::string& s){}
         void handle(std::string b){
             kul::hash::map::S2S h;
             std::string line;
@@ -109,7 +109,7 @@ class ARequest : public Sendable{
                     h.insert(line, "");
                 b.erase(0, b.find("\n") + 1);
             }
-            handle(h, b);
+            handleResponse(h, b);
         }
         const ARequest& request(ARequest& r) const {
             if(!r.header("Connection"))     r.header("Connection", "close");
@@ -139,8 +139,8 @@ class A1_1Request : public ARequest{
 
 class _1_1GetRequest : public A1_1Request{
     public:
-        virtual std::string method() const { return "GET";}
-        virtual std::string toString(const std::string& host, const std::string& res){
+        virtual std::string method() const override { return "GET";}
+        virtual std::string toString(const std::string& host, const std::string& res) override {
             std::stringstream ss;
             ss << method() << " /" << res;
             if(atts.size() > 0) ss << "?";
@@ -163,8 +163,8 @@ class _1_1GetRequest : public A1_1Request{
 
 class _1_1PostRequest : public A1_1Request{
     public:
-        virtual std::string method() const { return "POST";}
-        virtual std::string toString(const std::string& host, const std::string& res){
+        virtual std::string method() const override { return "POST";}
+        virtual std::string toString(const std::string& host, const std::string& res) override {
             std::stringstream ss;
             ss << method() << " /" << res << " " << version();
             ss << "\r\nHost: " << host;

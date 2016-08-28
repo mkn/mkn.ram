@@ -114,7 +114,7 @@ class Server : public kul::http::Server{
             if(s) stop();
         }
         void setChain(const kul::File& f){
-            if(!f) KEXCEPTION("HTTPS Server chain file does not exist: " + crt.full());
+            if(!f) KEXCEPTION("HTTPS Server chain file does not exist: " + f.full());
             if(SSL_CTX_use_certificate_chain_file(ctx, f.mini().c_str()) <= 0)
                 KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
         }

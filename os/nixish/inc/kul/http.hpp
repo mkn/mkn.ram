@@ -51,7 +51,7 @@ namespace kul{ namespace http{
 
 class Server : public kul::http::AServer{
     protected:
-        virtual const std::shared_ptr<ARequest> handle(const std::string& b, std::string& res){
+        virtual const std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& res){
              std::string a;
              std::shared_ptr<ARequest> req;
              {
@@ -142,7 +142,7 @@ class Server : public kul::http::AServer{
                     }
                     if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
                     
-                    std::shared_ptr<ARequest> req = handle(s, res);
+                    std::shared_ptr<ARequest> req = handleRequest(s, res);
                     const AResponse& rs(response(res, *req.get()));
                     std::string ret;
                     rs.toString(ret);
