@@ -69,126 +69,74 @@ class Cookie{
         }
 };
 
-class Sendable{
+class Message{
     protected:
-        Headers hs;
-        std::string b;
+        Headers _hs;
+        std::string _b;
     public:
-        void header(const std::string& k, const std::string& v){ this->hs[k] = v; }
-        const Headers& headers() const { return hs; }
-        void body(const std::string& b){ this->b = b; }
-        const std::string& body() const { return b; }
+        void header(const std::string& k, const std::string& v){ this->_hs[k] = v; }
+        const Headers& headers() const { return _hs; }
+        void body(const std::string& b){ this->_b = b; }
+        const std::string& body() const { return _b; }
         bool header(const std::string& s){
-            return hs.count(s);
+            return _hs.count(s);
         }
 };
 
-class ARequest : public Sendable{
+class ARequest : public Message{
     protected:
+        std::string host, res;
+        uint16_t port;
         kul::hash::map::S2S cs;
         kul::hash::map::S2S atts;
         virtual void handleResponse(const kul::hash::map::S2S& h, const std::string& s){}
-        void handle(std::string b){
-            kul::hash::map::S2S h;
-            std::string line;
-            std::stringstream ss(b);
-            while(std::getline(ss, line)){
-                if(line.size() <= 2) {
-                    b.erase(0, b.find("\n") + 1);
-                    break;
-                }
-                if(line.find(":") != std::string::npos){
-                    std::vector<std::string> bits;
-                    kul::String::SPLIT(line, ':', bits);
-                    std::string l(bits[0]);
-                    std::string r(bits[1]);
-                    kul::String::TRIM(l);
-                    kul::String::TRIM(r);
-                    h.insert(l, r);
-                }else
-                    h.insert(line, "");
-                b.erase(0, b.find("\n") + 1);
-            }
-            handleResponse(h, b);
-        }
-        const ARequest& request(ARequest& r) const {
-            if(!r.header("Connection"))     r.header("Connection", "close");
-            if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
-            if(!r.header("Accept"))         r.header("Accept", "text/html");
-            return r; 
-        }
+        void handle(std::string b);
     public:
+        ARequest(const std::string& _host, const uint16_t& _port, const std::string& _res = "") 
+            : host(_host), port(_port), res(_res){}
         virtual ~ARequest(){}
         virtual std::string method() const = 0;
         virtual std::string version() const = 0;
-        virtual std::string toString(const std::string& host, const std::string& res) = 0;
+        virtual std::string toString() const  = 0;
         void cookie(const std::string& k, const std::string& v) { this->cs.insert(k, v); }
         const kul::hash::map::S2S& cookies() const { return cs; }
-        virtual void send(const std::string& host, const std::string& res, const uint16_t& port) = 0;
         ARequest& attribute(const std::string& k, const std::string& v){
             atts[k] = v;
             return *this;
         }
         const kul::hash::map::S2S&  attributes() const { return atts; }
+        virtual void send() throw (kul::http::Exception) = 0;
 };
 
 class A1_1Request : public ARequest{
+    public:
+        A1_1Request(const std::string& host, const uint16_t& port, const std::string& res = "") 
+            : ARequest(host, port, res){}
     protected:
         std::string version() const { return "HTTP/1.1";}
 };
 
 class _1_1GetRequest : public A1_1Request{
     public:
+        _1_1GetRequest(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
+            : A1_1Request(host, port, res){}
         virtual std::string method() const override { return "GET";}
-        virtual std::string toString(const std::string& host, const std::string& res) override {
-            std::stringstream ss;
-            ss << method() << " /" << res;
-            if(atts.size() > 0) ss << "?";
-            for(const std::pair<std::string, std::string>& p : atts)
-                ss << p.first << "=" << p.second << "&";
-            if(atts.size() > 0) ss.seekp(-1, ss.cur);
-            ss << " " << version();
-            ss << "\r\nHost: " << host;
-            request(*this);
-            for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-            if(cookies().size()){
-                ss << "\r\nCookie: ";
-                for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
-            }
-            ss << "\r\n\r\n";
-            return ss.str();
-        };
-        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80) throw (kul::http::Exception) override;
+        virtual std::string toString() const override;
+        virtual void send() throw (kul::http::Exception) override;
 };
 
 class _1_1PostRequest : public A1_1Request{
     public:
+        _1_1PostRequest(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
+            : A1_1Request(host, port, res){}
         virtual std::string method() const override { return "POST";}
-        virtual std::string toString(const std::string& host, const std::string& res) override {
-            std::stringstream ss;
-            ss << method() << " /" << res << " " << version();
-            ss << "\r\nHost: " << host;
-            std::stringstream bo;
-            for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
-            if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }
-            if(body().size()) bo << "\r\n" << body();
-            body(bo.str());
-            request(*this);
-            for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-            if(cookies().size()){
-                ss << "\r\nCookie: ";
-                for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
-            }
-            ss << "\r\n\r\n";
-            if(body().size()) ss << body();
-            return ss.str();
-        }
-        virtual void send(const std::string& host, const std::string& res = "", const uint16_t& port = 80) throw (kul::http::Exception) override;
+        virtual std::string toString() const override;
+        virtual void send() throw (kul::http::Exception) override;
 };
 
-class AResponse : public Sendable{
+class AResponse : public Message{
     protected:
-        uint16_t s = 200;
+        uint16_t _s = 200;
         std::string r = "OK";
         Headers hs;
         kul::hash::map::S2T<Cookie> cs;
@@ -197,17 +145,12 @@ class AResponse : public Sendable{
         const kul::hash::map::S2T<Cookie>& cookies() const { return cs; }
         const std::string& reason() const { return r; }
         void reason(const std::string& r){ this->r = r; }
-        const uint16_t& status() const { return s; }
-        void status(const uint16_t& s){ this->s = s; }
+        const uint16_t& status() const { return _s; }
+        void status(const uint16_t& s){ this->_s = _s; }
         virtual std::string version() const { return "HTTP/1.1"; }
-        std::string toString()const {
-            std::string s;
-            toString(s);
-            return s;
-        }
-        virtual void toString(std::string& s) const {
+        virtual std::string toString() const {
             std::stringstream ss;
-            ss << version() << " " << s << " " << r << kul::os::EOL();
+            ss << version() << " " << _s << " " << r << kul::os::EOL();
             for(const auto& h : headers()) ss << h.first << ": " << h.second << kul::os::EOL();
             for(const auto& p : cookies()){
                 ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
@@ -221,7 +164,7 @@ class AResponse : public Sendable{
                 ss << kul::os::EOL();
             }
             ss << kul::os::EOL() << body() << "\r\n" << '\0';
-            s = ss.str();
+            return ss.str();
         }
         friend std::ostream& operator<<(std::ostream&, const AResponse&);
 };
@@ -250,18 +193,13 @@ class AServer : public kul::tcp::SocketServer<char>{
                 }
             }
         }
-        virtual std::shared_ptr<ARequest> get(){
-            return std::make_shared<_1_1GetRequest>();
-        }
-        virtual std::shared_ptr<ARequest> post(){
-            return std::make_shared<_1_1PostRequest>();
-        }
+
         virtual AResponse& response(AResponse& r) const { return r; }
     public:
         AServer(const uint16_t& p) : kul::tcp::SocketServer<char>(p){}
         virtual ~AServer(){}
         
-        virtual const AResponse response(const std::string& res, const ARequest& req) = 0;
+        virtual AResponse response(const std::string& res, const ARequest& req) = 0;
 };
 
 

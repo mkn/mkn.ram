@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2016, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include "kul/http.hpp"
 
-#include "kul.ram.test.hpp"
-
-int main(int argc, char* argv[]){
-	try{
-		kul::ram::Test();
-	}catch(const kul::Exception& e){ 
-		KERR << e.stack();
-	}catch(const std::exception& e){ 
-		KERR << e.what();
-	}catch(...){ 
-
-	}
-	return 0;
+void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
+    KLOG(DBG);
+    kul::tcp::Socket<char> sock; 
+    if(!sock.connect(host, port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string& req(toString());
+    sock.write(req.c_str(), req.size());
+    char buf[_KUL_TCP_REQUEST_BUFFER_];
+    std::stringstream ss;
+    size_t s = 0;
+    do{
+        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+        ss << buf;
+    }while(s == _KUL_TCP_REQUEST_BUFFER_);
+    handle(ss.str());
+    KLOG(DBG);
 }
 
+void kul::http::_1_1PostRequest::send() throw (kul::http::Exception){
+    KLOG(DBG);
+    kul::tcp::Socket<char> sock; 
+    if(!sock.connect(host, port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string& req(toString());
+    sock.write(req.c_str(), req.size());
+    char buf[_KUL_TCP_REQUEST_BUFFER_];
+    std::stringstream ss;
+    size_t s = 0;
+    do{
+        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+        ss << buf;
+    }while(s == _KUL_TCP_REQUEST_BUFFER_);
+    handle(ss.str());
+    KLOG(DBG);
+}

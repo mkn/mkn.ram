@@ -51,105 +51,123 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kul{ namespace ram{
 
 class TestHTTPServer : public kul::http::Server{
-	private:
-		void operator()(){
-			start();
-		}
-	public:
-		const kul::http::AResponse response(const std::string& res, const kul::http::ARequest& req){
+    private:
+        void operator()(){
+            start();
+        }
+    public:
+        kul::http::AResponse response(const std::string& res, const kul::http::ARequest& req){
             kul::http::_1_1Response r;
+            KLOG(INF) << req.body();
             r.body("HTTP PROVIDED BY KUL");
             return kul::http::Server::response(r);
         }
-		TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
-		friend class kul::Thread;
+        TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
+        friend class kul::Thread;
 };
 
 class TestSocketServer : public kul::tcp::SocketServer<char>{
-	private:
-		void operator()(){
-			start();
-		}
-	public:
-		bool handle(char* in, char* out) override {
-			std::strcpy(out, "TCP PROVIDED BY KUL");
-        	return true; // if true, close connection
+    private:
+        void operator()(){
+            start();
         }
-		TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_){}
-		friend class kul::Thread;
+    public:
+        bool handle(char* in, char* out) override {
+            std::strcpy(out, "TCP PROVIDED BY KUL");
+            return true; // if true, close connection
+        }
+        TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_){}
+        friend class kul::Thread;
 };
 
+void addDefaultHeaders(kul::http::ARequest& r){
+    if(!r.header("Connection"))     r.header("Connection", "close");
+    if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
+    if(!r.header("Accept"))         r.header("Accept", "text/html");
+}
+
 class Get : public kul::http::_1_1GetRequest{
-	public:
-		void handle(const kul::hash::map::S2S& h, const std::string& b){
-			KLOG(INF) << "GET RESPONSE:\n" << b;
-		}
+    public:
+        Get(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
+            : kul::http::_1_1GetRequest(host, port, res){
+                addDefaultHeaders(*this);
+            }
+        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
+            KLOG(INF) << "GET RESPONSE:\n" << b;
+        }
 };
 class Post : public kul::http::_1_1PostRequest{
-	public:
-		void handle(const kul::hash::map::S2S& h, const std::string& b){
-			KLOG(INF) << "POST RESPONSE:\n" << b;
-		}
+    public:
+        Post(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
+            : kul::http::_1_1PostRequest(host, port, res){
+            addDefaultHeaders(*this);
+        }
+        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
+            KLOG(INF) << "POST RESPONSE:\n" << b;
+        }
 };
 
 class Test{
-	public:
-		Test(){
-			{
-				TestHTTPServer serv;
-				kul::Thread t(std::ref(serv));
-				t.run();
-				kul::this_thread::sleep(1000);
-				if(t.exception()) std::rethrow_exception(t.exception());
-				Post().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-				if(t.exception()) std::rethrow_exception(t.exception());
-				Get().send("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-				if(t.exception()) std::rethrow_exception(t.exception());
+    public:
+        Test(){
+            {
+                TestHTTPServer serv;
+                kul::Thread t(std::ref(serv));
+                t.run();
+                kul::this_thread::sleep(1000);
+                if(t.exception()) std::rethrow_exception(t.exception());
+                Get("localhost", _KUL_HTTP_TEST_PORT_, "index.html").send();
+                if(t.exception()) std::rethrow_exception(t.exception());
+                Post p("localhost", _KUL_HTTP_TEST_PORT_, "index.html");
+                p.body("tsop");
+                p.send();
+                if(t.exception()) std::rethrow_exception(t.exception());
 
-				kul::tcp::Socket<char> sock; 
-				if(!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
-				Get get;
-				std::string req(get.toString("google.com", ""));
-				std::vector<char> v1, v2;
-				KOUT(NON) << "Writing to TCP socket";
-				for(size_t i = 0; i < req.size() / 2; i++) v1.push_back(req.at(i));
-				for(size_t i = req.size() / 2; i < req.size(); i++) v2.push_back(req.at(i));
-				std::string s1(v1.begin(), v1.end()), s2(v2.begin(), v2.end());
-				sock.write(s1.c_str(), s1.size());
-				sock.write(s2.c_str(), s2.size());
-				KOUT(NON) << "Reading from TCP socket";
-			    char buf[_KUL_TCP_REQUEST_BUFFER_];
-			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-			    sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
-				KLOG(INF) << buf;
+                // kul::tcp::Socket<char> sock; 
+                // if(!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
+                // Get get("google.com");
+                // std::string req(get.toString());
+                // std::vector<char> v1, v2;
+                // KOUT(NON) << "Writing to TCP socket";
+                // for(size_t i = 0; i < req.size() / 2; i++) v1.push_back(req.at(i));
+                // for(size_t i = req.size() / 2; i < req.size(); i++) v2.push_back(req.at(i));
+                // std::string s1(v1.begin(), v1.end()), s2(v2.begin(), v2.end());
+                // sock.write(s1.c_str(), s1.size());
+                // sock.write(s2.c_str(), s2.size());
+                // KOUT(NON) << "Reading from TCP socket";
+                // char buf[_KUL_TCP_REQUEST_BUFFER_];
+                // bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+                // sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+                // KLOG(INF) << buf;
 
-				sock.close();
-				serv.stop();
-				t.interrupt();
-			}
-			{
-				TestSocketServer serv;
-				kul::Thread t(std::ref(serv));
-				t.run();
-				kul::this_thread::sleep(1000);
-				if(t.exception()) std::rethrow_exception(t.exception());
+                // sock.close();
 
-				kul::tcp::Socket<char> sock; 
-				if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
+                serv.stop();
+                t.interrupt();
+            }
+            // {
+            //     TestSocketServer serv;
+            //     kul::Thread t(std::ref(serv));
+            //     t.run();
+            //     kul::this_thread::sleep(1000);
+            //     if(t.exception()) std::rethrow_exception(t.exception());
 
-				const char* c = "socketserver";
-				sock.write(c, strlen(c));
+            //     kul::tcp::Socket<char> sock; 
+            //     if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
 
-			    char buf[_KUL_TCP_REQUEST_BUFFER_];
-			    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-			    sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
-				KLOG(INF) << buf;
+            //     const char* c = "socketserver";
+            //     sock.write(c, strlen(c));
 
-				sock.close();
-				serv.stop();
-				t.interrupt();
-			}
-		}
+            //     char buf[_KUL_TCP_REQUEST_BUFFER_];
+            //     bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+            //     sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+            //     KLOG(INF) << buf;
+
+            //     sock.close();
+            //     serv.stop();
+            //     t.interrupt();
+            // }
+        }
 };
 
 }}

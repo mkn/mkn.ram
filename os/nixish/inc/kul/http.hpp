@@ -51,152 +51,18 @@ namespace kul{ namespace http{
 
 class Server : public kul::http::AServer{
     protected:
-        virtual const std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& res){
-             std::string a;
-             std::shared_ptr<ARequest> req;
-             {
-                 std::stringstream ss(b);
-                 {
-                     std::string r;
-                     std::string l;
-                     std::getline(ss, r);
-                     std::vector<std::string> l0; 
-                     kul::String::SPLIT(r, ' ', l0);
-                     if(!l0.size()) KEXCEPTION("Malformed request found: " + b); 
-                     std::string s(l0[1]);
-                     if(l0[0] == "GET"){
-                         req = get();
-                         if(s.find("?") != std::string::npos){
-                             a = s.substr(s.find("?") + 1);
-                             s = s.substr(0, s.find("?"));
-                         }
-                     }else 
-                     if(l0[0] == "POST") req = post();
-                     else KEXCEPTION("HTTP Server request type not handled: " + l0[0]); 
-                     res = s;
-                 }
-                 {
-                     std::string l;
-                     while(std::getline(ss, l)){
-                         if(l.size() <= 1) break;
-                         std::vector<std::string> bits;
-                         kul::String::SPLIT(l, ':', bits);
-                         kul::String::TRIM(bits[0]);
-                         std::stringstream sv;
-                         if(bits.size() > 1) sv << bits[1];
-                         for(size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
-                         std::string v(sv.str());
-                         kul::String::TRIM(v);
-                         if(*v.rbegin() == '\r') v.pop_back();
-                         if(bits[0] == "Cookie"){
-                             for(const auto& coo : kul::String::SPLIT(v, ';')){
-                                 if(coo.find("=") == std::string::npos){
-                                     req->cookie(coo, "");
-                                     KOUT(ERR) << "Cookie without equals sign, skipping";
-                                 }else{
-                                     std::vector<std::string> kv;
-                                     kul::String::ESC_SPLIT(coo, '=', kv);
-                                     if(kv[1].size()) req->cookie(kv[0], kv[1]);
-                                 }
-                             }
-                         }
-                         else
-                             req->header(bits[0], v);
-                     }
-                     std::stringstream ss1;
-                     while(std::getline(ss, l)) ss1 << l;
-                     if(a.empty()) a = ss1.str();
-                     req->body(ss1.str());
-                 }
-             }
-             kul::hash::map::S2S atts;
-             asAttributes(a, atts);
-             for(const auto& att : atts) req->attribute(att.first, att.second);
-             return req;
-         }
+        virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& res);
 
-        virtual void receive(const uint16_t& fd, int16_t i = -1){
-            char buffer[_KUL_HTTP_READ_BUFFER_];
-            bzero(buffer, _KUL_HTTP_READ_BUFFER_);
-            int16_t e = 0, read = ::read(fd, buffer, _KUL_HTTP_READ_BUFFER_ - 1);
-            if(read == 0){
-                getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
-                KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
-                onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
-                close(fd);
-                close(i);
-                FD_CLR(fd, &bfds);
-                if(i > 0) clients[i] = 0;
-            }else{
-                buffer[read] = '\0';
-                std::string res;
-                try{
-                    std::string s(buffer);
-                    std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
-                    std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
-                    bool f = 0;
-                    for(const auto& ch : allowed){
-                        f = c.find(ch) != std::string::npos;
-                        if(f) break;
-                    }
-                    if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-                    
-                    std::shared_ptr<ARequest> req = handleRequest(s, res);
-                    const AResponse& rs(response(res, *req.get()));
-                    std::string ret;
-                    rs.toString(ret);
-                    e = ::send(fd, ret.c_str(), ret.length(), 0);
+        virtual void receive(const uint16_t& fd, int16_t i = -1);
 
-                }catch(const kul::http::Exception& e1){
-                    KERR << e1.stack(); 
-                    e = -1;
-                }
-                if(e < 0){
-                    close(fd);
-                    if(i > 0) clients[i] = 0;
-                    FD_CLR(fd, &bfds);
-                    KLOG(ERR) << "Error replying to host error: " << e;
-                    KLOG(ERR) << "Error replying to host errno: " << errno;
-                }
-            }
-        }
-        virtual AResponse& response(AResponse& r) const {
-            if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
-            if(!r.header("Connection"))     r.header("Connection", "close");
-            if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
-            if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
-            return r; 
-        }
+        virtual AResponse& response(AResponse& r) const;
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
-        virtual const AResponse response(const std::string& res, const ARequest& req){
+        virtual AResponse response(const std::string& res, const ARequest& req){
             _1_1Response r;
             return response(r);
         }
 };
 }}
-
-inline void kul::http::_1_1GetRequest::send(const std::string& h, const std::string& res, const uint16_t& p) throw (kul::http::Exception){
-    kul::tcp::Socket<char> sock; 
-    if(!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
-    const std::string& req(toString(h, res));
-    sock.write(req.c_str(), req.size());
-    char buf[_KUL_TCP_REQUEST_BUFFER_];
-    std::stringstream ss;
-    while(sock.read(buf, _KUL_TCP_REQUEST_BUFFER_) == _KUL_TCP_REQUEST_BUFFER_) ss << buf;
-    handle(ss.str());
-}
-
-inline void kul::http::_1_1PostRequest::send(const std::string& h, const std::string& res, const uint16_t& p) throw (kul::http::Exception){
-    kul::tcp::Socket<char> sock; 
-    if(!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
-    const std::string& req(toString(h, res));
-    sock.write(req.c_str(), req.size());
-    char buf[_KUL_TCP_REQUEST_BUFFER_];
-    std::stringstream ss;
-    while(sock.read(buf, _KUL_TCP_REQUEST_BUFFER_) == _KUL_TCP_REQUEST_BUFFER_) ss << buf;
-    handle(ss.str());
-}
-
 
 #endif /* _KUL_HTTP_HPP_ */

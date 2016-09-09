@@ -2,7 +2,7 @@
 
 name: mkn.ram
 
-parent: build
+parent: lib
 
 profile:
   - name: base
@@ -11,11 +11,14 @@ profile:
         bsd: ./os/nixish/inc
         nix: ./os/nixish/inc
         win: ./os/win/inc
-    if_src:
-        win: ./os/win/src
 
-  - name: build
+  - name: lib
     parent: base
+    src: ./src
+    if_src:
+        bsd: ./os/nixish/src
+        nix: ./os/nixish/src
+        win: ./os/win/src
     dep:
       - name: mkn.kul
         version: master
@@ -28,8 +31,6 @@ profile:
         profile: c++0x
 
   - name: test
-    parent: build
     mode: none
     main: test.cpp
-    if_lib:
-        nix: pthread
+    self: lib

@@ -1,0 +1,4 @@
+#! -r -f cpp,hpp 
+
+KLOG(ERR)*;
+KLOG(DBG)*;

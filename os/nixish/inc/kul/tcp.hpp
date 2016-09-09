@@ -69,7 +69,7 @@ class Socket : public ASocket<T>{
             }
             return o1;
         }
-        virtual uint16_t read(T* data, const uint16_t& len) throw(kul::tcp::Exception) override {
+        virtual size_t read(T* data, const size_t& len) throw(kul::tcp::Exception) override {
             struct timeval tv;
             fd_set fds;
             int16_t d = 0, iof = -1;
@@ -91,7 +91,7 @@ class Socket : public ASocket<T>{
             }
             return d;
         }
-        virtual int16_t write(const T* data, const uint16_t& len) override {
+        virtual size_t write(const T* data, const size_t& len) override {
             return ::send(sck, data, len, 0);
         }
 
