@@ -66,14 +66,16 @@ class JsonResponse{
 
 class JsonGet : public kul::https::_1_1GetRequest, public JsonResponse{
     public:
-        JsonGet(){
+        JsonGet(const std::string& host, const std::string& path = "") 
+            : kul::https::_1_1GetRequest(host, path){
             header("Accept", "application/json");
         }  
         void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
 };
 class JsonPost : public kul::https::_1_1PostRequest, public JsonResponse{
     public:
-        JsonPost(){
+        JsonPost(const std::string& host, const std::string& path = "") 
+            : kul::https::_1_1PostRequest(host, path){
             header("Accept", "application/json");
         }  
         void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
@@ -98,10 +100,10 @@ class Gist{
             json["files"] = files;
             std::stringstream ss;
             ss << Json::FastWriter().write(json);
-            JsonPost p;
+            JsonPost p("api.github.com", "gists");
             p.header("User-Agent", ua);
             p.body(ss.str());
-            p.send("api.github.com", "gists");
+            p.send();
             if(p.fail()) KEXCEPTION("Post JSON response failed to parse");
             return p.json()["id"].asString();
         }

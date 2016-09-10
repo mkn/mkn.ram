@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std::string& b, std::string& res){
+std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std::string& b, std::string& path){
     KLOG(DBG);
     std::string a;
     std::shared_ptr<kul::http::ARequest> req;
@@ -53,12 +53,12 @@ std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std:
             if(l0[0] == "POST"){}// req = post();
             else KEXCEPTION("HTTP Server request type not handled: " + l0[0]); 
             mode = l0[0];
-            res = s;
+            path = s;
         }
         
-        if(mode == "GET")  req = std::make_shared<_1_1GetRequest> (host, port(), res);
+        if(mode == "GET")  req = std::make_shared<_1_1GetRequest> (host, path, port());
         else 
-        if(mode == "POST") req = std::make_shared<_1_1PostRequest>(host, port(), res);
+        if(mode == "POST") req = std::make_shared<_1_1PostRequest>(host, path, port());
         
         {
             std::string l;
@@ -129,7 +129,7 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
             if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
             
             std::shared_ptr<ARequest> req = handleRequest(s, res);
-            const AResponse& rs(response(res, *req.get()));
+            const AResponse& rs(respond(*req.get()));
             std::string ret(rs.toString());
             e = ::send(fd, ret.c_str(), ret.length(), 0);
 
@@ -146,14 +146,4 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
         }
     }
     KLOG(DBG);
-}
-
-kul::http::AResponse& kul::http::Server::response(kul::http::AResponse& r) const {
-    KLOG(DBG);
-    if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
-    if(!r.header("Connection"))     r.header("Connection", "close");
-    if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
-    if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
-    KLOG(DBG);
-    return r; 
 }

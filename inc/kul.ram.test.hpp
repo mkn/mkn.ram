@@ -50,17 +50,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace ram{
 
+void addResponseHeaders(kul::http::AResponse& r){
+    if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
+    if(!r.header("Connection"))     r.header("Connection", "close");
+    if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
+    if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
+}
+
 class TestHTTPServer : public kul::http::Server{
     private:
         void operator()(){
             start();
         }
     public:
-        kul::http::AResponse response(const std::string& res, const kul::http::ARequest& req){
+        kul::http::AResponse respond(const kul::http::ARequest& req){
             kul::http::_1_1Response r;
-            KLOG(INF) << req.body();
             r.body("HTTP PROVIDED BY KUL");
-            return kul::http::Server::response(r);
+            addResponseHeaders(r);
+            return r;
         }
         TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
         friend class kul::Thread;
@@ -80,7 +87,7 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
         friend class kul::Thread;
 };
 
-void addDefaultHeaders(kul::http::ARequest& r){
+void addRequestHeaders(kul::http::ARequest& r){
     if(!r.header("Connection"))     r.header("Connection", "close");
     if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
     if(!r.header("Accept"))         r.header("Accept", "text/html");
@@ -90,7 +97,7 @@ class Get : public kul::http::_1_1GetRequest{
     public:
         Get(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
             : kul::http::_1_1GetRequest(host, port, res){
-                addDefaultHeaders(*this);
+                addRequestHeaders(*this);
             }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
             KLOG(INF) << "GET RESPONSE:\n" << b;

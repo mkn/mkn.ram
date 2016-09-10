@@ -61,12 +61,11 @@ void kul::https::_1_1GetRequest::send() throw (kul::http::Exception){
     KLOG(DBG);
     try{
         std::stringstream ss;
-        KLOG(DBG) << toString();
-        Requester::send(host, toString(), port, ss, ssl);
+        Requester::send(_host, toString(), _port, ss, ssl);
         handle(ss.str());
     }catch(const kul::Exception& e){
         KLOG(ERR) << e.debug();
-        KEXCEPT(Exception, "HTTP GET failed with host: " + host);
+        KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
     }
     KLOG(DBG);
 }
@@ -75,12 +74,11 @@ void kul::https::_1_1PostRequest::send() throw (kul::http::Exception){
     KLOG(DBG);
     try{
         std::stringstream ss;
-        KLOG(DBG) << toString();
-        Requester::send(host, toString(), port, ss, ssl);
+        Requester::send(_host, toString(), _port, ss, ssl);
         handle(ss.str());
     }catch(const kul::Exception& e){
         KLOG(ERR) << e.debug();
-        KEXCEPT(Exception, "HTTP POST failed with host: " + host);
+        KEXCEPT(Exception, "HTTP POST failed with host: " + _host);
     }
     KLOG(DBG);
 }

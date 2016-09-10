@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
     KLOG(DBG);
     kul::tcp::Socket<char> sock; 
-    if(!sock.connect(host, port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
     const std::string& req(toString());
     sock.write(req.c_str(), req.size());
     char buf[_KUL_TCP_REQUEST_BUFFER_];
@@ -50,7 +50,7 @@ void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
 void kul::http::_1_1PostRequest::send() throw (kul::http::Exception){
     KLOG(DBG);
     kul::tcp::Socket<char> sock; 
-    if(!sock.connect(host, port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
     const std::string& req(toString());
     sock.write(req.c_str(), req.size());
     char buf[_KUL_TCP_REQUEST_BUFFER_];

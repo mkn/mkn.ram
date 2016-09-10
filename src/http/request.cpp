@@ -59,13 +59,13 @@ void kul::http::ARequest::handle(std::string b){
 std::string kul::http::_1_1GetRequest::toString() const {
     KLOG(DBG);
     std::stringstream ss;
-    ss << method() << " /" << res;
+    ss << method() << " /" << _path;
     if(atts.size() > 0) ss << "?";
     for(const std::pair<std::string, std::string>& p : atts)
         ss << p.first << "=" << p.second << "&";
     if(atts.size() > 0) ss.seekp(-1, ss.cur);
     ss << " " << version();
-    ss << "\r\nHost: " << host;
+    ss << "\r\nHost: " << _host;
     for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
     if(cookies().size()){
         ss << "\r\nCookie: ";
@@ -79,8 +79,8 @@ std::string kul::http::_1_1GetRequest::toString() const {
 std::string kul::http::_1_1PostRequest::toString() const {
     KLOG(DBG);
     std::stringstream ss;
-    ss << method() << " /" << res << " " << version();
-    ss << "\r\nHost: " << host;
+    ss << method() << " /" << _path << " " << version();
+    ss << "\r\nHost: " << _host;
     std::stringstream bo;
     for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
     if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }

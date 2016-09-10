@@ -85,15 +85,15 @@ class Message{
 
 class ARequest : public Message{
     protected:
-        std::string host, res;
-        uint16_t port;
+        std::string _host, _path;
+        uint16_t _port;
         kul::hash::map::S2S cs;
         kul::hash::map::S2S atts;
         virtual void handleResponse(const kul::hash::map::S2S& h, const std::string& s){}
         void handle(std::string b);
     public:
-        ARequest(const std::string& _host, const uint16_t& _port, const std::string& _res = "") 
-            : host(_host), port(_port), res(_res){}
+        ARequest(const std::string& host, const std::string& path, const uint16_t& port) 
+            : _host(host), _path(path), _port(port){}
         virtual ~ARequest(){}
         virtual std::string method() const = 0;
         virtual std::string version() const = 0;
@@ -106,20 +106,24 @@ class ARequest : public Message{
         }
         const kul::hash::map::S2S&  attributes() const { return atts; }
         virtual void send() throw (kul::http::Exception) = 0;
+        const std::string& host() const { return _host; }
+        const std::string& path() const { return _path; }
+        const uint16_t&    port() const { return _port; }
+
 };
 
 class A1_1Request : public ARequest{
     public:
-        A1_1Request(const std::string& host, const uint16_t& port, const std::string& res = "") 
-            : ARequest(host, port, res){}
+        A1_1Request(const std::string& host, const std::string& path, const uint16_t& port) 
+            : ARequest(host, path, port){}
     protected:
         std::string version() const { return "HTTP/1.1";}
 };
 
 class _1_1GetRequest : public A1_1Request{
     public:
-        _1_1GetRequest(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
-            : A1_1Request(host, port, res){}
+        _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+            : A1_1Request(host, path, port){}
         virtual std::string method() const override { return "GET";}
         virtual std::string toString() const override;
         virtual void send() throw (kul::http::Exception) override;
@@ -127,8 +131,8 @@ class _1_1GetRequest : public A1_1Request{
 
 class _1_1PostRequest : public A1_1Request{
     public:
-        _1_1PostRequest(const std::string& host, const uint16_t& port = 80, const std::string& res = "") 
-            : A1_1Request(host, port, res){}
+        _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+            : A1_1Request(host, path, port){}
         virtual std::string method() const override { return "POST";}
         virtual std::string toString() const override;
         virtual void send() throw (kul::http::Exception) override;
@@ -146,7 +150,7 @@ class AResponse : public Message{
         const std::string& reason() const { return r; }
         void reason(const std::string& r){ this->r = r; }
         const uint16_t& status() const { return _s; }
-        void status(const uint16_t& s){ this->_s = _s; }
+        void status(const uint16_t& s){ this->_s = s; }
         virtual std::string version() const { return "HTTP/1.1"; }
         virtual std::string toString() const {
             std::stringstream ss;
@@ -193,13 +197,11 @@ class AServer : public kul::tcp::SocketServer<char>{
                 }
             }
         }
-
-        virtual AResponse& response(AResponse& r) const { return r; }
     public:
         AServer(const uint16_t& p) : kul::tcp::SocketServer<char>(p){}
         virtual ~AServer(){}
         
-        virtual AResponse response(const std::string& res, const ARequest& req) = 0;
+        virtual AResponse respond(const ARequest& req) = 0;
 };
 
 
