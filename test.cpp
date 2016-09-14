@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul.ram.test.hpp"
 
 int main(int argc, char* argv[]){
-	try{
-		kul::ram::Test();
-	}catch(const kul::Exception& e){ 
-		KERR << e.stack();
-	}catch(const std::exception& e){ 
-		KERR << e.what();
-	}catch(...){ 
+    try{
+        kul::ram::Test();
+    }catch(const kul::Exception& e){ 
+        KERR << e.stack();
+    }catch(const std::exception& e){ 
+        KERR << e.what();
+    }catch(...){ 
 
-	}
-	return 0;
+    }
+    return 0;
 }
 
