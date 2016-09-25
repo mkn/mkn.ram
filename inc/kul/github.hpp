@@ -70,7 +70,7 @@ class JsonGet : public kul::https::_1_1GetRequest, public JsonResponse{
             : kul::https::_1_1GetRequest(host, path){
             header("Accept", "application/json");
         }  
-        void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
+        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override { JsonResponse::handle(h, b); }
 };
 class JsonPost : public kul::https::_1_1PostRequest, public JsonResponse{
     public:
@@ -78,7 +78,7 @@ class JsonPost : public kul::https::_1_1PostRequest, public JsonResponse{
             : kul::https::_1_1PostRequest(host, path){
             header("Accept", "application/json");
         }  
-        void handle(const kul::hash::map::S2S& h, const std::string& b){ JsonResponse::handle(h, b); }
+        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override { JsonResponse::handle(h, b); }
 };
 
 class Gist{
