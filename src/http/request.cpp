@@ -69,10 +69,9 @@ class RequestHeaders{
             return i;
         }
         kul::hash::map::S2S defaultHeaders(const kul::http::ARequest& r, const std::string& body = "") const{
-            kul::hash::map::S2S hs1 = _hs;
-            if(!body.empty() 
-                && !r.header("Content-Length")
-                && !r.header("Transfer-Encoding")) 
+            kul::hash::map::S2S hs1;
+            for(const auto& h : _hs) if(!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);
+            if(!body.empty() && !r.header("Content-Length") && !r.header("Transfer-Encoding")) 
                 hs1.insert("Content-Length", std::to_string(body.size()));
             return hs1;
         }        
@@ -105,8 +104,7 @@ std::string kul::http::_1_1PostRequest::toString() const {
     KLOG(DBG);
     std::stringstream ss;
     ss << method() << " /" << _path << " " << version();
-    ss << "\r\nHost: " << _host;    
-
+    ss << "\r\nHost: " << _host;
     std::stringstream bo;
     for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
     if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }
