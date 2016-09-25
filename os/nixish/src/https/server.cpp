@@ -78,8 +78,7 @@ void kul::https::Server::loop() throw(kul::tcp::Exception){
             std::string res;
             std::shared_ptr<kul::http::ARequest> req = handleRequest(cnt.str(), res);
             const kul::http::AResponse& rs(respond(*req.get()));
-            std::string ret;
-            const std::string& s(rs.toString());
+            std::string ret(rs.toString());
             e = SSL_write(ssl, ret.c_str(), ret.length());
         }catch(const kul::http::Exception& e1){
             KERR << e1.what(); 
