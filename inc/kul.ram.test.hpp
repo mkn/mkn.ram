@@ -87,18 +87,11 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
         friend class kul::Thread;
 };
 
-void addRequestHeaders(kul::http::ARequest& r){
-    if(!r.header("Connection"))     r.header("Connection", "close");
-    if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
-    if(!r.header("Accept"))         r.header("Accept", "text/html");
-}
-
 class Get : public kul::http::_1_1GetRequest{
     public:
         Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
             : kul::http::_1_1GetRequest(host, path, port){
-                addRequestHeaders(*this);
-            }
+        }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
             KLOG(INF) << "GET RESPONSE:\n" << b;
         }
@@ -107,11 +100,10 @@ class Post : public kul::http::_1_1PostRequest{
     public:
         Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
             : kul::http::_1_1PostRequest(host, path, port){
-            addRequestHeaders(*this);
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
             for(const auto& p : h)
-                KLOG(INF) << "HEADER:" << p.first << " : " << p.second;
+                KLOG(INF) << "HEADER: " << p.first << " : " << p.second;
             KLOG(INF) << "POST RESPONSE:\n" << b;
         }
 };

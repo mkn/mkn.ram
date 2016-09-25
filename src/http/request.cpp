@@ -56,6 +56,28 @@ void kul::http::ARequest::handle(std::string b){
     KLOG(DBG);
 }
 
+class RequestHeaders{
+    private:
+        kul::hash::map::S2S _hs;
+        RequestHeaders(){
+            _hs.insert("Connection", "close");
+            _hs.insert("Accept"    , "text/html");
+        }
+    public:
+        static RequestHeaders& I(){
+            static RequestHeaders i;
+            return i;
+        }
+        kul::hash::map::S2S defaultHeaders(const kul::http::ARequest& r, const std::string& body = "") const{
+            kul::hash::map::S2S hs1 = _hs;
+            if(!body.empty() 
+                && !r.header("Content-Length")
+                && !r.header("Transfer-Encoding")) 
+                hs1.insert("Content-Length", std::to_string(body.size()));
+            return hs1;
+        }        
+};
+
 std::string kul::http::_1_1GetRequest::toString() const {
     KLOG(DBG);
     std::stringstream ss;
@@ -66,7 +88,10 @@ std::string kul::http::_1_1GetRequest::toString() const {
     if(atts.size() > 0) ss.seekp(-1, ss.cur);
     ss << " " << version();
     ss << "\r\nHost: " << _host;
-    for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
+    for(const auto& h : headers()) 
+        ss << "\r\n" << h.first << ": " << h.second;
+    for(const auto& h : RequestHeaders::I().defaultHeaders(*this)) 
+        ss << "\r\n" << h.first << ": " << h.second;
     if(cookies().size()){
         ss << "\r\nCookie: ";
         for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
@@ -80,13 +105,17 @@ std::string kul::http::_1_1PostRequest::toString() const {
     KLOG(DBG);
     std::stringstream ss;
     ss << method() << " /" << _path << " " << version();
-    ss << "\r\nHost: " << _host;
+    ss << "\r\nHost: " << _host;    
+
     std::stringstream bo;
     for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
     if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }
     if(body().size()) bo << "\r\n" << body();
     std::string bod(bo.str());
-    for(const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
+    for(const auto& h : headers()) 
+        ss << "\r\n" << h.first << ": " << h.second;
+    for(const auto& h : RequestHeaders::I().defaultHeaders(*this, bod)) 
+        ss << "\r\n" << h.first << ": " << h.second;
     if(cookies().size()){
         ss << "\r\nCookie: ";
         for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";

@@ -108,14 +108,14 @@ class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
     public:
         _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
             : http::_1_1GetRequest(host, path, port){}
-        void send() throw (kul::http::Exception) override;
+        virtual void send() throw (kul::http::Exception) override;
 };
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::ARequest{
     public:
         _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
             : http::_1_1PostRequest(host, path, port){}
-        void send() throw (kul::http::Exception) override;
+        virtual void send() throw (kul::http::Exception) override;
 };
 
 }}

@@ -78,7 +78,7 @@ class Message{
         const Headers& headers() const { return _hs; }
         void body(const std::string& b){ this->_b = b; }
         const std::string& body() const { return _b; }
-        bool header(const std::string& s){
+        bool header(const std::string& s) const {
             return _hs.count(s);
         }
 };
