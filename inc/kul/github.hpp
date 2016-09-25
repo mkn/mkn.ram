@@ -50,18 +50,22 @@ class Exception : public kul::Exception{
 
 class JsonResponse{
     private:
-        Json::Value j;
-        bool f = 0;
+        bool _f = 0;
+        std::string _b;
+        Json::Value _j;
+
     public:
-        void handle(const kul::hash::map::S2S& h, const std::string& b){
+        void handle(const kul::hash::map::S2S& h, const std::string& b){            
             std::vector<std::string> lines;
             kul::String::LINES(b, lines);
             std::string json = lines.size() == 1 ? b : lines[1];
             Json::Reader reader;
-            f = !reader.parse(json.c_str(), j);
+            _f = !reader.parse(json.c_str(), _j);
+            if(_f) _b = b;
         }
-        bool fail(){ return f; }
-        const Json::Value& json(){ return j; }
+        bool               fail(){ return _f; }
+        const std::string& body(){ return _b; }
+        const Json::Value& json(){ return _j; }
 };
 
 class JsonGet : public kul::https::_1_1GetRequest, public JsonResponse{

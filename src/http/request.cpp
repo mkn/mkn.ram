@@ -91,7 +91,7 @@ std::string kul::http::_1_1PostRequest::toString() const {
         ss << "\r\nCookie: ";
         for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
     }
-    ss << "\r\n";
+    ss << "\r\n\r\n";
     if(bod.size()) ss << bod;
     KLOG(DBG);
     return ss.str();

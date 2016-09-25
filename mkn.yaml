@@ -1,4 +1,4 @@
-#! clean build -dtSp test
+#! clean build -dtSa "-O2 -fPIC" -p test -l -pthread
 
 name: mkn.ram
 
