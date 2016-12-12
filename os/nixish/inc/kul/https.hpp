@@ -54,12 +54,53 @@ class Server : public kul::http::Server{
     public:
         Server(const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(443), crt(c), key(k), cs(cs){}
         Server(const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(p), crt(c), key(k), cs(cs){}
-        ~Server(){
+        virtual ~Server(){
             if(s) stop();
         }
         void setChain(const kul::File& f);
         Server& init();
         virtual void stop() override;
+};
+
+class MultiServer : public kul::https::Server{
+    protected:
+        uint8_t _threads;
+        ChroncurrentThreadPool<> _pool;
+
+        void operate(){
+            while(s) loop();
+        }
+    public:
+        MultiServer(const uint8_t& threads, const kul::File& c, const kul::File& k, const std::string& cs = "")
+                : kul::https::Server(c, k, cs), _threads(threads){
+        
+            for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));
+        }
+        MultiServer(const uint8_t& threads, const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "")
+                : kul::https::Server(p, c, k, cs), _threads(threads){
+
+            for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));
+        }
+        virtual ~MultiServer(){
+            _pool.stop();
+        }
+
+        virtual void start() throw (kul::tcp::Exception) override {
+            KUL_DBG_FUNC_ENTER
+            _started = kul::Now::MILLIS();
+            listen(sockfd, 5);
+            clilen = sizeof(cli_addr);
+            s = true;
+            _pool.start();
+        }
+        virtual void join(){
+            _pool.join();
+        }
+        virtual void stop() override {
+            KUL_DBG_FUNC_ENTER
+            _pool.stop();
+            kul::tcp::SocketServer<char>::stop();
+        }
 };
 
 class ARequest;

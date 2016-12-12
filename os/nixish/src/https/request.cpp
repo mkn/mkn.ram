@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/https.hpp"
 
 void kul::https::Requester::send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     int32_t sck = 0;
     if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0)) 
         KEXCEPT(kul::http::Exception, "Error opening socket");
@@ -54,11 +54,10 @@ void kul::https::Requester::send(const std::string& h, const std::string& req, c
         for(uint16_t i = 0; i < d; i++) ss << buffer[i];
     }while(1);
     ::close(sck);
-    KLOG(DBG);
 }
 
 void kul::https::_1_1GetRequest::send() throw (kul::http::Exception){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     try{
         std::stringstream ss;
         Requester::send(_host, toString(), _port, ss, ssl);
@@ -67,11 +66,10 @@ void kul::https::_1_1GetRequest::send() throw (kul::http::Exception){
         KLOG(ERR) << e.debug();
         KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
     }
-    KLOG(DBG);
 }
 
 void kul::https::_1_1PostRequest::send() throw (kul::http::Exception){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     try{
         std::stringstream ss;
         Requester::send(_host, toString(), _port, ss, ssl);
@@ -80,7 +78,6 @@ void kul::https::_1_1PostRequest::send() throw (kul::http::Exception){
         KLOG(ERR) << e.debug();
         KEXCEPT(Exception, "HTTP POST failed with host: " + _host);
     }
-    KLOG(DBG);
 }
 
 

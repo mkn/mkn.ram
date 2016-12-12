@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/http.hpp"
 
 std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std::string& b, std::string& path){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     std::string a;
     std::shared_ptr<kul::http::ARequest> req;
     {
@@ -97,12 +97,11 @@ std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std:
     kul::hash::map::S2S atts;
     asAttributes(a, atts);
     for(const auto& att : atts) req->attribute(att.first, att.second);
-    KLOG(DBG);
     return req;
  }  
 
 void kul::http::Server::receive(const uint16_t& fd, int16_t i){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     char buffer[_KUL_HTTP_READ_BUFFER_];
     bzero(buffer, _KUL_HTTP_READ_BUFFER_);
     int16_t e = 0, read = ::read(fd, buffer, _KUL_HTTP_READ_BUFFER_ - 1);
@@ -145,5 +144,4 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
             KLOG(ERR) << "Error replying to host errno: " << errno;
         }
     }
-    KLOG(DBG);
 }

@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/http.base.hpp"
 
 void kul::http::ARequest::handle(std::string b){
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     kul::hash::map::S2S h;
     std::string line;
     std::stringstream ss(b);
@@ -53,7 +53,6 @@ void kul::http::ARequest::handle(std::string b){
         b.erase(0, b.find("\n") + 1);
     }
     handleResponse(h, b);
-    KLOG(DBG);
 }
 
 class RequestHeaders{
@@ -78,7 +77,7 @@ class RequestHeaders{
 };
 
 std::string kul::http::_1_1GetRequest::toString() const {
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     std::stringstream ss;
     ss << method() << " /" << _path;
     if(atts.size() > 0) ss << "?";
@@ -96,12 +95,11 @@ std::string kul::http::_1_1GetRequest::toString() const {
         for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
     }
     ss << "\r\n\r\n";
-    KLOG(DBG);
     return ss.str();
 }
 
 std::string kul::http::_1_1PostRequest::toString() const {
-    KLOG(DBG);
+    KUL_DBG_FUNC_ENTER
     std::stringstream ss;
     ss << method() << " /" << _path << " " << version();
     ss << "\r\nHost: " << _host;
@@ -120,6 +118,5 @@ std::string kul::http::_1_1PostRequest::toString() const {
     }
     ss << "\r\n\r\n";
     if(bod.size()) ss << bod;
-    KLOG(DBG);
     return ss.str();
 }

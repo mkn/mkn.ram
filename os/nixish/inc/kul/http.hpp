@@ -31,34 +31,67 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_HTTP_HPP_
 #define _KUL_HTTP_HPP_
 
-#include <fcntl.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <unistd.h> 
-#include <arpa/inet.h>
-#include <sys/types.h> 
-#include <sys/socket.h>
-#include <netinet/in.h>
-
-#include "kul/log.hpp"
 #include "kul/tcp.hpp"
-#include "kul/byte.hpp"
-#include "kul/time.hpp"
 #include "kul/http/def.hpp"
 #include "kul/http.base.hpp"
+#include "kul/threads.hpp"
 
 namespace kul{ namespace http{
 
 class Server : public kul::http::AServer{
     protected:
         virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& path);
-
         virtual void receive(const uint16_t& fd, int16_t i = -1);
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
         
 };
+
+class MultiServer : public kul::http::Server{
+    protected:
+        uint8_t _threads;
+        ChroncurrentThreadPool<> _pool;
+
+        void operate(){
+            while(s) loop();
+        }
+        virtual void error(const kul::Exception& e){ 
+            KLOG(ERR) << e.stack(); 
+        };
+    public:
+        MultiServer(const short& p = 80, const uint8_t& threads = 1, const std::string& w = "localhost") 
+                : Server(p, w), _threads(threads), _pool(threads){
+
+        }
+        // virtual ~MultiServer(){
+        //     _pool.stop();
+        // }
+        virtual void start() throw (kul::tcp::Exception) override {
+            KUL_DBG_FUNC_ENTER
+            _started = kul::Now::MILLIS();
+            listen(sockfd, 5);
+            clilen = sizeof(cli_addr);
+            s = true;
+            _pool.start();
+            for(size_t i = 0; i < _threads; i++) 
+                _pool.async(std::bind(&MultiServer::operate, std::ref(*this))
+                    , std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
+        }
+        virtual void join(){
+            _pool.join();
+        }
+        virtual void stop() override {
+            KUL_DBG_FUNC_ENTER
+            _pool.stop();
+            for(size_t i = 0; i < _threads; i++) kul::tcp::SocketServer<char>::stop();
+        }
+        virtual void interrupt(){
+            KUL_DBG_FUNC_ENTER
+            _pool.interrupt();
+        }
+};
+
 }}
 
 #endif /* _KUL_HTTP_HPP_ */

@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 void kul::https::Server::loop() throw(kul::tcp::Exception){
+    KUL_DBG_FUNC_ENTER
     int32_t newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if(newsockfd < 0) KEXCEPTION("HTTPS Server error on accept");
 

@@ -64,12 +64,28 @@ class TestHTTPServer : public kul::http::Server{
         }
     public:
         kul::http::AResponse respond(const kul::http::ARequest& req){
+            KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
             r.body("HTTP PROVIDED BY KUL");
             addResponseHeaders(r);
             return r;
         }
         TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
+        friend class kul::Thread;
+};
+
+class TestMultiHTTPServer : public kul::http::MultiServer{
+    public:
+        kul::http::AResponse respond(const kul::http::ARequest& req){
+            KUL_DBG_FUNC_ENTER
+            kul::http::_1_1Response r;
+            r.body("MULTI HTTP PROVIDED BY KUL");
+            addResponseHeaders(r);
+            return r;
+        }
+        TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 3){
+            start();
+        }
         friend class kul::Thread;
 };
 
@@ -80,6 +96,7 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
         }
     public:
         bool handle(char* in, char* out) override {
+            KUL_DBG_FUNC_ENTER
             std::strcpy(out, "TCP PROVIDED BY KUL");
             return true; // if true, close connection
         }
@@ -102,6 +119,7 @@ class Post : public kul::http::_1_1PostRequest{
             : kul::http::_1_1PostRequest(host, path, port){
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
+            KUL_DBG_FUNC_ENTER
             for(const auto& p : h)
                 KLOG(INF) << "HEADER: " << p.first << " : " << p.second;
             KLOG(INF) << "POST RESPONSE:\n" << b;
@@ -146,6 +164,7 @@ class Test{
                 serv.stop();
                 t.interrupt();
             }
+            kul::this_thread::sleep(1000);
             {
                 TestSocketServer serv;
                 kul::Thread t(std::ref(serv));
@@ -167,6 +186,17 @@ class Test{
                 sock.close();
                 serv.stop();
                 t.interrupt();
+            }
+            kul::this_thread::sleep(1000);
+            {
+                TestMultiHTTPServer serv;
+                for(size_t i = 0; i < 10; i++){
+                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();   
+                }
+                kul::this_thread::sleep(1000);
+                serv.stop();
+                serv.interrupt();
+                serv.join();
             }
         }
 };

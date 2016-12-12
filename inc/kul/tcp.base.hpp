@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_TCP_BASE_HPP_
 #define _KUL_TCP_BASE_HPP_
 
+#include "kul/dbg.hpp"
+
 namespace kul{ namespace tcp {
 
 class Exception : public kul::Exception{
