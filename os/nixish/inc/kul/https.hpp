@@ -70,17 +70,17 @@ class MultiServer : public kul::https::Server{
         void operate(){
             while(s) loop();
         }
+        virtual void error(const kul::Exception& e){ 
+            KERR << e.stack(); 
+            _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
+                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
+        };
     public:
         MultiServer(const uint8_t& threads, const kul::File& c, const kul::File& k, const std::string& cs = "")
-                : kul::https::Server(c, k, cs), _threads(threads){
-        
-            for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));
-        }
+                : kul::https::Server(c, k, cs), _threads(threads){}
         MultiServer(const uint8_t& threads, const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "")
-                : kul::https::Server(p, c, k, cs), _threads(threads){
+                : kul::https::Server(p, c, k, cs), _threads(threads){}
 
-            for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));
-        }
         virtual ~MultiServer(){
             _pool.stop();
         }
@@ -92,6 +92,9 @@ class MultiServer : public kul::https::Server{
             clilen = sizeof(cli_addr);
             s = true;
             _pool.start();
+            for(size_t i = 0; i < _threads; i++)
+                _pool.async(std::bind(&MultiServer::operate, std::ref(*this)),
+                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
         }
         virtual void join(){
             _pool.join();
@@ -100,6 +103,10 @@ class MultiServer : public kul::https::Server{
             KUL_DBG_FUNC_ENTER
             _pool.stop();
             kul::tcp::SocketServer<char>::stop();
+        }
+        virtual void interrupt(){
+            KUL_DBG_FUNC_ENTER
+            _pool.interrupt();
         }
 };
 
