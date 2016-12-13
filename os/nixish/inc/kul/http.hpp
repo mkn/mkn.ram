@@ -57,16 +57,15 @@ class MultiServer : public kul::http::Server{
             while(s) loop();
         }
         virtual void error(const kul::Exception& e){ 
-            KLOG(ERR) << e.stack(); 
+            KERR << e.stack(); 
+            _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
+                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
         };
     public:
         MultiServer(const short& p = 80, const uint16_t& threads = 1, const std::string& w = "localhost") 
                 : Server(p, w), _threads(threads), _pool(threads){
 
         }
-        // virtual ~MultiServer(){
-        //     _pool.stop();
-        // }
         virtual void start() throw (kul::tcp::Exception) override {
             KUL_DBG_FUNC_ENTER
             _started = kul::Now::MILLIS();
@@ -74,9 +73,9 @@ class MultiServer : public kul::http::Server{
             clilen = sizeof(cli_addr);
             s = true;
             _pool.start();
-            for(size_t i = 0; i < _threads; i++) 
-                _pool.async(std::bind(&MultiServer::operate, std::ref(*this))
-                    , std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
+            for(size_t i = 0; i < _threads; i++)
+                _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
+                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
         }
         virtual void join(){
             _pool.join();
