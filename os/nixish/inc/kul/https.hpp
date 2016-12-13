@@ -64,19 +64,19 @@ class Server : public kul::http::Server{
 
 class MultiServer : public kul::https::Server{
     protected:
-        uint8_t _threads;
+        uint16_t _threads;
         ChroncurrentThreadPool<> _pool;
 
         void operate(){
             while(s) loop();
         }
     public:
-        MultiServer(const uint8_t& threads, const kul::File& c, const kul::File& k, const std::string& cs = "")
+        MultiServer(const uint16_t& threads, const kul::File& c, const kul::File& k, const std::string& cs = "")
                 : kul::https::Server(c, k, cs), _threads(threads){
         
             for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));
         }
-        MultiServer(const uint8_t& threads, const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "")
+        MultiServer(const short& p, const uint16_t& threads, const kul::File& c, const kul::File& k, const std::string& cs = "")
                 : kul::https::Server(p, c, k, cs), _threads(threads){
 
             for(size_t i = 0; i < threads; i++) _pool.async(std::bind(&MultiServer::operate, std::ref(*this)));

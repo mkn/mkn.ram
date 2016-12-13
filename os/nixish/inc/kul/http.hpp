@@ -50,7 +50,7 @@ class Server : public kul::http::AServer{
 
 class MultiServer : public kul::http::Server{
     protected:
-        uint8_t _threads;
+        uint16_t _threads;
         ChroncurrentThreadPool<> _pool;
 
         void operate(){
@@ -60,7 +60,7 @@ class MultiServer : public kul::http::Server{
             KLOG(ERR) << e.stack(); 
         };
     public:
-        MultiServer(const short& p = 80, const uint8_t& threads = 1, const std::string& w = "localhost") 
+        MultiServer(const short& p = 80, const uint16_t& threads = 1, const std::string& w = "localhost") 
                 : Server(p, w), _threads(threads), _pool(threads){
 
         }
