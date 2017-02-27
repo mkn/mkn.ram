@@ -98,7 +98,7 @@ std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std:
     asAttributes(a, atts);
     for(const auto& att : atts) req->attribute(att.first, att.second);
     return req;
- }  
+}  
 
 void kul::http::Server::receive(const uint16_t& fd, int16_t i){
     KUL_DBG_FUNC_ENTER
@@ -111,7 +111,7 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
         onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
         close(fd);
         close(i);
-        FD_CLR(fd, &bfds);
+        // FD_CLR(fd, &m_fds);
         if(i > 0) clients[i] = 0;
     }else{
         buffer[read] = '\0';
@@ -125,6 +125,8 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
                 f = c.find(ch) != std::string::npos;
                 if(f) break;
             }
+            KLOG(INF) << "WHAT";
+            if(!f) KERR << buffer;
             if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
             
             std::shared_ptr<ARequest> req = handleRequest(s, res);
@@ -139,7 +141,7 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
         if(e < 0){
             close(fd);
             if(i > 0) clients[i] = 0;
-            FD_CLR(fd, &bfds);
+            // FD_CLR(fd, &m_fds);
             KLOG(ERR) << "Error replying to host error: " << e;
             KLOG(ERR) << "Error replying to host errno: " << errno;
         }

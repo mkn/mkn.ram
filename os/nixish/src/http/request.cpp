@@ -40,9 +40,9 @@ void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
     std::stringstream ss;
     size_t s = 0;
     do{
-        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
         ss << buf;
-    }while(s == _KUL_TCP_REQUEST_BUFFER_);
+    }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
     handle(ss.str());
 }
 
@@ -56,8 +56,8 @@ void kul::http::_1_1PostRequest::send() throw (kul::http::Exception){
     std::stringstream ss;
     size_t s = 0;
     do{
-        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
         ss << buf;
-    }while(s == _KUL_TCP_REQUEST_BUFFER_);
+    }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
     handle(ss.str());
 }

@@ -30,7 +30,6 @@ profile:
         version: master
         profile: c++0x
 
-  - name: test
-    mode: none
-    main: test.cpp
+  - name: usage 
     self: lib
+    main: usage.cpp

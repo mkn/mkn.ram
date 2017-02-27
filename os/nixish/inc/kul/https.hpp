@@ -45,12 +45,19 @@ namespace kul{ namespace https{
 
 class Server : public kul::http::Server{
     protected:
-        X509* cc = {0};
-        SSL *ssl = {0};
+        SSL * ssl_clients[_KUL_HTTPS_MAX_CLIENT_] = {0};
         SSL_CTX *ctx = {0};
         kul::File crt, key;
         const std::string cs;
         virtual void loop() throw(kul::tcp::Exception) override;
+        virtual void receive(SSL * ssl_client, const uint16_t& fd, int16_t i = -1);
+
+        virtual void onConnect(const char* ip, const uint16_t& port) override {
+            KLOG(INF);
+        }        
+        virtual void onDisconnect(const char* ip, const uint16_t& port) override {
+            KLOG(INF);
+        }
     public:
         Server(const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(443), crt(c), key(k), cs(cs){}
         Server(const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "") : kul::http::Server(p), crt(c), key(k), cs(cs){}

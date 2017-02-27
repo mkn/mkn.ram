@@ -59,11 +59,11 @@ class ASocketServer{
         uint16_t p;
         uint64_t s;
 
+        virtual void onConnect(const char* ip, const uint16_t& port){}
         ASocketServer(const uint16_t& p) : p(p){}
 	public:
 		virtual ~ASocketServer(){}
 		virtual void start() throw (kul::tcp::Exception) = 0;
-        virtual void onConnect(const char* ip, const uint16_t& port){}
         virtual void onDisconnect(const char* ip, const uint16_t& port){}
         const uint64_t  up()   const { return s - kul::Now::MILLIS(); }
         const uint16_t& port() const { return p; }

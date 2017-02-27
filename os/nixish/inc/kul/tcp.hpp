@@ -153,9 +153,9 @@ class SocketServer : public ASocketServer<T>{
         bool s = 0;
         uint16_t clients[_KUL_TCP_MAX_CLIENT_] = {0};
         int16_t max_fd = 0, sd = 0;
-        int32_t sockfd, newsockfd;
+        int32_t sockfd = 0;
         int64_t _started;
-        fd_set bfds, fds;
+        fd_set bfds;
         socklen_t clilen;
         struct sockaddr_in serv_addr, cli_addr;
         virtual bool handle(T* in, T* out){
@@ -181,6 +181,7 @@ class SocketServer : public ASocketServer<T>{
                     T out[_KUL_TCP_READ_BUFFER_];
                     bzero(out, _KUL_TCP_READ_BUFFER_);
                     cl = handle(in, out);
+                    out[_KUL_TCP_READ_BUFFER_ - 1] = '\0';
                     e = ::send(fd, out, strlen(out), 0);
                 }catch(const kul::tcp::Exception& e1){
                     KERR << e1.stack(); 
@@ -199,19 +200,21 @@ class SocketServer : public ASocketServer<T>{
         }
         virtual void loop() throw(kul::tcp::Exception){
             KUL_DBG_FUNC_ENTER
-            fds = bfds;
-
-            FD_ZERO(&fds);
+            fd_set fds = bfds;
+            
             FD_SET(sockfd, &fds);
             struct timeval tv;
-            tv.tv_sec = 1;
-            tv.tv_usec = 500;
-
-            if(select(_KUL_TCP_MAX_CLIENT_, &fds, NULL, NULL, &tv) < 0 && errno != EINTR) 
+            tv.tv_sec = 0;
+            tv.tv_usec = 1000;
+            auto sel = select(_KUL_TCP_MAX_CLIENT_, &fds, NULL, NULL, &tv);
+            KLOG(INF) << "sel: " << sel;
+            if(sel < 0 && errno != EINTR) {
+                KLOG(INF);
                 KEXCEPTION("Socket Server error on select");
+            }
 
             if(FD_ISSET(sockfd, &fds)){
-                newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+                uint32_t newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
                 if(newsockfd < 0) KEXCEPTION("SockerServer error on accept");
               
                 KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
@@ -244,6 +247,7 @@ class SocketServer : public ASocketServer<T>{
             int16_t e = 0;
             if ((e = bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr))) < 0)
                 KEXCEPTION("Socket Server error on binding, errno: " + std::to_string(errno));
+            FD_ZERO(&bfds);
         }
     public:
         virtual void start() throw (kul::tcp::Exception){

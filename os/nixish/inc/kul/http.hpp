@@ -41,7 +41,7 @@ namespace kul{ namespace http{
 class Server : public kul::http::AServer{
     protected:
         virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& path);
-        virtual void receive(const uint16_t& fd, int16_t i = -1);
+        virtual void receive(const uint16_t& fd, int16_t i = -1) override;
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}

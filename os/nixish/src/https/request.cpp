@@ -42,8 +42,9 @@ void kul::https::Requester::send(const std::string& h, const std::string& req, c
     if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
     SSL_write(ssl, req.c_str(), req.size());
     char buffer[_KUL_HTTPS_REQUEST_BUFFER_];
+    int d = 0;
     do{
-        int16_t d = SSL_read(ssl, buffer, _KUL_HTTPS_REQUEST_BUFFER_ - 1);
+        d = SSL_read(ssl, buffer, _KUL_HTTPS_REQUEST_BUFFER_ - 1);
         if (d == 0) break; 
         if (d < 0){ 
             short se = 0;
@@ -52,7 +53,7 @@ void kul::https::Requester::send(const std::string& h, const std::string& req, c
             break;
         }
         for(uint16_t i = 0; i < d; i++) ss << buffer[i];
-    }while(1);
+    }while(d == _KUL_HTTPS_REQUEST_BUFFER_ - 1);
     ::close(sck);
 }
 
