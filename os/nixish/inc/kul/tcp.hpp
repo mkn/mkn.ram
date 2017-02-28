@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unordered_set>
 
 #include "kul/log.hpp"
 #include "kul/byte.hpp"
@@ -105,7 +106,7 @@ class Socket : public ASocket<T>{
 
             KUL_DBG_FUNC_ENTER
             sck = socket(domain, type, protocol);
-            if(sck < 0) KLOG(DBG) << "SOCKET ERROR CODE: " << sck;
+            if(sck < 0) KLOG(ERR) << "SOCKET ERROR CODE: " << sck;
             return sck >= 0; 
         }
         static bool CONNECT(const int32_t& sck, const std::string& host, const int16_t& port){
@@ -118,11 +119,11 @@ class Socket : public ASocket<T>{
             if(host == "localhost" || host == "127.0.0.1"){   
                 servAddr.sin_addr.s_addr = INADDR_ANY;
                 e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-                if(e < 0) KLOG(DBG) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
+                if(e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
             }
             else if(inet_pton(AF_INET, &host[0], &(servAddr.sin_addr))){
                 e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr));
-                if(e < 0) KLOG(DBG) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
+                if(e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
             }
             else{
                 std::string ip;
@@ -141,7 +142,7 @@ class Socket : public ASocket<T>{
                     if((e = ::connect(sck, (struct sockaddr*) &servAddr, sizeof(servAddr))) == 0) break;
                 }
                 freeaddrinfo(servinfo);
-                if(e < 0) KLOG(DBG) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
+                if(e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
             }
             return e >= 0;
         }
@@ -151,29 +152,26 @@ template <class T = uint8_t>
 class SocketServer : public ASocketServer<T>{
     protected:
         bool s = 0;
-        uint16_t clients[_KUL_TCP_MAX_CLIENT_] = {0};
         int16_t max_fd = 0, sd = 0;
-        int32_t sockfd = 0;
+        int32_t sockfd;
         int64_t _started;
-        fd_set bfds;
+        fd_set m_fds;
         socklen_t clilen;
         struct sockaddr_in serv_addr, cli_addr;
         virtual bool handle(T* in, T* out){
             return true;
         }
-        virtual void receive(const uint16_t& fd, int16_t i = -1){
+        virtual void receive(const uint16_t& fd){
             KUL_DBG_FUNC_ENTER
             T in[_KUL_TCP_READ_BUFFER_];
             bzero(in, _KUL_TCP_READ_BUFFER_);
             int16_t e = 0, read = ::read(fd, in, _KUL_TCP_READ_BUFFER_ - 1);
             if(read == 0){
                 getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
-                KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
+                // KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
                 this->onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
                 close(fd);
-                close(i);
-                FD_CLR(fd, &bfds);
-                if(i > 0) clients[i] = 0;
+                FD_CLR(fd, &m_fds);
             }else{
                 bool cl = 1;
                 in[read] = '\0';
@@ -181,59 +179,44 @@ class SocketServer : public ASocketServer<T>{
                     T out[_KUL_TCP_READ_BUFFER_];
                     bzero(out, _KUL_TCP_READ_BUFFER_);
                     cl = handle(in, out);
-                    out[_KUL_TCP_READ_BUFFER_ - 1] = '\0';
                     e = ::send(fd, out, strlen(out), 0);
                 }catch(const kul::tcp::Exception& e1){
                     KERR << e1.stack(); 
                     e = -1;
                 }
-                if(e < 0){
-                    KLOG(ERR) << "Error replying to host error: " << e;
-                    KLOG(ERR) << "Error replying to host errno: " << errno;
-                }
+                if(e < 0) KLOG(ERR) << "Error replying to host errno: " << strerror(errno);
                 if(e < 0 || cl){
                     close(fd);
-                    if(i > 0) clients[i] = 0;
-                    FD_CLR(fd, &bfds);   
+                    FD_CLR(fd, &m_fds);   
                 }
             }
         }
-        virtual void loop() throw(kul::tcp::Exception){
+        virtual void loop(std::unordered_set<int32_t>& fds) throw(kul::tcp::Exception){
             KUL_DBG_FUNC_ENTER
-            fd_set fds = bfds;
-            
-            FD_SET(sockfd, &fds);
+
+            fd_set l_fds = m_fds;
+
             struct timeval tv;
             tv.tv_sec = 0;
             tv.tv_usec = 1000;
-            auto sel = select(_KUL_TCP_MAX_CLIENT_, &fds, NULL, NULL, &tv);
-            KLOG(INF) << "sel: " << sel;
-            if(sel < 0 && errno != EINTR) {
-                KLOG(INF);
+
+            auto sel = select(_KUL_TCP_MAX_CLIENT_, &l_fds, &tv);
+            if(sel < 0 && errno != EINTR)
                 KEXCEPTION("Socket Server error on select");
-            }
 
-            if(FD_ISSET(sockfd, &fds)){
-                uint32_t newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+            if(FD_ISSET(sockfd, &l_fds)){
+                int32_t newsockfd = accept();
+                fds.insert(newsockfd);
                 if(newsockfd < 0) KEXCEPTION("SockerServer error on accept");
-              
-                KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
-
+                // KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
                 this->onConnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
-                receive(newsockfd);
-                FD_SET(newsockfd, &bfds);
-                for(uint16_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++)
-                    if(clients[i] == 0){
-                        clients[i] = newsockfd;
-                        break;
-                    }
+                FD_SET(newsockfd, &m_fds);
             }
-            else
-                for(uint16_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++)
-                    if(FD_ISSET(clients[i], &fds)){
-                        receive(clients[i], i);
-                        break;
-                    }
+            for(uint16_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++)
+                if(fds.count(i) && FD_ISSET(i, &l_fds)){
+                    receive(i);
+                    fds.erase(i);
+                }
         }
         SocketServer(const uint16_t& p) : kul::tcp::ASocketServer<T>(p){
             sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -247,7 +230,13 @@ class SocketServer : public ASocketServer<T>{
             int16_t e = 0;
             if ((e = bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr))) < 0)
                 KEXCEPTION("Socket Server error on binding, errno: " + std::to_string(errno));
-            FD_ZERO(&bfds);
+
+        }
+        virtual int32_t select(const int& max, fd_set* set, struct timeval* tv){
+            return ::select(max, set, NULL, NULL, tv);
+        }
+        virtual int32_t accept(){
+            return ::accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
         }
     public:
         virtual void start() throw (kul::tcp::Exception){
@@ -256,13 +245,19 @@ class SocketServer : public ASocketServer<T>{
             listen(sockfd, 5);
             clilen = sizeof(cli_addr);
             s = true;
-            while(s) loop();
+            FD_ZERO(&m_fds);
+            FD_SET(sockfd, &m_fds);
+
+            std::unordered_set<int32_t> fds;
+            while(s) loop(fds);
         }
         virtual void stop(){
             KUL_DBG_FUNC_ENTER
             s = 0;
             close(sockfd);
-            for(uint16_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++) shutdown(clients[i], SHUT_RDWR);
+            for(uint16_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++)
+                if(i != sockfd)
+                    shutdown(i, SHUT_RDWR);
         }
 };
 

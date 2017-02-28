@@ -104,19 +104,16 @@ std::string kul::http::_1_1PostRequest::toString() const {
     ss << method() << " /" << _path << " " << version();
     ss << "\r\nHost: " << _host;
     std::stringstream bo;
-    for(const std::pair<std::string, std::string>& p : atts) bo << p.first << "=" << p.second << "&";
-    if(atts.size()){ bo.seekp(-1, ss.cur); bo << " "; }
     if(body().size()) bo << "\r\n" << body();
-    std::string bod(bo.str());
     for(const auto& h : headers()) 
         ss << "\r\n" << h.first << ": " << h.second;
-    for(const auto& h : RequestHeaders::I().defaultHeaders(*this, bod)) 
+    for(const auto& h : RequestHeaders::I().defaultHeaders(*this, body())) 
         ss << "\r\n" << h.first << ": " << h.second;
     if(cookies().size()){
         ss << "\r\nCookie: ";
         for(const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
     }
     ss << "\r\n\r\n";
-    if(bod.size()) ss << bod;
+    if(body().size()) ss << body();
     return ss.str();
 }

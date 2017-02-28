@@ -41,7 +41,7 @@ namespace kul{ namespace http{
 class Server : public kul::http::AServer{
     protected:
         virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& path);
-        virtual void receive(const uint16_t& fd, int16_t i = -1) override;
+        virtual void receive(const uint16_t& fd);
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
@@ -50,11 +50,13 @@ class Server : public kul::http::AServer{
 
 class MultiServer : public kul::http::Server{
     protected:
-        uint16_t _threads;
+        uint8_t _threads;
+        kul::Mutex m_mutAccept, m_mutSelect;
         ChroncurrentThreadPool<> _pool;
 
-        void operate(){
-            while(s) loop();
+        void operate(){            
+            std::unordered_set<int32_t> fds;
+            while(s) loop(fds);
         }
         virtual void error(const kul::Exception& e){ 
             KERR << e.stack(); 
@@ -62,16 +64,21 @@ class MultiServer : public kul::http::Server{
                     std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
         };
     public:
-        MultiServer(const short& p = 80, const uint16_t& threads = 1, const std::string& w = "localhost") 
+        MultiServer(const short& p = 80, const uint8_t& threads = 1, const std::string& w = "localhost") 
                 : Server(p, w), _threads(threads), _pool(threads){
 
         }
+        // virtual ~MultiServer(){
+        //     _pool.stop();
+        // }
         virtual void start() throw (kul::tcp::Exception) override {
             KUL_DBG_FUNC_ENTER
             _started = kul::Now::MILLIS();
             listen(sockfd, 5);
             clilen = sizeof(cli_addr);
             s = true;
+            FD_ZERO(&m_fds);
+            FD_SET(sockfd, &m_fds);
             _pool.start();
             for(size_t i = 0; i < _threads; i++)
                 _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
@@ -88,6 +95,14 @@ class MultiServer : public kul::http::Server{
         virtual void interrupt(){
             KUL_DBG_FUNC_ENTER
             _pool.interrupt();
+        }
+        virtual int32_t select(const int& max, fd_set* set, struct timeval* tv){
+            kul::ScopeLock lock(m_mutSelect);
+            return ::select(max, set, NULL, NULL, tv);
+        }
+        virtual int32_t accept(){
+            kul::ScopeLock lock(m_mutAccept);
+            return ::accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
         }
 };
 

@@ -100,19 +100,19 @@ std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std:
     return req;
 }  
 
-void kul::http::Server::receive(const uint16_t& fd, int16_t i){
+void kul::http::Server::receive(const uint16_t& fd){
     KUL_DBG_FUNC_ENTER
     char buffer[_KUL_HTTP_READ_BUFFER_];
     bzero(buffer, _KUL_HTTP_READ_BUFFER_);
     int16_t e = 0, read = ::read(fd, buffer, _KUL_HTTP_READ_BUFFER_ - 1);
+    if(read < 0) e = -1;
+    else
     if(read == 0){
         getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
         KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
         onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
         close(fd);
-        close(i);
-        // FD_CLR(fd, &m_fds);
-        if(i > 0) clients[i] = 0;
+        FD_CLR(fd, &m_fds);
     }else{
         buffer[read] = '\0';
         std::string res;
@@ -125,8 +125,6 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
                 f = c.find(ch) != std::string::npos;
                 if(f) break;
             }
-            KLOG(INF) << "WHAT";
-            if(!f) KERR << buffer;
             if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
             
             std::shared_ptr<ARequest> req = handleRequest(s, res);
@@ -135,15 +133,13 @@ void kul::http::Server::receive(const uint16_t& fd, int16_t i){
             e = ::send(fd, ret.c_str(), ret.length(), 0);
 
         }catch(const kul::http::Exception& e1){
-            KERR << e1.stack(); 
+            KLOG(ERR) << e1.stack(); 
             e = -1;
         }
-        if(e < 0){
-            close(fd);
-            if(i > 0) clients[i] = 0;
-            // FD_CLR(fd, &m_fds);
-            KLOG(ERR) << "Error replying to host error: " << e;
-            KLOG(ERR) << "Error replying to host errno: " << errno;
-        }
+    }
+    if(e < 0){
+        KLOG(ERR) << "Error on read: " << strerror(errno);
+        close(fd);
+        FD_CLR(fd, &m_fds);
     }
 }
