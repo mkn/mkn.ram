@@ -2,13 +2,10 @@
 
 name: mkn.ram
 
-property:
-    mkn.kul.profile: "@" # change to "c++0x" for < c++11
-
 parent: lib
 
 profile:
-  - name: lib
+  - name: base
     inc: ./inc
     if_inc:
         bsd: ./os/nixish/inc
@@ -19,10 +16,19 @@ profile:
         bsd: ./os/nixish/src
         nix: ./os/nixish/src
         win: ./os/win/src
+
+  - name: lib
+    parent: base
     dep:
       - name: mkn.kul
         version: master
-        profile: ${mkn.kul.profile}
+
+  - name: c++0x
+    parent: base
+    dep:
+      - name: mkn.kul
+        version: master
+        profile: c++0x
 
   - name: usage 
     self: lib
