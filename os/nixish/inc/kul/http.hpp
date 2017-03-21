@@ -41,7 +41,7 @@ namespace kul{ namespace http{
 class Server : public kul::http::AServer{
     protected:
         virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& path);
-        virtual void receive(const uint16_t& fd);
+        virtual bool receive(const int& fd);
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
@@ -51,11 +51,11 @@ class Server : public kul::http::AServer{
 class MultiServer : public kul::http::Server{
     protected:
         uint8_t _threads;
-        kul::Mutex m_mutAccept, m_mutSelect;
+        kul::Mutex m_mutAccept, m_mutSelect, m_mutFDMod;
         ChroncurrentThreadPool<> _pool;
 
         void operate(){            
-            std::unordered_set<int32_t> fds;
+            std::unordered_set<int> fds;
             while(s) loop(fds);
         }
         virtual void error(const kul::Exception& e){ 
@@ -68,41 +68,34 @@ class MultiServer : public kul::http::Server{
                 : Server(p, w), _threads(threads), _pool(threads){
 
         }
-        // virtual ~MultiServer(){
-        //     _pool.stop();
-        // }
-        virtual void start() throw (kul::tcp::Exception) override {
-            KUL_DBG_FUNC_ENTER
-            _started = kul::Now::MILLIS();
-            listen(sockfd, 5);
-            clilen = sizeof(cli_addr);
-            s = true;
-            FD_ZERO(&m_fds);
-            FD_SET(sockfd, &m_fds);
-            _pool.start();
-            for(size_t i = 0; i < _threads; i++)
-                _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
-                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
-        }
+
+        virtual void start() throw (kul::tcp::Exception) override;
         virtual void join(){
             _pool.join();
         }
         virtual void stop() override {
             KUL_DBG_FUNC_ENTER
             _pool.stop();
-            for(size_t i = 0; i < _threads; i++) kul::tcp::SocketServer<char>::stop();
+            kul::http::Server::stop();
         }
         virtual void interrupt(){
             KUL_DBG_FUNC_ENTER
             _pool.interrupt();
         }
-        virtual int32_t select(const int& max, fd_set* set, struct timeval* tv){
+        virtual void copyFDSet(fd_set& from, fd_set& to) override {
+            kul::ScopeLock lock(m_mutFDMod);
+            kul::tcp::SocketServer<char>::copyFDSet(from, to);
+        }
+        virtual int select(const int& max, fd_set* set, struct timeval* tv) override {
             kul::ScopeLock lock(m_mutSelect);
             return ::select(max, set, NULL, NULL, tv);
         }
-        virtual int32_t accept(){
+        virtual int accept() override {
             kul::ScopeLock lock(m_mutAccept);
-            return ::accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+            return ::accept(lisock, (struct sockaddr *) &cli_addr, &clilen);
+        }
+        const std::exception_ptr& exception(){ 
+            return _pool.exception();
         }
 };
 

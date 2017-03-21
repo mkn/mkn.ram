@@ -33,27 +33,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void kul::https::Requester::send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
     KUL_DBG_FUNC_ENTER
-    int32_t sck = 0;
-    if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0)) 
+    int sck = 0;
+    if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
         KEXCEPT(kul::http::Exception, "Error opening socket");
-    if(!kul::tcp::Socket<char>::CONNECT(sck, h, p)) 
+    if(!kul::tcp::Socket<char>::CONNECT(sck, h, p))
         KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
     SSL_set_fd(ssl, sck);
     if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
     SSL_write(ssl, req.c_str(), req.size());
-    char buffer[_KUL_HTTPS_REQUEST_BUFFER_];
+    char buffer[_KUL_TCP_REQUEST_BUFFER_];
     int d = 0;
     do{
-        d = SSL_read(ssl, buffer, _KUL_HTTPS_REQUEST_BUFFER_ - 1);
-        if (d == 0) break; 
-        if (d < 0){ 
+        d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
+        if (d == 0) break;
+        if (d < 0){
             short se = 0;
             SSL_get_error(ssl, se);
             if(se) KLOG(ERR) << "SSL_get_error: " << se;
             break;
         }
         for(uint16_t i = 0; i < d; i++) ss << buffer[i];
-    }while(d == _KUL_HTTPS_REQUEST_BUFFER_ - 1);
+    }while(d == _KUL_TCP_REQUEST_BUFFER_ - 1);
     ::close(sck);
 }
 

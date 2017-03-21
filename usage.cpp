@@ -72,6 +72,10 @@ class TestHTTPServer : public kul::http::Server{
 };
 
 class TestMultiHTTPServer : public kul::http::MultiServer{
+    private:
+        void operator()(){
+            start();
+        }
     public:
         kul::http::AResponse respond(const kul::http::ARequest& req){
             KUL_DBG_FUNC_ENTER
@@ -80,9 +84,7 @@ class TestMultiHTTPServer : public kul::http::MultiServer{
             addResponseHeaders(r);
             return r;
         }
-        TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 3){
-            start();
-        }
+        TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 3){}
         friend class kul::Thread;
 };
 
@@ -109,11 +111,15 @@ class TestHTTPSServer : public kul::https::Server{
 };
 
 class TestMultiHTTPSServer : public kul::https::MultiServer{
+    private:
+        void operator()(){
+            start();
+        }
     public:
         kul::http::AResponse respond(const kul::http::ARequest& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
-            r.body("MULTI HTTP PROVIDED BY KUL");
+            r.body("MULTI HTTPS PROVIDED BY KUL");
             addResponseHeaders(r);
             return r;
         }
@@ -121,7 +127,6 @@ class TestMultiHTTPSServer : public kul::https::MultiServer{
             _KUL_HTTP_TEST_PORT_, 3,
             kul::File("res/test/server.crt"),
             kul::File("res/test/server.key")){
-            start();
         }
         friend class kul::Thread;
 };
@@ -191,6 +196,7 @@ class Test{
     public:
         Test(){
 #ifdef  _KUL_HTTPS_
+            KOUT(NON) << "Single HTTPS SERVER";
             {
                 TestHTTPSServer serv;
                 serv.init();
@@ -210,22 +216,27 @@ class Test{
                 }
                 kul::this_thread::sleep(100);
                 serv.stop();
+                t.join();
                 kul::this_thread::sleep(100);
-                t.interrupt();
             }
+            KOUT(NON) << "Multi HTTPS SERVER";
             {
                 TestMultiHTTPSServer serv;
                 serv.init();
+                kul::Thread t(std::ref(serv));
+                t.run();
                 for(size_t i = 0; i < 10; i++){
-                    HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();   
+                    if(t.exception()) std::rethrow_exception(t.exception());
+                    HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();                    
                 }
                 kul::this_thread::sleep(100);
                 serv.stop();
                 kul::this_thread::sleep(100);
-                serv.interrupt();
                 serv.join();
+                t.join();
             }
 #endif//_KUL_HTTPS_
+            KOUT(NON) << "Single HTTP SERVER";
             {
                 TestHTTPServer serv;
                 kul::Thread t(std::ref(serv));
@@ -253,9 +264,9 @@ class Test{
                 KLOG(INF);
                 kul::this_thread::sleep(100);
                 KLOG(INF);
-                t.interrupt();
+                t.join();
             }
-            KLOG(INF);
+            KOUT(NON) << "TCP Socket SERVER";
             {
                 kul::tcp::Socket<char> sock; 
                 if(!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
@@ -298,36 +309,41 @@ class Test{
 
                 sock.close();
                 serv.stop();
-                t.interrupt();
+                t.join();
             }
             KLOG(INF);
             kul::this_thread::sleep(100);
             {
                 TestMultiHTTPServer serv;
+                kul::Thread t(std::ref(serv));
+                t.run();
                 for(size_t i = 0; i < 10; i++){
                     Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();   
+                    if(t.exception()) std::rethrow_exception(t.exception());
                 }
                 kul::this_thread::sleep(100);
                 serv.stop();
                 kul::this_thread::sleep(100);
-                serv.interrupt();
                 serv.join();
             }
+            KOUT(NON) << "FINISHED!";
         }
 };
 
 }}
 
+#ifndef __KUL_RAM_NOMAIN__
 int main(int argc, char* argv[]){
+    kul::Signal s;
     try{
         kul::ram::Test();
     }catch(const kul::Exception& e){ 
-        KERR << e.stack();
+        KERR << e.stack(); return 1;
     }catch(const std::exception& e){ 
-        KERR << e.what();
+        KERR << e.what();  return 2;
     }catch(...){ 
-
+        KERR << "UNKNOWN EXCEPTION CAUGHT";  return 3;
     }
     return 0;
 }
-
+#endif//__KUL_RAM_NOMAIN__

@@ -31,39 +31,39 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef  _KUL_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Server::loop(std::unordered_set<int32_t>& fds) throw(kul::tcp::Exception){
+void kul::https::Server::loop(std::unordered_set<int>& fds) throw(kul::tcp::Exception){
     KUL_DBG_FUNC_ENTER
-    fd_set l_fds = m_fds;
+    fd_set l_fds;
+    copyFDSet(m_fds, l_fds);
 
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
 
-    auto sel = select(_KUL_HTTPS_MAX_CLIENT_, &l_fds, &tv);
-    if(sel < 0 && errno != EINTR) 
-        KEXCEPTION("Socket Server error on select");
-    if(sel == 0) return;
-    if(FD_ISSET(sockfd, &l_fds)){
-        int32_t newsockfd = accept();
-        if(newsockfd < 0) KEXCEPTION("SockerServer error on accept");
-        KOUT(DBG) << "New connection , socket fd is " << newsockfd << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
+    auto sel = select(_KUL_TCP_MAX_CLIENT_, &l_fds, &tv);
+    if(s && sel < 0 && errno != EINTR)
+        KEXCEPTION("Socket Server error on select: " + std::to_string(errno) + " - " + std::string(strerror(errno)));
+    if(FD_ISSET(lisock, &l_fds)){
+        int newlisock = accept();
+        if(newlisock < 0) KEXCEPTION("SockerServer error on accept");
+        KOUT(DBG) << "New connection , socket fd is " << newlisock << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
         this->onConnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
-        fds.insert(newsockfd);
-        FD_SET(newsockfd, &m_fds);
-        ssl_clients[newsockfd] = SSL_new(ctx);
-        if(!ssl_clients[newsockfd]) KEXCEPTION("HTTPS Server ssl failed to initialise");
-        SSL_set_fd(ssl_clients[newsockfd], newsockfd); 
-        int16_t ssl_err = SSL_accept(ssl_clients[newsockfd]);
+        fds.insert(newlisock);
+        FD_SET(newlisock, &m_fds);
+        ssl_clients[newlisock] = SSL_new(ctx);
+        if(!ssl_clients[newlisock]) KEXCEPTION("HTTPS Server ssl failed to initialise");
+        SSL_set_fd(ssl_clients[newlisock], newlisock);
+        int16_t ssl_err = SSL_accept(ssl_clients[newlisock]);
         if(ssl_err <= 0){
             short se = 0;
-            SSL_get_error(ssl_clients[newsockfd], se);
-            SSL_shutdown(ssl_clients[newsockfd]);
-            SSL_free(ssl_clients[newsockfd]);
-            close(newsockfd);
+            SSL_get_error(ssl_clients[newlisock], se);
+            SSL_shutdown(ssl_clients[newlisock]);
+            SSL_free(ssl_clients[newlisock]);
+            close(newlisock);
             KERR << "HTTPS Server SSL ERROR on SSL_ACCEPT error: " << se;
             KEXCEPTION("HTTPS Server SSL ERROR on SSL_ACCEPT error");
         }
-        X509* cc = SSL_get_peer_certificate (ssl_clients[newsockfd]);
+        X509* cc = SSL_get_peer_certificate (ssl_clients[newlisock]);
         if(cc != NULL) {
             KLOG(DBG) << "Client certificate:";
             KLOG(DBG) << "\t subject: " << X509_NAME_oneline (X509_get_subject_name (cc), 0, 0);
@@ -71,9 +71,9 @@ void kul::https::Server::loop(std::unordered_set<int32_t>& fds) throw(kul::tcp::
             X509_free(cc);
         }else KLOG(ERR) << "Client does not have certificate.";
     }
-    for(uint16_t i = 0; i < _KUL_HTTPS_MAX_CLIENT_; i++)
-        if(fds.count(i) && FD_ISSET(i, &l_fds))
-            receive(i);
+    std::vector<int32_t> del;
+    for(const auto fd : fds) if( FD_ISSET(fd, &l_fds)) if(receive(fd)) del.push_back(fd);
+    for(const auto fd : del) fds.erase(fd);
 }
 
 void kul::https::Server::setChain(const kul::File& f){
@@ -107,23 +107,26 @@ void kul::https::Server::stop(){
     s = 0;
     ERR_free_strings();
     EVP_cleanup();
-    for(size_t i = 0; i < _KUL_HTTPS_MAX_CLIENT_; i++){
+    for(size_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++){
         auto ssl = ssl_clients[i];
         if(ssl){
             SSL_shutdown(ssl);
             SSL_free(ssl);
         }
+        // if(FD_ISSET(i, &m_fds)) close(i);
     }
     if(ctx) SSL_CTX_free(ctx);
     kul::http::Server::stop();
 }
 
 
-void kul::https::Server::receive(const uint16_t& fd){
+bool kul::https::Server::receive(const int& fd){
     KUL_DBG_FUNC_ENTER
-    char buffer[_KUL_HTTPS_READ_BUFFER_];
-    bzero(buffer, _KUL_HTTPS_READ_BUFFER_);
-    int16_t e = 0, read = ::SSL_read(ssl_clients[fd], buffer, _KUL_HTTPS_READ_BUFFER_ - 1);
+    char buffer[_KUL_TCP_READ_BUFFER_];
+    bzero(buffer, _KUL_TCP_READ_BUFFER_);
+    int16_t e = 0, read = ::SSL_read(ssl_clients[fd], buffer, _KUL_TCP_READ_BUFFER_ - 1);
+    if(read < 0) e = -1;
+    else
     if(read == 0){
         getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
         KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
@@ -133,6 +136,7 @@ void kul::https::Server::receive(const uint16_t& fd){
         ssl_clients[fd] = 0;
         close(fd);
         FD_CLR(fd, &m_fds);
+        return true;
     }else{
         buffer[read] = '\0';
         std::string res;
@@ -146,24 +150,26 @@ void kul::https::Server::receive(const uint16_t& fd){
                 if(f) break;
             }
             if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-            
+
             std::shared_ptr<kul::http::ARequest> req = handleRequest(s, res);
             const kul::http::AResponse& rs(respond(*req.get()));
             std::string ret(rs.toString());
             e = ::SSL_write(ssl_clients[fd], ret.c_str(), ret.length());
         }catch(const kul::http::Exception& e1){
-            KERR << e1.stack(); 
+            KERR << e1.stack();
             e = -1;
         }
-        if(e < 0){
-            KLOG(ERR) << "Error replying to host errno: " << strerror(errno);
-            SSL_shutdown(ssl_clients[fd]);
-            SSL_free(ssl_clients[fd]);
-            ssl_clients[fd] = 0;
-            close(fd);
-            FD_CLR(fd, &m_fds);
-        }
     }
+    if(e < 0){
+        KLOG(ERR) << "Error on receive: " << strerror(errno);
+        SSL_shutdown(ssl_clients[fd]);
+        SSL_free(ssl_clients[fd]);
+        ssl_clients[fd] = 0;
+        close(fd);
+        FD_CLR(fd, &m_fds);
+        return true;
+    }
+    return false;
 }
 
 #endif//_KUL_HTTPS_

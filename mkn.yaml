@@ -33,3 +33,8 @@ profile:
   - name: usage 
     self: lib
     main: usage.cpp
+
+  - name: test 
+    parent: lib
+    main: test.cpp
+

@@ -8,6 +8,15 @@ Convenience library providing cross platform http/https services
 How to use:
 view tst/kul.ram.test.hpp
 
-License
+License: BSD
 
-BSD
+
+
+Switches - OSX is considered BSD for swiches unless otherwise noted
+ 
+Key             __KUL_TCP_BIND_SOCKTOPTS__ 
+Type            text
+Default         SO_REUSEADDR
+OS              nix/bsd
+Description
+	Socket options to use on bind
