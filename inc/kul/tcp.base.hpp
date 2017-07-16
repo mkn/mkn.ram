@@ -42,28 +42,28 @@ class Exception : public kul::Exception{
 
 template <class T = uint8_t>
 class ASocket{
-	protected:
-		bool open = 0;
-	public:
-		virtual ~ASocket(){}
-		virtual bool connect(const std::string& host, const int16_t& port)  = 0;
-		virtual bool close()    = 0;
-		virtual size_t read(T* data, const size_t& len) throw(kul::tcp::Exception) = 0;
-		virtual size_t write(const T* data, const size_t& len) = 0;
+    protected:
+        bool open = 0;
+    public:
+        virtual ~ASocket(){}
+        virtual bool connect(const std::string& host, const int16_t& port)  = 0;
+        virtual bool close()    = 0;
+        virtual size_t read(T* data, const size_t& len) KTHROW(kul::tcp::Exception) = 0;
+        virtual size_t write(const T* data, const size_t& len) = 0;
 
 };
 
 template <class T = uint8_t>
 class ASocketServer{
-	protected:
+    protected:
         uint16_t p;
         uint64_t s;
 
         virtual void onConnect(const char* ip, const uint16_t& port){}
         ASocketServer(const uint16_t& p) : p(p){}
-	public:
-		virtual ~ASocketServer(){}
-		virtual void start() throw (kul::tcp::Exception) = 0;
+    public:
+        virtual ~ASocketServer(){}
+        virtual void start() KTHROW (kul::tcp::Exception) = 0;
         virtual void onDisconnect(const char* ip, const uint16_t& port){}
         const uint64_t  up()   const { return s - kul::Now::MILLIS(); }
         const uint16_t& port() const { return p; }

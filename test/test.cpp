@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2013, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,22 +28,26 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTML4_HPP_
-#define _KUL_HTML4_HPP_
+#include "kul/proc.hpp"
 
-#include "kul/html/page.hpp"
+#include "kul/signal.hpp"
 
-namespace kul{ namespace html4{
-
-class Exception : public kul::Exception{
-    public:
-        Exception(const char*f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s){}
-};
+#ifndef  _KUL_HTTP_TEST_PORT_
+#define  _KUL_HTTP_TEST_PORT_ 8888
+#endif /*_KUL_HTTP_TEST_PORT_*/
 
 
-}// END NAMESPACE html4
-}// END NAMESPACE kul
+int main(int argc, char* argv[]){
+    kul::Signal s;
+    try{
 
 
-
-#endif /* _KUL_HTML_HPP_ */
+    }catch(const kul::Exception& e){ 
+        KERR << e.stack(); return 1;
+    }catch(const std::exception& e){ 
+        KERR << e.what();  return 2;
+    }catch(...){ 
+        KERR << "UNKNOWN EXCEPTION CAUGHT";  return 3;
+    }
+    return 0;
+}

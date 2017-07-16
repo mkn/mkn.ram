@@ -19,4 +19,4 @@ Type            text
 Default         SO_REUSEADDR
 OS              nix/bsd
 Description
-	Socket options to use on bind
+    Socket options to use on bind

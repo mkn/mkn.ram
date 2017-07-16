@@ -100,49 +100,48 @@ std::shared_ptr<kul::http::ARequest> kul::http::Server::handleRequest(const std:
     return req;
 }
 
-bool kul::http::Server::receive(const int& fd){
-    KUL_DBG_FUNC_ENTER
-    char buffer[_KUL_TCP_READ_BUFFER_];
-    bzero(buffer, _KUL_TCP_READ_BUFFER_);
-    int16_t e = 0, read = ::read(fd, buffer, _KUL_TCP_READ_BUFFER_ - 1);
+void
+kul::http::Server::handleBuffer(std::map<int, uint8_t>& fds , const int& fd, char* in, const int& read, int& e){
+    in[read] = '\0';
+    std::string res;
+    try{
+        std::string s(in);
+        std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
+        std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
+        bool f = 0;
+        for(const auto& ch : allowed){
+            f = c.find(ch) != std::string::npos;
+            if(f) break;
+        }
+        if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
+        std::shared_ptr<ARequest> req = handleRequest(s, res);
+        const AResponse& rs(respond(*req.get()));
+        std::string ret(rs.toString());
+        e = ::send(m_fds[fd].fd, ret.c_str(), ret.length(), 0);
+    }catch(const kul::http::Exception& e1){
+        KLOG(ERR) << e1.stack();
+        e = -1;
+    }
+    fds[fd] = 1;
+}
+
+bool
+kul::http::Server::receive(std::map<int, uint8_t>& fds , const int& fd){
+    KUL_DBG_FUNC_ENTER;
+    char* in = getOrCreateBufferFor(fd);
+    bzero(in, _KUL_TCP_READ_BUFFER_);
+    int e = 0, read = readFrom(fd, in);
     if(read < 0) e = -1;
     else
-    if(read == 0){
-        getpeername(fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
-        KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port " << ntohs(serv_addr.sin_port);
+    if(read > 0){
+        fds[fd] = 2;
+        handleBuffer(fds, fd, in, read, e);
+        if(e) return false;
+    }
+    else{
+        getpeername(m_fds[fd].fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
         onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
-        close(fd);
-        FD_CLR(fd, &m_fds);
-        return true;
-    }else{
-        buffer[read] = '\0';
-        std::string res;
-        try{
-            std::string s(buffer);
-            std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
-            std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
-            bool f = 0;
-            for(const auto& ch : allowed){
-                f = c.find(ch) != std::string::npos;
-                if(f) break;
-            }
-            if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-
-            std::shared_ptr<ARequest> req = handleRequest(s, res);
-            const AResponse& rs(respond(*req.get()));
-            std::string ret(rs.toString());
-            e = ::send(fd, ret.c_str(), ret.length(), 0);
-
-        }catch(const kul::http::Exception& e1){
-            KLOG(ERR) << e1.stack();
-            e = -1;
-        }
     }
-    if(e < 0){
-        KLOG(ERR) << "Error on receive: " << strerror(errno);
-        close(fd);
-        FD_CLR(fd, &m_fds);
-        return true;
-    }
-    return false;
+    if(e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
+    return true;
 }

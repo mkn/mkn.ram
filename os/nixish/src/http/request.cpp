@@ -30,7 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
+void
+kul::http::_1_1GetRequest::send() KTHROW (kul::http::Exception){
     KUL_DBG_FUNC_ENTER
     kul::tcp::Socket<char> sock;
     if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
@@ -44,9 +45,11 @@ void kul::http::_1_1GetRequest::send() throw (kul::http::Exception){
         ss << buf;
     }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
     handle(ss.str());
+    sock.close();
 }
 
-void kul::http::_1_1PostRequest::send() throw (kul::http::Exception){
+void
+kul::http::_1_1PostRequest::send() KTHROW (kul::http::Exception){
     KUL_DBG_FUNC_ENTER
     kul::tcp::Socket<char> sock;
     if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");

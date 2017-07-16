@@ -31,7 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef  _KUL_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Requester::send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
+void
+kul::https::Requester::send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl){
     KUL_DBG_FUNC_ENTER
     int sck = 0;
     if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
@@ -57,7 +58,8 @@ void kul::https::Requester::send(const std::string& h, const std::string& req, c
     ::close(sck);
 }
 
-void kul::https::_1_1GetRequest::send() throw (kul::http::Exception){
+void
+kul::https::_1_1GetRequest::send() KTHROW (kul::http::Exception){
     KUL_DBG_FUNC_ENTER
     try{
         std::stringstream ss;
@@ -69,7 +71,8 @@ void kul::https::_1_1GetRequest::send() throw (kul::http::Exception){
     }
 }
 
-void kul::https::_1_1PostRequest::send() throw (kul::http::Exception){
+void
+kul::https::_1_1PostRequest::send() KTHROW (kul::http::Exception){
     KUL_DBG_FUNC_ENTER
     try{
         std::stringstream ss;

@@ -65,41 +65,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kul{ namespace http{ 
 
 class Server : public kul::http::AServer{
-	private:
-		const std::string url;
-		HANDLE q;
+    private:
+        const std::string url;
+        HANDLE q;
 
-		bool get(PHTTP_REQUEST pRequest);
-		bool post(PHTTP_REQUEST pRequest);
+        bool get(PHTTP_REQUEST pRequest);
+        bool post(PHTTP_REQUEST pRequest);
 
-		void initialiseReponse(HTTP_RESPONSE& response, const uint16_t& status, PSTR reason);
-		void addKnownHeader(HTTP_RESPONSE& response, _HTTP_HEADER_ID headerID, PSTR rawValue);
-		void postClean(PUCHAR rstr);
-		static const LPVOID wAlloc(ULONG& u){ return HeapAlloc(GetProcessHeap(), 0, u); }
-		static const bool wFreeM(LPVOID a){ return HeapFree(GetProcessHeap(), 0, a); }
-	public:
-		Server(const short& p = 80, const std::string& s = "localhost") : AServer(p), q(NULL), url("http://" + s + ":" + std::to_string(p) + "/"){
-			ULONG r = 0;
-			r = HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_SERVER, NULL);
-			if(r != NO_ERROR) KEXCEPT(Exception, "HttpInitialize failed: " + std::to_string(r));
-			r = HttpCreateHttpHandle(&this->q, 0);
-			if(r != NO_ERROR) KEXCEPT(Exception, "HttpCreateHttpHandle failed: " + std::to_string(r));
-			std::wstring ws(url.begin(), url.end());
-			r = HttpAddUrl(this->q, ws.c_str(), NULL);
-			if(r != NO_ERROR) KEXCEPT(Exception, "HttpAddUrl failed: " + std::to_string(r));
-		}
-		~Server(){
-			HttpRemoveUrl(this->q, std::wstring(url.begin(), url.end()).c_str());
-			if(q) CloseHandle(q);
-			HttpTerminate(HTTP_INITIALIZE_SERVER, NULL);
-		}
-		void start() throw(kul::http::Exception);
-		bool started(){ return q != NULL; }
-		void stop();
+        void initialiseReponse(HTTP_RESPONSE& response, const uint16_t& status, PSTR reason);
+        void addKnownHeader(HTTP_RESPONSE& response, _HTTP_HEADER_ID headerID, PSTR rawValue);
+        void postClean(PUCHAR rstr);
+        static const LPVOID wAlloc(ULONG& u){ return HeapAlloc(GetProcessHeap(), 0, u); }
+        static const bool wFreeM(LPVOID a){ return HeapFree(GetProcessHeap(), 0, a); }
+    public:
+        Server(const short& p = 80, const std::string& s = "localhost") : AServer(p), q(NULL), url("http://" + s + ":" + std::to_string(p) + "/"){
+            ULONG r = 0;
+            r = HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_SERVER, NULL);
+            if(r != NO_ERROR) KEXCEPT(Exception, "HttpInitialize failed: " + std::to_string(r));
+            r = HttpCreateHttpHandle(&this->q, 0);
+            if(r != NO_ERROR) KEXCEPT(Exception, "HttpCreateHttpHandle failed: " + std::to_string(r));
+            std::wstring ws(url.begin(), url.end());
+            r = HttpAddUrl(this->q, ws.c_str(), NULL);
+            if(r != NO_ERROR) KEXCEPT(Exception, "HttpAddUrl failed: " + std::to_string(r));
+        }
+        ~Server(){
+            HttpRemoveUrl(this->q, std::wstring(url.begin(), url.end()).c_str());
+            if(q) CloseHandle(q);
+            HttpTerminate(HTTP_INITIALIZE_SERVER, NULL);
+        }
+        void start() KTHROW(kul::http::Exception);
+        bool started(){ return q != NULL; }
+        void stop();
 
-		virtual const AResponse response(const std::string& res, kul::hash::map::S2S atts){
+        virtual const AResponse response(const std::string& res, kul::hash::map::S2S atts){
             return _1_1Response(r);
-		}
+        }
 };
 
 }// END NAMESPACE ipc

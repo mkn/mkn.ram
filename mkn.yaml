@@ -38,3 +38,10 @@ profile:
     parent: lib
     main: test.cpp
 
+  - name: test.client
+    parent: lib
+    main: test/client.cpp
+
+  - name: test.server
+    parent: lib
+    main: test/server.cpp

@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_HTTP_HPP_
 #define _KUL_HTTP_HPP_
 
+#include <unordered_map>
+
 #include "kul/tcp.hpp"
 #include "kul/http/def.hpp"
 #include "kul/http.base.hpp"
@@ -39,63 +41,103 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kul{ namespace http{
 
 class Server : public kul::http::AServer{
+    private:
+        int fdSize = _KUL_TCP_READ_BUFFER_;
+        std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
+
     protected:
-        virtual std::shared_ptr<ARequest> handleRequest(const std::string& b, std::string& path);
-        virtual bool receive(const int& fd);
+        virtual char* getOrCreateBufferFor(const int& fd){
+            if(!inBuffers.count(fd))
+                inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
+            return inBuffers[fd].get();
+        }
+
+        virtual std::shared_ptr<ARequest> handleRequest(
+            const std::string& b, 
+            std::string& path
+        );
+
+        virtual bool receive(
+            std::map<int, uint8_t>& fds, 
+            const int& fd
+        ) override;
+
+        virtual void handleBuffer(
+            std::map<int, uint8_t>& fds, 
+            const int& fd, 
+            char* in, 
+            const int& read, 
+            int& e
+        );
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}
-        
 };
 
 class MultiServer : public kul::http::Server{
     protected:
-        uint8_t _threads;
-        kul::Mutex m_mutAccept, m_mutSelect, m_mutFDMod;
-        ChroncurrentThreadPool<> _pool;
+        uint8_t _acceptThreads, _workerThreads;
+        kul::Mutex m_mutex;
+        ChroncurrentThreadPool<> _acceptPool;
+        ChroncurrentThreadPool<> _workerPool;
 
-        void operate(){            
-            std::unordered_set<int> fds;
-            while(s) loop(fds);
+        virtual void handleBuffer(std::map<int, uint8_t>& fds , const int& fd, char* in, const int& read, int& e) override {
+            _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e), 
+                std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
+            e = 1;
         }
-        virtual void error(const kul::Exception& e){ 
+        
+        void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read, int& e){
+            kul::http::Server::handleBuffer(*fds, fd, in, read, e);
+            if(e < 0){
+                std::vector<int> del {fd};
+                closeFDs(*fds, del);
+            }
+        }
+        virtual void errorBuffer(const kul::Exception& e){ 
             KERR << e.stack(); 
-            _pool.async(std::bind(&MultiServer::operate, std::ref(*this)), 
-                    std::bind(&MultiServer::error, std::ref(*this), std::placeholders::_1));
         };
-    public:
-        MultiServer(const short& p = 80, const uint8_t& threads = 1, const std::string& w = "localhost") 
-                : Server(p, w), _threads(threads), _pool(threads){
 
+        void operateAccept(
+            const size_t& threadID
+        ){
+            std::map<int, uint8_t> fds;
+            fds.insert(std::make_pair(0, 0));
+            for(size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i+=_acceptThreads) fds.insert(std::make_pair(i, 0));
+            while(s)
+                try{
+                    kul::ScopeLock lock(m_mutex);
+                    loop(fds);
+                }
+                catch(const kul::tcp::Exception& e1){ KERR << e1.stack();  }
+                catch(const std::exception& e1)     { KERR << e1.what();   }
+                catch(...)                          { KERR << "Loop Exception caught"; }
         }
+    public:
+        MultiServer(
+            const short& p = 80, 
+            const uint8_t& acceptThreads = 1, 
+            const uint8_t& workerThreads = 1, 
+            const std::string& w = "localhost") 
+                : Server(p, w), _acceptThreads(acceptThreads), _workerThreads(workerThreads){}
 
-        virtual void start() throw (kul::tcp::Exception) override;
+        virtual void start() KTHROW (kul::tcp::Exception) override;
+
         virtual void join(){
-            _pool.join();
+            _acceptPool.join();
+            _workerPool.join();
         }
         virtual void stop() override {
-            KUL_DBG_FUNC_ENTER
-            _pool.stop();
             kul::http::Server::stop();
+            _acceptPool.stop();
+            _workerPool.stop();
         }
         virtual void interrupt(){
-            KUL_DBG_FUNC_ENTER
-            _pool.interrupt();
-        }
-        virtual void copyFDSet(fd_set& from, fd_set& to) override {
-            kul::ScopeLock lock(m_mutFDMod);
-            kul::tcp::SocketServer<char>::copyFDSet(from, to);
-        }
-        virtual int select(const int& max, fd_set* set, struct timeval* tv) override {
-            kul::ScopeLock lock(m_mutSelect);
-            return ::select(max, set, NULL, NULL, tv);
-        }
-        virtual int accept() override {
-            kul::ScopeLock lock(m_mutAccept);
-            return ::accept(lisock, (struct sockaddr *) &cli_addr, &clilen);
+            _acceptPool.interrupt();
+            _workerPool.interrupt();
         }
         const std::exception_ptr& exception(){ 
-            return _pool.exception();
+            return _acceptPool.exception();
         }
 };
 

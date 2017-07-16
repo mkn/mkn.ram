@@ -119,12 +119,12 @@ class TestMultiHTTPSServer : public kul::https::MultiServer{
         kul::http::AResponse respond(const kul::http::ARequest& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
-            r.body("MULTI HTTPS PROVIDED BY KUL");
+            r.body("MULTI HTTPS PROVIDED BY KUL @ " + req.path());
             addResponseHeaders(r);
             return r;
         }
-        TestMultiHTTPSServer() : kul::https::MultiServer(
-            _KUL_HTTP_TEST_PORT_, 3,
+        TestMultiHTTPSServer(const uint8_t& acceptThreads = 1, const uint8_t& workerThreads = 1) : kul::https::MultiServer(
+            _KUL_HTTP_TEST_PORT_, acceptThreads, workerThreads,
             kul::File("res/test/server.crt"),
             kul::File("res/test/server.key")){
         }
@@ -134,23 +134,23 @@ class TestMultiHTTPSServer : public kul::https::MultiServer{
 
 class HTTPS_Get : public kul::https::_1_1GetRequest{
     public:
-        HTTPS_Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+        HTTPS_Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::https::_1_1GetRequest(host, path, port){
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
+            KLOG(INF) << "HTTPS GET RESPONSE: " << b;
         }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest{
     public:
-        HTTPS_Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+        HTTPS_Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::https::_1_1PostRequest(host, path, port){
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
             KUL_DBG_FUNC_ENTER
             for(const auto& p : h)
                 KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
-            KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
+            KOUT(NON) << "HTTPS POST RESPONSE: " << b;
         }
 };
 #endif//_KUL_HTTPS_
@@ -172,23 +172,23 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
 
 class Get : public kul::http::_1_1GetRequest{
     public:
-        Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+        Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::http::_1_1GetRequest(host, path, port){
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << "GET RESPONSE:\n" << b;
+            KLOG(INF) << "GET RESPONSE: " << b;
         }
 };
 class Post : public kul::http::_1_1PostRequest{
     public:
-        Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
+        Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::http::_1_1PostRequest(host, path, port){
         }
         void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
             KUL_DBG_FUNC_ENTER
             for(const auto& p : h)
                 KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
-            KOUT(NON) << "POST RESPONSE:\n" << b;
+            KOUT(NON) << "POST RESPONSE: " << b;
         }
 };
 
@@ -199,76 +199,114 @@ class Test{
             KOUT(NON) << "Single HTTPS SERVER";
             {
                 TestHTTPSServer serv;
+                KLOG(INF);
                 serv.init();
+                KLOG(INF);
                 kul::Thread t(std::ref(serv));
+                KLOG(INF);
                 t.run();
-                kul::this_thread::sleep(100);
+                KLOG(INF);
+                kul::this_thread::sleep(333);
+                KLOG(INF);
                 if(t.exception()) std::rethrow_exception(t.exception());
+                KLOG(INF);
                 {
+                KLOG(INF);
                     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
+                KLOG(INF);
                     HTTPS_Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+                KLOG(INF);
                     p.body("tsop");
                     p.send();
+                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
+                KLOG(INF);
                     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
+                KLOG(INF);
                 }
+                KLOG(INF);
                 kul::this_thread::sleep(100);
                 serv.stop();
+                KLOG(INF);
                 t.join();
+                KLOG(INF);
                 kul::this_thread::sleep(100);
             }
             KOUT(NON) << "Multi HTTPS SERVER";
             {
-                TestMultiHTTPSServer serv;
+                TestMultiHTTPSServer serv(1, 5);
                 serv.init();
                 kul::Thread t(std::ref(serv));
                 t.run();
-                for(size_t i = 0; i < 10; i++){
+                kul::this_thread::sleep(333);
+
+                // for(size_t i = 0; i < 10; i++){
+                //     if(t.exception()) std::rethrow_exception(t.exception());
+                //     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+                // }
+                std::atomic<uint16_t> index(0);
+                auto getter = [&](){
+                    HTTPS_Get("localhost", "index.html_"+std::to_string(index++), _KUL_HTTP_TEST_PORT_).send();
+                };
+                auto except = [&t](const kul::Exception& e){
+                    KLOG(ERR) << e.stack();
                     if(t.exception()) std::rethrow_exception(t.exception());
-                    HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();                    
-                }
+                };
+                kul::ChroncurrentThreadPool<> ctp(3, 1);
+                for(size_t i = 0; i < 999; i++) ctp.async(getter, except);
+                ctp.finish(1000000000);
+
                 kul::this_thread::sleep(100);
+                KLOG(INF);
                 serv.stop();
+                KLOG(INF);
                 kul::this_thread::sleep(100);
+                KLOG(INF);
                 serv.join();
-                t.join();
-            }
-#endif//_KUL_HTTPS_
-            KOUT(NON) << "Single HTTP SERVER";
-            {
-                TestHTTPServer serv;
-                kul::Thread t(std::ref(serv));
-                t.run();
-                kul::this_thread::sleep(100);
-                if(t.exception()) std::rethrow_exception(t.exception());
-                {
-                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-                    KLOG(INF);
-                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-                    KLOG(INF);
-                    if(t.exception()) std::rethrow_exception(t.exception());
-                    KLOG(INF);
-                    Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-                    KLOG(INF);
-                    p.body("tsop");
-                    KLOG(INF);
-                    p.send();
-                    KLOG(INF);
-                    if(t.exception()) std::rethrow_exception(t.exception());
-                    KLOG(INF);
-                }
-                kul::this_thread::sleep(100);
-                serv.stop();
-                KLOG(INF);
-                kul::this_thread::sleep(100);
                 KLOG(INF);
                 t.join();
+                KLOG(INF);
             }
-            KOUT(NON) << "TCP Socket SERVER";
+
+#endif
+            //_KUL_HTTPS_
+            // KOUT(NON) << "Single HTTP SERVER";
+            // {
+            //     TestHTTPServer serv;
+            //     kul::Thread t(std::ref(serv));
+            //     t.run();
+            //     kul::this_thread::sleep(333);
+            //     if(t.exception()) std::rethrow_exception(t.exception());
+            //     {
+            //         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+            //         KLOG(INF);
+            //         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+            //         KLOG(INF);
+            //         if(t.exception()) std::rethrow_exception(t.exception());
+            //         KLOG(INF);
+            //         Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+            //         KLOG(INF);
+            //         p.body("tsop");
+            //         KLOG(INF);
+            //         p.send();
+            //         KLOG(INF);
+            //         if(t.exception()) std::rethrow_exception(t.exception());
+            //         KLOG(INF);
+            //     }
+            //     kul::this_thread::sleep(100);
+            //     serv.stop();
+            //     KLOG(INF);
+            //     kul::this_thread::sleep(100);
+            //     KLOG(INF);
+            //     t.join();
+            // }
+            KLOG(INF) << "Test socket connection";
             {
-                kul::tcp::Socket<char> sock; 
+                kul::tcp::Socket<char> sock;
                 if(!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
                 Get get("google.com");
                 std::string req(get.toString());
@@ -287,16 +325,16 @@ class Test{
 
                 sock.close();
             }
-            KLOG(INF);
+            KOUT(NON) << "TCP Socket SERVER";
             kul::this_thread::sleep(500);
             {
                 TestSocketServer serv;
                 kul::Thread t(std::ref(serv));
                 t.run();
-                kul::this_thread::sleep(100);
+                kul::this_thread::sleep(333);
                 if(t.exception()) std::rethrow_exception(t.exception());
 
-                kul::tcp::Socket<char> sock; 
+                kul::tcp::Socket<char> sock;
                 if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
 
                 const char* c = "socketserver";
@@ -311,22 +349,23 @@ class Test{
                 serv.stop();
                 t.join();
             }
-            KLOG(INF);
-            kul::this_thread::sleep(100);
-            {
-                TestMultiHTTPServer serv;
-                kul::Thread t(std::ref(serv));
-                t.run();
-                for(size_t i = 0; i < 10; i++){
-                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();   
-                    if(t.exception()) std::rethrow_exception(t.exception());
-                }
-                kul::this_thread::sleep(100);
-                serv.stop();
-                kul::this_thread::sleep(100);
-                serv.join();
-            }
-            KOUT(NON) << "FINISHED!";
+        //     KLOG(INF);
+        //     kul::this_thread::sleep(100);
+        //     {
+        //         TestMultiHTTPServer serv;
+        //         kul::Thread t(std::ref(serv));
+        //         t.run();
+        //         kul::this_thread::sleep(333);
+        //         for(size_t i = 0; i < 10; i++){
+        //             Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+        //             if(t.exception()) std::rethrow_exception(t.exception());
+        //         }
+        //         kul::this_thread::sleep(100);
+        //         serv.stop();
+        //         kul::this_thread::sleep(100);
+        //         serv.join();
+        //     }
+        //     KOUT(NON) << "FINISHED!";
         }
 };
 
@@ -337,11 +376,12 @@ int main(int argc, char* argv[]){
     kul::Signal s;
     try{
         kul::ram::Test();
-    }catch(const kul::Exception& e){ 
+
+    }catch(const kul::Exception& e){
         KERR << e.stack(); return 1;
-    }catch(const std::exception& e){ 
+    }catch(const std::exception& e){
         KERR << e.what();  return 2;
-    }catch(...){ 
+    }catch(...){
         KERR << "UNKNOWN EXCEPTION CAUGHT";  return 3;
     }
     return 0;

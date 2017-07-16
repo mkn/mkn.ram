@@ -105,7 +105,7 @@ class ARequest : public Message{
             return *this;
         }
         const kul::hash::map::S2S&  attributes() const { return atts; }
-        virtual void send() throw (kul::http::Exception) = 0;
+        virtual void send() KTHROW (kul::http::Exception) = 0;
         const std::string& host() const { return _host; }
         const std::string& path() const { return _path; }
         const uint16_t&    port() const { return _port; }
@@ -126,7 +126,7 @@ class _1_1GetRequest : public A1_1Request{
             : A1_1Request(host, path, port){}
         virtual std::string method() const override { return "GET";}
         virtual std::string toString() const override;
-        virtual void send() throw (kul::http::Exception) override;
+        virtual void send() KTHROW (kul::http::Exception) override;
 };
 
 class _1_1PostRequest : public A1_1Request{
@@ -135,7 +135,7 @@ class _1_1PostRequest : public A1_1Request{
             : A1_1Request(host, path, port){}
         virtual std::string method() const override { return "POST";}
         virtual std::string toString() const override;
-        virtual void send() throw (kul::http::Exception) override;
+        virtual void send() KTHROW (kul::http::Exception) override;
 };
 
 class AResponse : public Message{

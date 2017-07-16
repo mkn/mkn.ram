@@ -28,22 +28,41 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTML4_HPP_
-#define _KUL_HTML4_HPP_
+#define __KUL_RAM_NOMAIN__
+#include "usage.cpp"
 
-#include "kul/html/page.hpp"
+int main(int argc, char* argv[]) {
+    kul::Signal s;
 
-namespace kul{ namespace html4{
+    uint8_t _threads = 4;
 
-class Exception : public kul::Exception{
-    public:
-        Exception(const char*f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s){}
-};
+    auto getter = [](){
+        kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    };
+    auto except = [](const kul::Exception& e){
+        KLOG(ERR) << e.stack();
+    };
 
+    kul::ram::TestMultiHTTPServer serv;
+    try{
 
-}// END NAMESPACE html4
-}// END NAMESPACE kul
+        // kul::ChroncurrentThreadPool<> ctp(_threads, 1);
+        // for(size_t i = 0; i < 10000; i++) ctp.async(getter, except);
+        for(size_t i = 0; i < 1000; i++) {
+            KLOG(INF) << "SENDING: " << i;
+            kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+            if(serv.exception()) std::rethrow_exception(serv.exception());
+            KLOG(INF) << i;
+        }
+        // ctp.finish(1000000000);
 
+    }
+    catch(const kul::Exception& e){ KERR << e.stack(); }
+    catch(const std::exception& e){ KERR << e.what(); }
+    catch(...)                    { KERR << "UNKNOWN EXCEPTION CAUGHT"; }
+    kul::this_thread::sleep(100);
+    serv.stop();
+    serv.join();
 
-
-#endif /* _KUL_HTML_HPP_ */
+    return 0;
+}
