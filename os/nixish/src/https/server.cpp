@@ -108,7 +108,7 @@ kul::https::Server::init(){
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_ssl_algorithms();
-    ctx = SSL_CTX_new(TLS_server_method());
+    ctx = SSL_CTX_new(_KUL_HTTPS_SERVER_METHOD_());
     if (!ctx) KEXCEPTION("HTTPS Server SSL_CTX failed SSL_CTX_new");
     if(SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
         KEXCEPTION("HTTPS Server SSL_CTX_use_certificate_file failed");

@@ -41,6 +41,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kul/http.hpp"
 
+#define KUL_HTTPS_METHOD_APPENDER2(x, y) x ## y
+#define KUL_HTTPS_METHOD_APPENDER(x, y) KUL_HTTPS_METHOD_APPENDER2(x, y)
+
+#if !defined(_KUL_HTTPS_CLIENT_METHOD_) && !defined(_KUL_HTTPS_SERVER_METHOD_)
+
+#ifndef   _KUL_HTTPS_METHOD_
+#define   _KUL_HTTPS_METHOD_ TLS
+#endif /* _KUL_HTTPS_METHOD_ */
+
+#define   _KUL_HTTPS_CLIENT_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _client_method)
+#define   _KUL_HTTPS_SERVER_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _server_method)
+
+#else
+
+#ifndef   _KUL_HTTPS_CLIENT_METHOD_
+#define   _KUL_HTTPS_CLIENT_METHOD_ TLS_client_method
+#endif /* _KUL_HTTPS_CLIENT_METHOD_ */
+#ifndef   _KUL_HTTPS_SERVER_METHOD_
+#define   _KUL_HTTPS_SERVER_METHOD_ TLS_server_method
+#endif /* _KUL_HTTPS_SERVER_METHOD_ */
+
+#endif /* defined xyz */
+
+
+
 namespace kul{ namespace https{
 
 class Server : public kul::http::Server{
@@ -187,7 +212,7 @@ class SSLReqHelper{
             SSL_library_init();
             SSL_load_error_strings();
             OpenSSL_add_all_algorithms();
-            ctx = SSL_CTX_new(TLS_client_method());
+            ctx = SSL_CTX_new(_KUL_HTTPS_CLIENT_METHOD_());
             if ( ctx == NULL ) {
                 ERR_print_errors_fp(stderr);
                 abort();
