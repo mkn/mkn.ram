@@ -11,7 +11,6 @@ view tst/kul.ram.test.hpp
 License: BSD
 
 
-
 Switches - OSX is considered BSD for swiches unless otherwise noted
  
 Key             __KUL_TCP_BIND_SOCKTOPTS__ 
@@ -20,3 +19,30 @@ Default         SO_REUSEADDR
 OS              nix/bsd
 Description
     Socket options to use on bind
+
+Key             _KUL_HTTPS_CLIENT_METHOD_ 
+Type            text
+Default         TLS_client_method
+OS              nix/bsd
+Description
+    Method to tell SSL server what method is wanted
+
+Key             _KUL_HTTPS_SERVER_METHOD_ 
+Type            text
+Default         TLS_server_method
+OS              nix/bsd
+Description
+    Method to tell SSL client is in use
+
+
+Key             _KUL_HTTPS_METHOD_ 
+Type            text
+Default         TLS
+OS              nix/bsd
+Description
+    Convenience macro, if _KUL_HTTPS_CLIENT_METHOD_ and _KUL_HTTPS_SERVER_METHOD_ are not defined, it is used as the prefix for both i.e.:
+    -D_KUL_HTTPS_METHOD_=TLS
+    -D_KUL_HTTPS_METHOD_=TLSv1_2
+
+
+
