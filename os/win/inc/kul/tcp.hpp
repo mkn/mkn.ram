@@ -31,21 +31,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_TCP_HPP_
 #define _KUL_TCP_HPP_
 
-#include <unordered_set>
-#include <map>
-
 #include "kul/tcp/def.hpp"
 
 #undef UNICODE
 #define WIN32_LEAN_AND_MEAN
 
-#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <windows.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "kul/tcp.base.hpp"
+
+#include <unordered_set>
+#include <map>
 
 #pragma comment (lib, "Ws2_32.lib")
 #pragma comment (lib, "Mswsock.lib")
@@ -167,9 +168,15 @@ class SocketServer : public ASocketServer<T>{
         struct addrinfo *result = NULL;
         struct addrinfo hints;
 
-        virtual bool handle(T* in, T* out){
+        virtual bool handle(
+                T*const in,
+                const size_t& inLen,
+                T*const out,
+                size_t& outLen) {
+
             return true;
         }
+
         virtual int readFrom(const int& fd, T* in){
             return ::recv(fd, in, _KUL_TCP_READ_BUFFER_ - 1, 0);
         }
@@ -182,16 +189,19 @@ class SocketServer : public ASocketServer<T>{
             T in[_KUL_TCP_READ_BUFFER_];
             ZeroMemory(in, _KUL_TCP_READ_BUFFER_);
 
+            bool cl;
             do {
-                bool cl = 1;
+                cl = 0;
                 iResult = recv(ClientSocket, in, _KUL_TCP_READ_BUFFER_ - 1, 0);
                 if (iResult > 0) {
                     T out[_KUL_TCP_READ_BUFFER_];
                     ZeroMemory(out, _KUL_TCP_READ_BUFFER_);
-                    cl = handle(in, out);
+                    size_t outLen;
+                    cl = handle(in, iResult, out, outLen);
                     auto sent = writeTo( ClientSocket, out, strlen(out));
                     if (sent == SOCKET_ERROR)
                         KEXCEPTION("SocketServer send failed with error: ") << WSAGetLastError();
+                    if(cl) break;
                 }
                 else if (iResult == 0){
                     //printf("Connection closing...\n");

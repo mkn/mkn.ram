@@ -165,10 +165,15 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
             start();
         }
     public:
-        bool handle(char* in, char* out) override {
-            KUL_DBG_FUNC_ENTER
-            std::strcpy(out, "TCP PROVIDED BY KUL");
-            return true; // if true, close connection
+        bool handle(
+                char*const in, 
+                const size_t& inLen, 
+                char*const out, 
+                size_t& outLen) override {
+
+            std::string rep("TCP PROVIDED BY KUL");
+            std::strcpy(out, rep.c_str());
+            outLen = rep.size();
         }
         TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_){}
         friend class kul::Thread;

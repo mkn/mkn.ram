@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_HTTP_BASE_HPP_
 #define _KUL_HTTP_BASE_HPP_
 
-#include "kul/map.hpp"
 #include "kul/tcp.hpp"
+#include "kul/map.hpp"
 #include "kul/string.hpp"
 
 namespace kul{ namespace http{
@@ -72,7 +72,7 @@ class Cookie{
 class Message{
     protected:
         Headers _hs;
-        std::string _b;
+        std::string _b = "";
     public:
         void header(const std::string& k, const std::string& v){ this->_hs[k] = v; }
         const Headers& headers() const { return _hs; }
@@ -131,8 +131,14 @@ class _1_1GetRequest : public A1_1Request{
 
 class _1_1PostRequest : public A1_1Request{
     public:
-        _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
-            : A1_1Request(host, path, port){}
+        _1_1PostRequest(
+                const std::string& host,
+                const std::string& path = "",
+                const uint16_t& port = 80,
+                const std::string& bdy = "")
+                    : A1_1Request(host, path, port){
+            body(bdy);
+        }
         virtual std::string method() const override { return "POST";}
         virtual std::string toString() const override;
         virtual void send() KTHROW (kul::http::Exception) override;

@@ -38,9 +38,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+#include "kul/http.base.hpp"
 #include "kul/log.hpp"
 #include "kul/threads.hpp"
-#include "kul/http.base.hpp"
 
 #ifndef UNICODE
 #define UNICODE
@@ -53,11 +53,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
 #endif
-
-#include <http.h>
-#include <stdio.h>
-#include <Windows.h>
-#include <winsock2.h>
 
 #include <unordered_map>
 

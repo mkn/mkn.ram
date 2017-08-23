@@ -165,9 +165,16 @@ class SocketServer : public ASocketServer<T>{
         struct pollfd m_fds[_KUL_TCP_MAX_CLIENT_];
         socklen_t clilen;
         struct sockaddr_in serv_addr, cli_addr;
-        virtual bool handle(T* in, T* out){
+
+        virtual bool handle(
+                T*const in,
+                const size_t& inLen,
+                T*const out,
+                size_t& outLen) {
+
             return true;
         }
+
         virtual int readFrom(const int& fd, T* in){
             return ::recv(m_fds[fd].fd, in, _KUL_TCP_READ_BUFFER_ - 1, 0);
         }
@@ -192,8 +199,9 @@ class SocketServer : public ASocketServer<T>{
                 try{
                     T out[_KUL_TCP_READ_BUFFER_];
                     bzero(out, _KUL_TCP_READ_BUFFER_);
-                    cl = handle(in, out);
-                    e = writeTo(fd, out, strlen(out));
+                    size_t outLen;
+                    cl = handle(in, read, out, outLen);
+                    e = writeTo(fd, out, outLen);
                 }catch(const kul::tcp::Exception& e1){
                     KERR << e1.stack(); 
                     e = -1;
