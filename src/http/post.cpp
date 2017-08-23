@@ -28,9 +28,21 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTTPS_HPP_
-#define _KUL_HTTPS_HPP_
+#include "kul/http.base.hpp"
 
-#error HTTPS NOT DEFINED FOR WINDOWS
-
-#endif /* _KUL_HTTPS_HPP_ */
+void
+kul::http::_1_1PostRequest::send() KTHROW (kul::http::Exception){
+    KUL_DBG_FUNC_ENTER
+    kul::tcp::Socket<char> sock;
+    if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string& req(toString());
+    sock.write(req.c_str(), req.size());
+    char buf[_KUL_TCP_REQUEST_BUFFER_];
+    std::stringstream ss;
+    size_t s = 0;
+    do{
+        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
+        ss << buf;
+    }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
+    handle(ss.str());
+}

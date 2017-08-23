@@ -59,6 +59,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Windows.h>
 #include <winsock2.h>
 
+#include <unordered_map>
+
 #pragma comment(lib, "httpapi.lib")
 #pragma comment(lib,"ws2_32.lib")
 
@@ -66,43 +68,106 @@ namespace kul{ namespace http{
 
 class Server : public kul::http::AServer{
     private:
+        int fdSize = _KUL_TCP_READ_BUFFER_;
         const std::string url;
-        HANDLE q;
+        std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
-        bool get(PHTTP_REQUEST pRequest);
-        bool post(PHTTP_REQUEST pRequest);
+    protected:
+        virtual char* getOrCreateBufferFor(const int& fd){
+            if(!inBuffers.count(fd))
+                inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
+            return inBuffers[fd].get();
+        }
 
-        void initialiseReponse(HTTP_RESPONSE& response, const uint16_t& status, PSTR reason);
-        void addKnownHeader(HTTP_RESPONSE& response, _HTTP_HEADER_ID headerID, PSTR rawValue);
-        void postClean(PUCHAR rstr);
-        static const LPVOID wAlloc(ULONG& u){ return HeapAlloc(GetProcessHeap(), 0, u); }
-        static const bool wFreeM(LPVOID a){ return HeapFree(GetProcessHeap(), 0, a); }
+        virtual bool receive(
+            std::map<int, uint8_t>& fds, 
+            const int& fd
+        ) override;
+
     public:
-        Server(const short& p = 80, const std::string& s = "localhost") : AServer(p), q(NULL), url("http://" + s + ":" + std::to_string(p) + "/"){
-            ULONG r = 0;
-            r = HttpInitialize(HTTPAPI_VERSION_1, HTTP_INITIALIZE_SERVER, NULL);
-            if(r != NO_ERROR) KEXCEPT(Exception, "HttpInitialize failed: " + std::to_string(r));
-            r = HttpCreateHttpHandle(&this->q, 0);
-            if(r != NO_ERROR) KEXCEPT(Exception, "HttpCreateHttpHandle failed: " + std::to_string(r));
-            std::wstring ws(url.begin(), url.end());
-            r = HttpAddUrl(this->q, ws.c_str(), NULL);
-            if(r != NO_ERROR) KEXCEPT(Exception, "HttpAddUrl failed: " + std::to_string(r));
+        Server(const short& p = 80, const std::string& s = "localhost") : AServer(p), url("http://" + s + ":" + std::to_string(p) + "/"){
+            // std::wstring ws(url.begin(), url.end());
+            // ULONG r = HttpAddUrl(this->q, ws.c_str(), NULL);
+            // if(r != NO_ERROR) KEXCEPT(Exception, "HttpAddUrl failed: " + std::to_string(r));
         }
         ~Server(){
-            HttpRemoveUrl(this->q, std::wstring(url.begin(), url.end()).c_str());
-            if(q) CloseHandle(q);
-            HttpTerminate(HTTP_INITIALIZE_SERVER, NULL);
-        }
-        void start() KTHROW(kul::http::Exception);
-        bool started(){ return q != NULL; }
-        void stop();
-
-        virtual const AResponse response(const std::string& res, kul::hash::map::S2S atts){
-            return _1_1Response(r);
+            // HttpRemoveUrl(this->q, std::wstring(url.begin(), url.end()).c_str());
+            // if(q) CloseHandle(q);
+            // HttpTerminate(HTTP_INITIALIZE_SERVER, NULL);
         }
 };
 
-}// END NAMESPACE ipc
+
+class MultiServer : public kul::http::Server{
+    protected:
+        uint8_t _acceptThreads, _workerThreads;
+        kul::Mutex m_mutex;
+        ChroncurrentThreadPool<> _acceptPool;
+        ChroncurrentThreadPool<> _workerPool;
+
+        virtual void handleBuffer(std::map<int, uint8_t>& fds , const int& fd, char* in, const int& read, int& e) override {
+            _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e), 
+                std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
+            e = 1;
+        }
+        
+        void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read, int& e){
+            kul::http::Server::handleBuffer(*fds, fd, in, read, e);
+            if(e < 0){
+                std::vector<int> del {fd};
+                // closeFDs(*fds, del);
+            }
+        }
+        virtual void errorBuffer(const kul::Exception& e){ 
+            KERR << e.stack(); 
+        };
+
+        void operateAccept(
+            const size_t& threadID
+        ){
+            std::map<int, uint8_t> fds;
+            fds.insert(std::make_pair(0, 0));
+            for(int i = threadID; i < _KUL_TCP_MAX_CLIENT_; i+=_acceptThreads) fds.insert(std::make_pair(i, 0));
+            while(s)
+                try{
+                    kul::ScopeLock lock(m_mutex);
+                    loop(fds);
+                }
+                catch(const kul::tcp::Exception& e1){ KERR << e1.stack();  }
+                catch(const std::exception& e1)     { KERR << e1.what();   }
+                catch(...)                          { KERR << "Loop Exception caught"; }
+        }
+    public:
+        MultiServer(
+            const short& p = 80, 
+            const uint8_t& acceptThreads = 1, 
+            const uint8_t& workerThreads = 1, 
+            const std::string& w = "localhost") 
+                : Server(p, w), _acceptThreads(acceptThreads), _workerThreads(workerThreads){}
+
+        virtual void start() KTHROW (kul::tcp::Exception) override;
+
+        virtual void join(){
+            _acceptPool.join();
+            _workerPool.join();
+        }
+        virtual void stop() override {
+            kul::http::Server::stop();
+            _acceptPool.stop();
+            _workerPool.stop();
+        }
+        virtual void interrupt(){
+            _acceptPool.interrupt();
+            _workerPool.interrupt();
+        }
+        const std::exception_ptr& exception(){ 
+            return _acceptPool.exception();
+        }
+};
+
+
+
 }// END NAMESPACE http
+}// END NAMESPACE kul
 
 #endif /* _KUL_HTTP_HPP_ */

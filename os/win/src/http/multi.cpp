@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2017, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,36 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/http.hpp"
 
 void
-kul::http::_1_1GetRequest::send() KTHROW (kul::http::Exception){
+kul::http::MultiServer::start() KTHROW (kul::tcp::Exception){
     KUL_DBG_FUNC_ENTER
-    kul::tcp::Socket<char> sock;
-    if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
-    const std::string& req(toString());
-    sock.write(req.c_str(), req.size());
-    char buf[_KUL_TCP_REQUEST_BUFFER_];
-    std::stringstream ss;
-    size_t s = 0;
-    do{
-        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
-        ss << buf;
-    }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
-    handle(ss.str());
-    sock.close();
-}
+    _started = kul::Now::MILLIS();
+   
 
-void
-kul::http::_1_1PostRequest::send() KTHROW (kul::http::Exception){
-    KUL_DBG_FUNC_ENTER
-    kul::tcp::Socket<char> sock;
-    if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
-    const std::string& req(toString());
-    sock.write(req.c_str(), req.size());
-    char buf[_KUL_TCP_REQUEST_BUFFER_];
-    std::stringstream ss;
-    size_t s = 0;
-    do{
-        s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
-        ss << buf;
-    }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
-    handle(ss.str());
+    for(size_t i = 0; i < _acceptThreads; i++)
+        _acceptPool.async(std::bind(&MultiServer::operateAccept, std::ref(*this), i));
+    _acceptPool.start();
+    _workerPool.start();
 }

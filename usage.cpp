@@ -41,6 +41,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kul/signal.hpp"
 
+#ifdef _WIN32
+#define bzero ZeroMemory
+#endif
+
 #ifndef  _KUL_HTTP_TEST_PORT_
 #define  _KUL_HTTP_TEST_PORT_ 8888
 #endif /*_KUL_HTTP_TEST_PORT_*/
@@ -199,41 +203,24 @@ class Test{
             KOUT(NON) << "Single HTTPS SERVER";
             {
                 TestHTTPSServer serv;
-                KLOG(INF);
                 serv.init();
-                KLOG(INF);
                 kul::Thread t(std::ref(serv));
-                KLOG(INF);
                 t.run();
-                KLOG(INF);
                 kul::this_thread::sleep(333);
-                KLOG(INF);
                 if(t.exception()) std::rethrow_exception(t.exception());
-                KLOG(INF);
                 {
-                KLOG(INF);
                     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
-                KLOG(INF);
                     HTTPS_Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-                KLOG(INF);
                     p.body("tsop");
                     p.send();
-                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
-                KLOG(INF);
                     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-                KLOG(INF);
                     if(t.exception()) std::rethrow_exception(t.exception());
-                KLOG(INF);
                 }
-                KLOG(INF);
                 kul::this_thread::sleep(100);
                 serv.stop();
-                KLOG(INF);
                 t.join();
-                KLOG(INF);
                 kul::this_thread::sleep(100);
             }
             KOUT(NON) << "Multi HTTPS SERVER";
@@ -261,49 +248,35 @@ class Test{
                 ctp.finish(1000000000);
 
                 kul::this_thread::sleep(100);
-                KLOG(INF);
                 serv.stop();
-                KLOG(INF);
                 kul::this_thread::sleep(100);
-                KLOG(INF);
                 serv.join();
-                KLOG(INF);
                 t.join();
-                KLOG(INF);
             }
 
-#endif
-            //_KUL_HTTPS_
-            // KOUT(NON) << "Single HTTP SERVER";
-            // {
-            //     TestHTTPServer serv;
-            //     kul::Thread t(std::ref(serv));
-            //     t.run();
-            //     kul::this_thread::sleep(333);
-            //     if(t.exception()) std::rethrow_exception(t.exception());
-            //     {
-            //         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-            //         KLOG(INF);
-            //         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-            //         KLOG(INF);
-            //         if(t.exception()) std::rethrow_exception(t.exception());
-            //         KLOG(INF);
-            //         Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-            //         KLOG(INF);
-            //         p.body("tsop");
-            //         KLOG(INF);
-            //         p.send();
-            //         KLOG(INF);
-            //         if(t.exception()) std::rethrow_exception(t.exception());
-            //         KLOG(INF);
-            //     }
-            //     kul::this_thread::sleep(100);
-            //     serv.stop();
-            //     KLOG(INF);
-            //     kul::this_thread::sleep(100);
-            //     KLOG(INF);
-            //     t.join();
-            // }
+#endif // _KUL_HTTPS_
+            
+            KOUT(NON) << "Single HTTP SERVER";
+            {
+                TestHTTPServer serv;
+                kul::Thread t(std::ref(serv));
+                t.run();
+                kul::this_thread::sleep(333);
+                if(t.exception()) std::rethrow_exception(t.exception());
+                {
+                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+                    Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+                    if(t.exception()) std::rethrow_exception(t.exception());
+                    Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+                    p.body("tsop");
+                    p.send();
+                    if(t.exception()) std::rethrow_exception(t.exception());
+                }
+                kul::this_thread::sleep(100);
+                serv.stop();
+                kul::this_thread::sleep(100);
+                t.join();
+            }
             KLOG(INF) << "Test socket connection";
             {
                 kul::tcp::Socket<char> sock;

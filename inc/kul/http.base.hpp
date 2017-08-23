@@ -197,6 +197,19 @@ class AServer : public kul::tcp::SocketServer<char>{
                 }
             }
         }
+
+        virtual std::shared_ptr<ARequest> handleRequest(
+            const std::string& b, 
+            std::string& path
+        );
+
+        virtual void handleBuffer(
+            std::map<int, uint8_t>& fds, 
+            const int& fd, 
+            char* in, 
+            const int& read, 
+            int& e
+        );
     public:
         AServer(const uint16_t& p) : kul::tcp::SocketServer<char>(p){}
         virtual ~AServer(){}

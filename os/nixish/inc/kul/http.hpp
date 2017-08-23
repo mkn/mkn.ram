@@ -52,23 +52,10 @@ class Server : public kul::http::AServer{
             return inBuffers[fd].get();
         }
 
-        virtual std::shared_ptr<ARequest> handleRequest(
-            const std::string& b, 
-            std::string& path
-        );
-
         virtual bool receive(
             std::map<int, uint8_t>& fds, 
             const int& fd
         ) override;
-
-        virtual void handleBuffer(
-            std::map<int, uint8_t>& fds, 
-            const int& fd, 
-            char* in, 
-            const int& read, 
-            int& e
-        );
 
     public:
         Server(const short& p = 80, const std::string& w = "localhost") : AServer(p){}

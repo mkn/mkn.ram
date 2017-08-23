@@ -171,8 +171,8 @@ class SocketServer : public ASocketServer<T>{
         virtual int readFrom(const int& fd, T* in){
             return ::recv(m_fds[fd].fd, in, _KUL_TCP_READ_BUFFER_ - 1, 0);
         }
-        virtual int writeTo(const int& fd, T* out){
-            return ::send(m_fds[fd].fd, out, strlen(out), 0);
+        virtual int writeTo(const int& fd, const T*const out, size_t size){
+            return ::send(m_fds[fd].fd, out, size, 0);
         }
         virtual bool receive(std::map<int, uint8_t>& fds , const int& fd){
             KUL_DBG_FUNC_ENTER
@@ -193,7 +193,7 @@ class SocketServer : public ASocketServer<T>{
                     T out[_KUL_TCP_READ_BUFFER_];
                     bzero(out, _KUL_TCP_READ_BUFFER_);
                     cl = handle(in, out);
-                    e = writeTo(fd, out);
+                    e = writeTo(fd, out, strlen(out));
                 }catch(const kul::tcp::Exception& e1){
                     KERR << e1.stack(); 
                     e = -1;
