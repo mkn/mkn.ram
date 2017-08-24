@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace ram{
 
-void addResponseHeaders(kul::http::AResponse& r){
+void addResponseHeaders(kul::http::_1_1Response& r){
     if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
     if(!r.header("Connection"))     r.header("Connection", "close");
     if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
@@ -60,7 +60,7 @@ class TestHTTPServer : public kul::http::Server{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
             r.body("HTTP PROVIDED BY KUL");
@@ -77,7 +77,7 @@ class TestMultiHTTPServer : public kul::http::MultiServer{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
             r.body("MULTI HTTP PROVIDED BY KUL");
@@ -97,7 +97,7 @@ class TestHTTPSServer : public kul::https::Server{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
             r.body("HTTPS PROVIDED BY KUL: " + req.method());
@@ -118,7 +118,7 @@ class TestMultiHTTPSServer : public kul::https::MultiServer{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             KUL_DBG_FUNC_ENTER
             kul::http::_1_1Response r;
             r.body("MULTI HTTPS PROVIDED BY KUL");

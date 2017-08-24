@@ -51,25 +51,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul{ namespace ram{
 
-void addResponseHeaders(kul::http::AResponse& r){
-    if(!r.header("Date"))           r.header("Date", kul::DateTime::NOW());
-    if(!r.header("Connection"))     r.header("Connection", "close");
-    if(!r.header("Content-Type"))   r.header("Content-Type", "text/html");
-    if(!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
-}
-
 class TestHTTPServer : public kul::http::Server{
     private:
         void operator()(){
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
-            KUL_DBG_FUNC_ENTER
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             kul::http::_1_1Response r;
-            r.body("HTTP PROVIDED BY KUL");
-            addResponseHeaders(r);
-            return r;
+            return r.withBody("HTTP PROVIDED BY KUL")
+                    .withDefaultHeaders();
         }
         TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_){}
         friend class kul::Thread;
@@ -81,12 +72,10 @@ class TestMultiHTTPServer : public kul::http::MultiServer{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
-            KUL_DBG_FUNC_ENTER
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             kul::http::_1_1Response r;
-            r.body("MULTI HTTP PROVIDED BY KUL");
-            addResponseHeaders(r);
-            return r;
+            return r.withBody("MULTI HTTP PROVIDED BY KUL")
+                    .withDefaultHeaders();
         }
         TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 3){}
         friend class kul::Thread;
@@ -99,12 +88,10 @@ class TestHTTPSServer : public kul::https::Server{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
-            KUL_DBG_FUNC_ENTER
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             kul::http::_1_1Response r;
-            r.body("HTTPS PROVIDED BY KUL: " + req.method());
-            addResponseHeaders(r);
-            return r;
+            return r.withBody("HTTPS PROVIDED BY KUL: " + req.method())
+                    .withDefaultHeaders();
         }
         TestHTTPSServer() : kul::https::Server(
             _KUL_HTTP_TEST_PORT_,
@@ -120,12 +107,10 @@ class TestMultiHTTPSServer : public kul::https::MultiServer{
             start();
         }
     public:
-        kul::http::AResponse respond(const kul::http::ARequest& req){
-            KUL_DBG_FUNC_ENTER
+        kul::http::_1_1Response respond(const kul::http::A1_1Request& req){
             kul::http::_1_1Response r;
-            r.body("MULTI HTTPS PROVIDED BY KUL @ " + req.path());
-            addResponseHeaders(r);
-            return r;
+            return r.withBody("MULTI HTTPS PROVIDED BY KUL: " + req.method())
+                    .withDefaultHeaders();
         }
         TestMultiHTTPSServer(const uint8_t& acceptThreads = 1, const uint8_t& workerThreads = 1) : kul::https::MultiServer(
             _KUL_HTTP_TEST_PORT_, acceptThreads, workerThreads,
@@ -141,8 +126,8 @@ class HTTPS_Get : public kul::https::_1_1GetRequest{
         HTTPS_Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::https::_1_1GetRequest(host, path, port){
         }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << "HTTPS GET RESPONSE: " << b;
+        void handleResponse(const kul::http::_1_1Response& r) override {
+            KLOG(INF) << "HTTPS GET RESPONSE: " << r.body();
         }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest{
@@ -150,11 +135,9 @@ class HTTPS_Post : public kul::https::_1_1PostRequest{
         HTTPS_Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::https::_1_1PostRequest(host, path, port){
         }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KUL_DBG_FUNC_ENTER
-            for(const auto& p : h)
-                KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
-            KOUT(NON) << "HTTPS POST RESPONSE: " << b;
+        void handleResponse(const kul::http::_1_1Response& r) override {
+            for(const auto& p : r.headers()) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
+            KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
         }
 };
 #endif//_KUL_HTTPS_
@@ -174,6 +157,7 @@ class TestSocketServer : public kul::tcp::SocketServer<char>{
             std::string rep("TCP PROVIDED BY KUL");
             std::strcpy(out, rep.c_str());
             outLen = rep.size();
+            return true;
         }
         TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_){}
         friend class kul::Thread;
@@ -184,8 +168,8 @@ class Get : public kul::http::_1_1GetRequest{
         Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::http::_1_1GetRequest(host, path, port){
         }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << "GET RESPONSE: " << b;
+        void handleResponse(const kul::http::_1_1Response& r) override {
+            KLOG(INF) << "GET RESPONSE: " << r.body();
         }
 };
 class Post : public kul::http::_1_1PostRequest{
@@ -193,11 +177,9 @@ class Post : public kul::http::_1_1PostRequest{
         Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80)
             : kul::http::_1_1PostRequest(host, path, port){
         }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KUL_DBG_FUNC_ENTER
-            for(const auto& p : h)
-                KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
-            KOUT(NON) << "POST RESPONSE: " << b;
+        void handleResponse(const kul::http::_1_1Response& r) override {
+            for(const auto& p : r.headers()) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
+            KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
         }
 };
 

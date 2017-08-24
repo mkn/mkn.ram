@@ -30,11 +30,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-std::shared_ptr<kul::http::ARequest> 
+std::shared_ptr<kul::http::A1_1Request> 
 kul::http::AServer::handleRequest(const std::string& b, std::string& path){
     KUL_DBG_FUNC_ENTER
     std::string a;
-    std::shared_ptr<kul::http::ARequest> req;
+    std::shared_ptr<kul::http::A1_1Request> req;
     {
         std::string mode, host;
         std::stringstream ss(b);
@@ -106,7 +106,7 @@ kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds , const int& fd, ch
     in[read] = '\0';
     std::string res;
     try{
-        std::string s(in);
+        std::string s(in, read);
         std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
         std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
         bool f = 0;
@@ -115,8 +115,8 @@ kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds , const int& fd, ch
             if(f) break;
         }
         if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-        std::shared_ptr<ARequest> req = handleRequest(s, res);
-        const AResponse& rs(respond(*req.get()));
+        std::shared_ptr<A1_1Request> req = handleRequest(s, res);
+        const _1_1Response& rs(respond(*req.get()));
         std::string ret(rs.toString());
         e = writeTo(fd, ret.c_str(), ret.length());
     }catch(const kul::http::Exception& e1){

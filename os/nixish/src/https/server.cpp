@@ -152,8 +152,8 @@ kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds , const int& fd, ch
             if(f) break;
         }
         if(!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-        std::shared_ptr<kul::http::ARequest> req = handleRequest(s, res);
-        const kul::http::AResponse& rs(respond(*req.get()));
+        std::shared_ptr<kul::http::A1_1Request> req = handleRequest(s, res);
+        const kul::http::_1_1Response& rs(respond(*req.get()));
         std::string ret(rs.toString());
         e = ::SSL_write(ssl_clients[m_fds[fd].fd], ret.c_str(), ret.length());
     }catch(const kul::http::Exception& e1){

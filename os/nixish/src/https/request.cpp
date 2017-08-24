@@ -64,7 +64,10 @@ kul::https::_1_1GetRequest::send() KTHROW (kul::http::Exception){
     try{
         std::stringstream ss;
         Requester::send(_host, toString(), _port, ss, ssl);
-        handle(ss.str());
+
+        auto rec(ss.str());
+        kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
+        handleResponse(res);
     }catch(const kul::Exception& e){
         KLOG(ERR) << e.debug();
         KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
@@ -77,7 +80,10 @@ kul::https::_1_1PostRequest::send() KTHROW (kul::http::Exception){
     try{
         std::stringstream ss;
         Requester::send(_host, toString(), _port, ss, ssl);
-        handle(ss.str());
+
+        auto rec(ss.str());
+        kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
+        handleResponse(res);
     }catch(const kul::Exception& e){
         KLOG(ERR) << e.debug();
         KEXCEPT(Exception, "HTTP POST failed with host: " + _host);

@@ -30,31 +30,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.base.hpp"
 
-void kul::http::ARequest::handle(std::string b){
-    KUL_DBG_FUNC_ENTER
-    kul::hash::map::S2S h;
-    std::string line;
-    std::stringstream ss(b);
-    while(std::getline(ss, line)){
-        if(line.size() <= 2) {
-            b.erase(0, b.find("\n") + 1);
-            break;
-        }
-        if(line.find(":") != std::string::npos){
-            std::vector<std::string> bits;
-            kul::String::SPLIT(line, ':', bits);
-            std::string l(bits[0]);
-            std::string r(bits[1]);
-            kul::String::TRIM(l);
-            kul::String::TRIM(r);
-            h.insert(l, r);
-        }else
-            h.insert(line, "");
-        b.erase(0, b.find("\n") + 1);
-    }
-    handleResponse(h, b);
-}
-
 class RequestHeaders{
     private:
         kul::hash::map::S2S _hs;
@@ -67,7 +42,7 @@ class RequestHeaders{
             static RequestHeaders i;
             return i;
         }
-        kul::hash::map::S2S defaultHeaders(const kul::http::ARequest& r, const std::string& body = "") const{
+        kul::hash::map::S2S defaultHeaders(const kul::http::A1_1Request& r, const std::string& body = "") const{
             kul::hash::map::S2S hs1;
             for(const auto& h : _hs) if(!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);
             if(!body.empty() && !r.header("Content-Length") && !r.header("Transfer-Encoding"))
@@ -98,7 +73,8 @@ std::string kul::http::_1_1GetRequest::toString() const {
     return ss.str();
 }
 
-std::string kul::http::_1_1PostRequest::toString() const {
+std::string
+kul::http::_1_1PostRequest::toString() const {
     KUL_DBG_FUNC_ENTER
     std::stringstream ss;
     ss << method() << " /" << _path << " " << version();

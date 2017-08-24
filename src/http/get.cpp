@@ -44,6 +44,7 @@ kul::http::_1_1GetRequest::send() KTHROW (kul::http::Exception){
         s = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
         ss << buf;
     }while(s == _KUL_TCP_REQUEST_BUFFER_ - 1);
-    handle(ss.str());
-    sock.close();
+    auto rec(ss.str());
+    _1_1Response res(_1_1Response::FROM_STRING(rec));
+    handleResponse(res);
 }

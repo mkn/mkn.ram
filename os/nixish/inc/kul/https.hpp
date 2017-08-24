@@ -201,10 +201,10 @@ class MultiServer : public kul::https::Server{
         }
 };
 
-class ARequest;
+class A1_1Request;
 class Requester;
 class SSLReqHelper{
-    friend class ARequest;
+    friend class A1_1Request;
     friend class Requester;
     private:
         SSL_CTX *ctx;
@@ -229,11 +229,11 @@ class SSLReqHelper{
 
 };
 
-class ARequest{
+class A1_1Request{
     protected:
         SSL *ssl = {0};
-        ARequest() : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx)){}
-        ~ARequest(){
+        A1_1Request() : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx)){}
+        ~A1_1Request(){
             SSL_free(ssl);
         }
 };
@@ -243,14 +243,14 @@ class Requester{
         static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl);
 };
 
-class _1_1GetRequest : public http::_1_1GetRequest, https::ARequest{
+class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request{
     public:
         _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
             : http::_1_1GetRequest(host, path, port){}
         virtual void send() KTHROW (kul::http::Exception) override;
 };
 
-class _1_1PostRequest : public http::_1_1PostRequest, https::ARequest{
+class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request{
     public:
         _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
             : http::_1_1PostRequest(host, path, port){}
