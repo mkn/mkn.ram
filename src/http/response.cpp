@@ -53,7 +53,6 @@ kul::http::_1_1Response::toString() const {
 
 kul::http::_1_1Response
 kul::http::_1_1Response::FROM_STRING(std::string& b){
-    KLOG(INF) << b;
     _1_1Response res;
 
     std::stringstream ss(b);
@@ -95,7 +94,7 @@ kul::http::_1_1Response::FROM_STRING(std::string& b){
 
         b.erase(0, b.find("\n") + 1);
     }
+    for(uint8_t i = 0; i < 3; i++) b.pop_back();
     res.body(b);
-
     return res;
 }

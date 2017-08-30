@@ -44,7 +44,9 @@ kul::https::Requester::send(const std::string& h, const std::string& req, const 
     SSL_write(ssl, req.c_str(), req.size());
     char buffer[_KUL_TCP_REQUEST_BUFFER_];
     int d = 0;
+    uint32_t i;
     do{
+        bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
         d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
         if (d == 0) break;
         if (d < 0){
@@ -53,7 +55,7 @@ kul::https::Requester::send(const std::string& h, const std::string& req, const 
             if(se) KLOG(ERR) << "SSL_get_error: " << se;
             break;
         }
-        for(uint16_t i = 0; i < d; i++) ss << buffer[i];
+        for(i = 0; i < d; i++) ss << buffer[i];
     }while(d == _KUL_TCP_REQUEST_BUFFER_ - 1);
     ::close(sck);
 }

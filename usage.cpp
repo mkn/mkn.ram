@@ -294,18 +294,22 @@ class Test{
                 kul::this_thread::sleep(333);
                 if(t.exception()) std::rethrow_exception(t.exception());
 
-                kul::tcp::Socket<char> sock;
-                if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
+                for(size_t i = 0; i < 5; i++){
 
-                const char* c = "socketserver";
-                sock.write(c, strlen(c));
+                    kul::tcp::Socket<char> sock;
+                    if(!sock.connect("localhost", _KUL_HTTP_TEST_PORT_)) KEXCEPTION("TCP FAILED TO CONNECT!");
 
-                char buf[_KUL_TCP_REQUEST_BUFFER_];
-                bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-                sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
-                KLOG(INF) << buf;
+                    const char* c = "socketserver";
+                    sock.write(c, strlen(c));
 
-                sock.close();
+                    char buf[_KUL_TCP_REQUEST_BUFFER_];
+                    bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+                    sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
+                    KLOG(INF) << buf;
+
+                    sock.close();
+                }
+
                 serv.stop();
                 t.join();
             }

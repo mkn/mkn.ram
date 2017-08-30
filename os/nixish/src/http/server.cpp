@@ -46,6 +46,7 @@ kul::http::Server::receive(std::map<int, uint8_t>& fds , const int& fd){
     else{
         getpeername(m_fds[fd].fd , (struct sockaddr*) &cli_addr , (socklen_t*)&clilen);
         onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+        KOUT(DBG) << "DISCO,  " << inet_ntoa(cli_addr.sin_addr) << ", port : " << ntohs(cli_addr.sin_port);
     }
     if(e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
     return true;

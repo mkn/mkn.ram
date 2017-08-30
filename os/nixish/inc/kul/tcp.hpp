@@ -39,7 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/ioctl.h>
 #include <sys/poll.h>
 #include <sys/types.h> 
-// #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unordered_set>
@@ -212,6 +211,7 @@ class SocketServer : public ASocketServer<T>{
             return false;
         }
         void closeFDsNoCompress(std::map<int, uint8_t>& fds , std::vector<int>& del){
+            KUL_DBG_FUNC_ENTER;
             for(const auto& fd : del){
                 ::close(m_fds[fd].fd);
                 m_fds[fd].fd = -1;
@@ -229,7 +229,7 @@ class SocketServer : public ASocketServer<T>{
             if(!s) return;
             if(ret < 0)
                 KEXCEPTION("Socket Server error on select: " + std::to_string(errno) + " - " + std::string(strerror(errno)));
-            if(ret == 0) return;
+            // if(ret == 0) return;
             int newlisock = -1;;
             for (const auto& pair : fds){
                 auto& i = pair.first;
@@ -255,23 +255,30 @@ class SocketServer : public ASocketServer<T>{
                 }
             }
             std::vector<int> del;
-            for(const auto& pair : fds) {
-                if(pair.second == 1 && receive(fds, pair.first)) del.push_back(pair.first);
-            }
+            for(const auto& pair : fds)
+                if(pair.second == 1 && receive(fds, pair.first))
+                    del.push_back(pair.first);
             if(del.size()) closeFDs(fds, del);
         }
-        virtual int poll(int timeout = 1000){
+        virtual int poll(int timeout = 10){
             auto p = ::poll(m_fds, nfds, timeout);
-            if(errno)
+            if(errno == 11){
+                kul::this_thread::sleep(timeout);
+                return 0;
+            }
+            else
+            if(errno){
                 KLOG(ERR) << std::to_string(errno) << " - " << std::string(strerror(errno));
-            if(errno == 11) return 0;
+                return -1;
+            }
             return p;
         }
         virtual int accept(){
             return ::accept(lisock, (struct sockaddr *) &cli_addr, &clilen);
         }
         virtual void validAccept(std::map<int, uint8_t>& fds, const int& newlisock, const int& nfd){
-            KOUT(DBG) << "New connection , socket fd is " << newlisock << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);        
+            KUL_DBG_FUNC_ENTER;
+            KOUT(DBG) << "New connection , socket fd is " << newlisock << ", is : " << inet_ntoa(cli_addr.sin_addr) << ", port : "<< ntohs(cli_addr.sin_port);
             this->onConnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
             m_fds[nfd].fd = newlisock;
             m_fds[nfd].events = POLLIN;
@@ -289,7 +296,7 @@ class SocketServer : public ASocketServer<T>{
         virtual void bind(int sockOpt = __KUL_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {
             lisock = socket(AF_INET, SOCK_STREAM, 0);
             int iso = 1;
-            int rc = setsockopt(lisock, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
+            int rc = setsockopt(lisock, SOL_SOCKET, sockOpt, (char*)&iso, sizeof(iso));
             if (rc < 0) {
                 KERR << std::to_string(errno) << " - " << std::string(strerror(errno));
                 KEXCEPTION("Socket Server error on setsockopt");
@@ -321,7 +328,7 @@ class SocketServer : public ASocketServer<T>{
             s = true;
             m_fds[0].fd = lisock;
             m_fds[0].events = POLLIN; //|POLLPRI;
-
+            nfds = lisock + 1;
             std::map<int, uint8_t> fds;
             for(size_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
             try{

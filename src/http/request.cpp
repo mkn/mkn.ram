@@ -30,6 +30,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.base.hpp"
 
+void
+kul::http::A1_1Request::send() KTHROW (kul::http::Exception){
+    KUL_DBG_FUNC_ENTER
+    std::stringstream ss;
+    {
+        kul::tcp::Socket<char> sock;
+        if(!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
+        const std::string& req(toString());
+        sock.write(req.c_str(), req.size());
+        char buf[_KUL_TCP_REQUEST_BUFFER_];
+        uint32_t i;
+        int d = 0;
+        do{
+            bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
+            d = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
+            for(i = 0; i < d; i++) ss << buf[i];
+        }while(d == _KUL_TCP_REQUEST_BUFFER_ - 1);
+    }
+    std::string rec(ss.str());
+    _1_1Response res(_1_1Response::FROM_STRING(rec));
+    handleResponse(res);
+}
+
 class RequestHeaders{
     private:
         kul::hash::map::S2S _hs;

@@ -103,6 +103,7 @@ kul::http::AServer::handleRequest(const std::string& b, std::string& path){
 
 void
 kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds , const int& fd, char* in, const int& read, int& e){
+    KUL_DBG_FUNC_ENTER;
     in[read] = '\0';
     std::string res;
     try{

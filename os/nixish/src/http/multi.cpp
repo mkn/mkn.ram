@@ -39,6 +39,7 @@ kul::http::MultiServer::start() KTHROW (kul::tcp::Exception){
     s = true;
     m_fds[0].fd = lisock;
     m_fds[0].events = POLLIN; //|POLLPRI;
+    nfds = lisock + 1;
 
     for(size_t i = 0; i < _acceptThreads; i++)
         _acceptPool.async(std::bind(&MultiServer::operateAccept, std::ref(*this), i));
