@@ -56,7 +56,7 @@ kul::https::Requester::send(const std::string& h, const std::string& req, const 
             break;
         }
         for(i = 0; i < d; i++) ss << buffer[i];
-    }while(d == _KUL_TCP_REQUEST_BUFFER_ - 1);
+    }while(true);
     ::close(sck);
 }
 

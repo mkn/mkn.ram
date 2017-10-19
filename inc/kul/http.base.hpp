@@ -128,6 +128,7 @@ class _1_1Response : public Message{
 
         static _1_1Response FROM_STRING(std::string&);
 };
+using Response = _1_1Response;
 inline std::ostream& operator<<(std::ostream &s, const _1_1Response& r){
     return s << r.toString();
 }
@@ -162,7 +163,7 @@ class A1_1Request : public Message{
         const std::string& path() const { return _path; }
         const uint16_t&    port() const { return _port; }
         virtual std::string version() const { return "HTTP/1.1";}
-        A1_1Request& withResponse(const std::function<void(const _1_1Response&)>& func){
+        A1_1Request& withResponse(const std::function<void(const Response&)>& func){
             m_func = func;
             return *this;
         }
@@ -187,9 +188,11 @@ class _1_1GetRequest : public A1_1Request{
                 const std::string& path = "", 
                 const uint16_t& port = 80
         )              : A1_1Request(host, path, port){}
+        virtual ~_1_1GetRequest(){}
         virtual std::string method() const override { return "GET";}
         virtual std::string toString() const override;
 };
+using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public A1_1Request{
     public:
@@ -204,6 +207,7 @@ class _1_1PostRequest : public A1_1Request{
         virtual std::string method() const override { return "POST";}
         virtual std::string toString() const override;
 };
+using Post = _1_1PostRequest;
 
 class AServer : public kul::tcp::SocketServer<char>{
     protected:

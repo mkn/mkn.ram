@@ -23,6 +23,13 @@ profile:
       - name: mkn.kul
         version: master
 
+  - name: https
+    parent: lib
+    arg: -D_KUL_HTTPS_
+    if_lib:
+      nix: ssl crypto
+      bsd: ssl crypto
+
   - name: c++0x
     parent: base
     dep:

@@ -247,8 +247,10 @@ class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request{
     public:
         _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
             : http::_1_1GetRequest(host, path, port){}
+        virtual ~_1_1GetRequest(){}
         virtual void send() KTHROW (kul::http::Exception) override;
 };
+using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request{
     public:
@@ -256,6 +258,7 @@ class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request{
             : http::_1_1PostRequest(host, path, port){}
         virtual void send() KTHROW (kul::http::Exception) override;
 };
+using Post = _1_1PostRequest;
 
 }}
 #endif//_KUL_HTTPS_HPP_

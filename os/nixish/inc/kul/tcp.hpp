@@ -136,7 +136,7 @@ class Socket : public ASocket<T>{
                 std::string ip;
                 struct addrinfo hints, *servinfo, *next;
                 struct sockaddr_in *in;
-                memset(&hints, 0, sizeof hints);
+                memset(&hints, 0, sizeof(hints));
                 hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
                 hints.ai_socktype = SOCK_STREAM;
                 if ((e = getaddrinfo(host.c_str(), 0, &hints, &servinfo)) != 0) 
