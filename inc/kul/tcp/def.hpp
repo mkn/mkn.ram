@@ -51,4 +51,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define   _KUL_TCP_REQUEST_BUFFER_ 10000 
 #endif /* _KUL_TCP_REQUEST_BUFFER_ */
 
+#ifdef _WIN32
+#define bzero ZeroMemory
+#endif
+
 #endif /* _KUL_TCP_DEF_HPP_ */
