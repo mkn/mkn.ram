@@ -10,6 +10,12 @@ view tst/kul.ram.test.hpp
 
 License: BSD
 
+OpenSSL on Windows found @
+  https://www.npcglib.org/~stathis/blog/precompiled-openssl/
+
+mkn command for compiling with windows looks like
+
+  mkn clean build -dtKa "-EHsc -Zc:inline -O2 -MT" -l "libsslMT.lib libcryptoMT.lib Crypt32.lib User32.lib" 
 
 Switches - OSX is considered BSD for swiches unless otherwise noted
  
@@ -43,6 +49,4 @@ Description
     Convenience macro, if _KUL_HTTPS_CLIENT_METHOD_ and _KUL_HTTPS_SERVER_METHOD_ are not defined, it is used as the prefix for both i.e.:
     -D_KUL_HTTPS_METHOD_=TLS
     -D_KUL_HTTPS_METHOD_=TLSv1_2
-
-
 
