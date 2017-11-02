@@ -45,13 +45,10 @@ profile:
     self: lib
     main: usage.cpp
 
-<<<<<<< Updated upstream
-=======
   - name: test_fcgi
     main: test/fcgi.cpp
     self: lib
 
->>>>>>> Stashed changes
   - name: test 
     parent: lib
     main: test.cpp
