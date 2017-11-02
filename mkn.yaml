@@ -25,10 +25,14 @@ profile:
 
   - name: https
     parent: lib
-    arg: -D_KUL_HTTPS_
+    arg: -D_KUL_INCLUDE_HTTPS_
     if_lib:
       nix: ssl crypto
       bsd: ssl crypto
+
+  - name: fcgi
+    parent: lib
+    arg: -D_KUL_INCLUDE_FCGI_
 
   - name: c++0x
     parent: base
@@ -41,6 +45,13 @@ profile:
     self: lib
     main: usage.cpp
 
+<<<<<<< Updated upstream
+=======
+  - name: test_fcgi
+    main: test/fcgi.cpp
+    self: lib
+
+>>>>>>> Stashed changes
   - name: test 
     parent: lib
     main: test.cpp

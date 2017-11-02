@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/tcp.hpp"
 #include "kul/http.hpp"
 
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif//_KUL_HTTPS_
+#endif//_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
@@ -81,7 +81,7 @@ class TestMultiHTTPServer : public kul::http::MultiServer{
         friend class kul::Thread;
 };
 
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
 class TestHTTPSServer : public kul::https::Server{
     private:
         void operator()(){
@@ -140,7 +140,7 @@ class HTTPS_Post : public kul::https::_1_1PostRequest{
             KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
         }
 };
-#endif//_KUL_HTTPS_
+#endif//_KUL_INCLUDE_HTTPS_
 
 class TestSocketServer : public kul::tcp::SocketServer<char>{
     private:
@@ -186,7 +186,7 @@ class Post : public kul::http::_1_1PostRequest{
 class Test{
     public:
         Test(){
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
             KOUT(NON) << "Single HTTPS SERVER";
             {
                 TestHTTPSServer serv;

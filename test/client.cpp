@@ -33,9 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/tcp.hpp"
 #include "kul/http.hpp"
 
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif//_KUL_HTTPS_
+#endif//_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
@@ -44,7 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef  _KUL_HTTP_TEST_PORT_
 #define  _KUL_HTTP_TEST_PORT_ 8888
 #endif /*_KUL_HTTP_TEST_PORT_*/
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
 
 namespace kul{ namespace ram{
 
@@ -69,7 +69,7 @@ class HTTPS_Post : public kul::https::_1_1PostRequest{
             KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
         }
 };
-#endif//_KUL_HTTPS_
+#endif//_KUL_INCLUDE_HTTPS_
 
 class Get : public kul::http::_1_1GetRequest{
     public:
@@ -114,7 +114,7 @@ int main(int argc, char* argv[]){
 
         // kul::this_thread::sleep(500);
 
-// #ifdef  _KUL_HTTPS_
+// #ifdef  _KUL_INCLUDE_HTTPS_
 //         for(size_t i = 0; i < 100; i++)
 //             kul::ram::HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
 //         for(size_t i = 0; i < 100; i++)
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]){
 //             kul::ram::HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
 //         for(size_t i = 0; i < 1000; i++)
 //             kul::ram::HTTPS_Post("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-// #endif//_KUL_HTTPS_
+// #endif//_KUL_INCLUDE_HTTPS_
 
     }catch(const kul::Exception& e){ 
         KERR << e.stack(); return 1;

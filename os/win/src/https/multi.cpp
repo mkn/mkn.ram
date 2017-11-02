@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef  _KUL_HTTPS_
+#ifdef  _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
 void
@@ -48,4 +48,4 @@ kul::https::MultiServer::start() KTHROW (kul::tcp::Exception){
     _workerPool.start();
 }
 
-#endif//_KUL_HTTPS_
+#endif//_KUL_INCLUDE_HTTPS_
