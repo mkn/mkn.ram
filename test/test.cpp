@@ -32,22 +32,25 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kul/signal.hpp"
 
-#ifndef  _KUL_HTTP_TEST_PORT_
-#define  _KUL_HTTP_TEST_PORT_ 8888
+#ifndef _KUL_HTTP_TEST_PORT_
+#define _KUL_HTTP_TEST_PORT_ 8888
 #endif /*_KUL_HTTP_TEST_PORT_*/
 
+int
+main(int argc, char* argv[])
+{
+  kul::Signal s;
+  try {
 
-int main(int argc, char* argv[]){
-    kul::Signal s;
-    try{
-
-
-    }catch(const kul::Exception& e){ 
-        KERR << e.stack(); return 1;
-    }catch(const std::exception& e){ 
-        KERR << e.what();  return 2;
-    }catch(...){ 
-        KERR << "UNKNOWN EXCEPTION CAUGHT";  return 3;
-    }
-    return 0;
+  } catch (const kul::Exception& e) {
+    KERR << e.stack();
+    return 1;
+  } catch (const std::exception& e) {
+    KERR << e.what();
+    return 2;
+  } catch (...) {
+    KERR << "UNKNOWN EXCEPTION CAUGHT";
+    return 3;
+  }
+  return 0;
 }

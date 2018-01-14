@@ -32,92 +32,115 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_HTTP_SESSION_HPP_
 
 #include "kul/http.hpp"
-#include "kul/time.hpp"
-#include "kul/threads.hpp"
 #include "kul/http/def.hpp"
+#include "kul/threads.hpp"
+#include "kul/time.hpp"
 
-namespace kul{ namespace http{
+namespace kul {
+namespace http {
 
-template <class S>
+template<class S>
 class SessionServer;
 
-class Session{
-    private:
-        static const constexpr std::time_t MAX = (std::numeric_limits<std::time_t>::max)();
-        std::time_t c;
-    public:
-        Session() : c(std::time(0)){}
-        void refresh(){ 
-            if(c != MAX) this->c = std::time(0); 
-        }
-        const bool expired() const { 
-            return c < (std::time(0) - _KUL_HTTP_SESSION_TTL_); 
-        }
-        void invalidate(){ 
-            c = MAX; 
-        }
-        template <class S> friend class SessionServer;
+class Session
+{
+private:
+  static const constexpr std::time_t MAX =
+    (std::numeric_limits<std::time_t>::max)();
+  std::time_t c;
+
+public:
+  Session()
+    : c(std::time(0))
+  {}
+  void refresh()
+  {
+    if (c != MAX)
+      this->c = std::time(0);
+  }
+  const bool expired() const
+  {
+    return c < (std::time(0) - _KUL_HTTP_SESSION_TTL_);
+  }
+  void invalidate() { c = MAX; }
+  template<class S>
+  friend class SessionServer;
 };
 
-template <class S = Session>
-class SessionServer{
-    protected:
-        kul::Mutex mutex;
-        kul::Thread th1;
-        kul::hash::map::S2T<std::shared_ptr<S>> sss;
-        virtual void operator()(){
-            while(true){
-                kul::this_thread::sleep(_KUL_HTTP_SESSION_CHECK_);
-                {   
-                    auto copy = sss;
-                    std::vector<std::string> erase;
-                    for(const auto& p : copy) if(p.second->expired()) erase.push_back(p.first); 
-                    kul::ScopeLock lock(mutex);             
-                    for(const std::string& e : erase) sss.erase(e);
-                }
-            }
-        }
-    public:
-        SessionServer() : th1(std::ref(*this)){
-            sss.setDeletedKey("DELETED");
-            th1.run();
-        }
-        S* get(const std::string& id){
-            S* s = 0;
-            kul::ScopeLock lock(mutex);
-            if(sss.count(id)) s = (*sss.find(id)).second.get();
-            if(s && !s->expired()) s->c -= 5;
-            return s;
-        }
-        bool has(const std::string& id) {
-            kul::ScopeLock lock(mutex);
-            if(sss.count(id)){
-                S& s = *(*sss.find(id)).second.get();
-                if(!s.expired()) s.c -= 5;
-            }
-            return sss.count(id);
-        }
-        S& add(const std::string& id, const std::shared_ptr<S>& s){
-            kul::ScopeLock lock(mutex);
-            sss.insert(id, s);
-            return *s.get();
-        }
-        S& add(const std::string& id){
-            return add(id, std::make_shared<S>());
-        }
-        void refresh(const std::string& id){
-            S* s = 0;
-            kul::ScopeLock lock(mutex);
-            if(sss.count(id)) s = (*sss.find(id)).second.get();
-            if(s && !s->expired()) (*sss.find(id)).second->refresh();
-        }
-        void shutdown(){
-            kul::ScopeLock lock(mutex);
-            th1.interrupt();
-        }
-        friend class kul::Thread;
+template<class S = Session>
+class SessionServer
+{
+protected:
+  kul::Mutex mutex;
+  kul::Thread th1;
+  kul::hash::map::S2T<std::shared_ptr<S>> sss;
+  virtual void operator()()
+  {
+    while (true) {
+      kul::this_thread::sleep(_KUL_HTTP_SESSION_CHECK_);
+      {
+        auto copy = sss;
+        std::vector<std::string> erase;
+        for (const auto& p : copy)
+          if (p.second->expired())
+            erase.push_back(p.first);
+        kul::ScopeLock lock(mutex);
+        for (const std::string& e : erase)
+          sss.erase(e);
+      }
+    }
+  }
+
+public:
+  SessionServer()
+    : th1(std::ref(*this))
+  {
+    sss.setDeletedKey("DELETED");
+    th1.run();
+  }
+  S* get(const std::string& id)
+  {
+    S* s = 0;
+    kul::ScopeLock lock(mutex);
+    if (sss.count(id))
+      s = (*sss.find(id)).second.get();
+    if (s && !s->expired())
+      s->c -= 5;
+    return s;
+  }
+  bool has(const std::string& id)
+  {
+    kul::ScopeLock lock(mutex);
+    if (sss.count(id)) {
+      S& s = *(*sss.find(id)).second.get();
+      if (!s.expired())
+        s.c -= 5;
+    }
+    return sss.count(id);
+  }
+  S& add(const std::string& id, const std::shared_ptr<S>& s)
+  {
+    kul::ScopeLock lock(mutex);
+    sss.insert(id, s);
+    return *s.get();
+  }
+  S& add(const std::string& id) { return add(id, std::make_shared<S>()); }
+  void refresh(const std::string& id)
+  {
+    S* s = 0;
+    kul::ScopeLock lock(mutex);
+    if (sss.count(id))
+      s = (*sss.find(id)).second.get();
+    if (s && !s->expired())
+      (*sss.find(id)).second->refresh();
+  }
+  void shutdown()
+  {
+    kul::ScopeLock lock(mutex);
+    th1.interrupt();
+  }
+  friend class kul::Thread;
 };
-
-
-}}
+}
+}
 #endif /* _KUL_HTTP_SESSION_HPP_ */

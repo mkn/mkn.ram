@@ -33,66 +33,77 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "kul/html/tag.hpp"
 
-namespace kul{ namespace html4{
+namespace kul {
+namespace html4 {
 
-namespace tag{
-class Body : public Tag{
-    protected:
-        virtual const std::string tag() const { return "body"; }
+namespace tag {
+class Body : public Tag
+{
+protected:
+  virtual const std::string tag() const { return "body"; }
 };
-class Head : public Tag{
-    protected:
-        virtual const std::string tag() const { return "head"; }
+class Head : public Tag
+{
+protected:
+  virtual const std::string tag() const { return "head"; }
 };
 }
 
-class Page{
-    protected:
-        size_t p = 0;
-        uint16_t c = -1;
-        const std::string t = "", x = "";
-        std::shared_ptr<const std::string> str;
-        std::shared_ptr<tag::Head> h;
-        std::shared_ptr<tag::Body> b;
-        Page() : h(std::make_shared<tag::Head>()), b(std::make_shared<tag::Body>()){}
-    public:
-        Tag& body(){
-            return *b.get();
-        }
-        Page& body(const std::shared_ptr<tag::Body>& t){
-            b = t; return *this;
-        }
-        template <class T>
-        Page& body(const std::shared_ptr<T>& t){
-            b->tags.push_back(t); return *this;
-        }
-        Tag& head(){
-            return *h.get();
-        }
-        Page& head(const std::shared_ptr<tag::Head>& t){
-            h = t; return *this;
-        }
-        template <class T>
-        Page& head(const std::shared_ptr<T>& t){
-            h->tags.push_back(t); return *this;
-        }
-        virtual const std::string* render(){
-            std::stringstream ss;
-#if defined(_KUL_HTML_DOC_TYPE_)
-            ss << _KUL_HTML_DOC_TYPE_ << "\n";
-#endif
-            ss << "<html>";
-            ss << *h->render();
-            ss << *b->render();
-            ss << x << "\n</html>";
-            str = std::make_shared<std::string>(ss.str());
-            return str.get();
-        }
+class Page
+{
+protected:
+  size_t p = 0;
+  uint16_t c = -1;
+  const std::string t = "", x = "";
+  std::shared_ptr<const std::string> str;
+  std::shared_ptr<tag::Head> h;
+  std::shared_ptr<tag::Body> b;
+  Page()
+    : h(std::make_shared<tag::Head>())
+    , b(std::make_shared<tag::Body>())
+  {}
 
+public:
+  Tag& body() { return *b.get(); }
+  Page& body(const std::shared_ptr<tag::Body>& t)
+  {
+    b = t;
+    return *this;
+  }
+  template<class T>
+  Page& body(const std::shared_ptr<T>& t)
+  {
+    b->tags.push_back(t);
+    return *this;
+  }
+  Tag& head() { return *h.get(); }
+  Page& head(const std::shared_ptr<tag::Head>& t)
+  {
+    h = t;
+    return *this;
+  }
+  template<class T>
+  Page& head(const std::shared_ptr<T>& t)
+  {
+    h->tags.push_back(t);
+    return *this;
+  }
+  virtual const std::string* render()
+  {
+    std::stringstream ss;
+#if defined(_KUL_HTML_DOC_TYPE_)
+    ss << _KUL_HTML_DOC_TYPE_ << "\n";
+#endif
+    ss << "<html>";
+    ss << *h->render();
+    ss << *b->render();
+    ss << x << "\n</html>";
+    str = std::make_shared<std::string>(ss.str());
+    return str.get();
+  }
 };
 
-
-}// END NAMESPACE html4
-}// END NAMESPACE kul
+} // END NAMESPACE html4
+} // END NAMESPACE kul
 
 #endif /* _KUL_HTML_PAGE_HPP_ */

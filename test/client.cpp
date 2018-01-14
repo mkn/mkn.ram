@@ -30,110 +30,147 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <cstring>
 
-#include "kul/tcp.hpp"
 #include "kul/http.hpp"
+#include "kul/tcp.hpp"
 
-#ifdef  _KUL_INCLUDE_HTTPS_
+#ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif//_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
 #include "kul/signal.hpp"
 
-#ifndef  _KUL_HTTP_TEST_PORT_
-#define  _KUL_HTTP_TEST_PORT_ 8888
+#ifndef _KUL_HTTP_TEST_PORT_
+#define _KUL_HTTP_TEST_PORT_ 8888
 #endif /*_KUL_HTTP_TEST_PORT_*/
-#ifdef  _KUL_INCLUDE_HTTPS_
+#ifdef _KUL_INCLUDE_HTTPS_
 
-namespace kul{ namespace ram{
+namespace kul {
+namespace ram {
 
-class HTTPS_Get : public kul::https::_1_1GetRequest{
-    public:
-        HTTPS_Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
-            : kul::https::_1_1GetRequest(host, path, port){
-        }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
-        }
+class HTTPS_Get : public kul::https::_1_1GetRequest
+{
+public:
+  HTTPS_Get(const std::string& host,
+            const std::string& path = "",
+            const uint16_t& port = 80)
+    : kul::https::_1_1GetRequest(host, path, port)
+  {}
+  void handleResponse(const kul::hash::map::S2S& h,
+                      const std::string& b) override
+  {
+    KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
+  }
 };
-class HTTPS_Post : public kul::https::_1_1PostRequest{
-    public:
-        HTTPS_Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
-            : kul::https::_1_1PostRequest(host, path, port){
-        }
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KUL_DBG_FUNC_ENTER
-            for(const auto& p : h)
-                KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
-            KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
-        }
+class HTTPS_Post : public kul::https::_1_1PostRequest
+{
+public:
+  HTTPS_Post(const std::string& host,
+             const std::string& path = "",
+             const uint16_t& port = 80)
+    : kul::https::_1_1PostRequest(host, path, port)
+  {}
+  void handleResponse(const kul::hash::map::S2S& h,
+                      const std::string& b) override
+  {
+    KUL_DBG_FUNC_ENTER
+    for (const auto& p : h)
+      KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
+    KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
+  }
 };
-#endif//_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
-class Get : public kul::http::_1_1GetRequest{
-    public:
-        Get(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
-            : kul::http::_1_1GetRequest(host, path, port){}
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            KLOG(INF) << b;
-            // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL") KEXCEPTION("Body failed :" + b + ":");
-        }
+class Get : public kul::http::_1_1GetRequest
+{
+public:
+  Get(const std::string& host,
+      const std::string& path = "",
+      const uint16_t& port = 80)
+    : kul::http::_1_1GetRequest(host, path, port)
+  {}
+  void handleResponse(const kul::hash::map::S2S& h,
+                      const std::string& b) override
+  {
+    KLOG(INF) << b;
+    // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
+    // KEXCEPTION("Body failed :" + b + ":");
+  }
 };
-class Post : public kul::http::_1_1PostRequest{
-    public:
-        Post(const std::string& host, const std::string& path = "", const uint16_t& port = 80) 
-            : kul::http::_1_1PostRequest(host, path, port){}
-        void handleResponse(const kul::hash::map::S2S& h, const std::string& b) override {
-            if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL") KEXCEPTION("Body failed :" + b + ":");
-        }
+class Post : public kul::http::_1_1PostRequest
+{
+public:
+  Post(const std::string& host,
+       const std::string& path = "",
+       const uint16_t& port = 80)
+    : kul::http::_1_1PostRequest(host, path, port)
+  {}
+  void handleResponse(const kul::hash::map::S2S& h,
+                      const std::string& b) override
+  {
+    if (b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
+      KEXCEPTION("Body failed :" + b + ":");
+  }
 };
+}
+}
 
-}}
+int
+main(int argc, char* argv[])
+{
+  kul::Signal s;
+  try {
+    kul::ram::Get g("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+    kul::ChroncurrentThreadPool<> requests(10, 0);
 
+    for (size_t i = 0; i < 5000; i++)
+      requests.async([&]() { g.send(); });
+    requests.start().finish();
 
-int main(int argc, char* argv[]){
-    kul::Signal s;    
-    try{
-        kul::ram::Get g("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-        kul::ChroncurrentThreadPool<> requests(10, 0);
+    // kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    // for(size_t i = 0; i < 100; i++)
+    //     kul::ram::Post("localhost", "index.html",
+    //     _KUL_HTTP_TEST_PORT_).send();
 
-        for(size_t i = 0; i < 5000; i++) requests.async([&](){ g.send(); } );
-        requests.start().finish();
+    // kul::this_thread::sleep(500);
 
-            // kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-        // for(size_t i = 0; i < 100; i++)
-        //     kul::ram::Post("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    // for(size_t i = 0; i < 1000; i++)
+    //     kul::ram::Get("localhost", "index.html",
+    //     _KUL_HTTP_TEST_PORT_).send();
+    // for(size_t i = 0; i < 1000; i++)
+    //     kul::ram::Post("localhost", "index.html",
+    //     _KUL_HTTP_TEST_PORT_).send();
 
-        // kul::this_thread::sleep(500);
+    // kul::this_thread::sleep(500);
 
-        // for(size_t i = 0; i < 1000; i++)
-        //     kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-        // for(size_t i = 0; i < 1000; i++)
-        //     kul::ram::Post("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    // #ifdef  _KUL_INCLUDE_HTTPS_
+    //         for(size_t i = 0; i < 100; i++)
+    //             kul::ram::HTTPS_Get("localhost", "index.html",
+    //             _KUL_HTTP_TEST_PORT_).send();
+    //         for(size_t i = 0; i < 100; i++)
+    //             kul::ram::HTTPS_Post("localhost", "index.html",
+    //             _KUL_HTTP_TEST_PORT_).send();
 
-        // kul::this_thread::sleep(500);
+    //         kul::this_thread::sleep(500);
 
-// #ifdef  _KUL_INCLUDE_HTTPS_
-//         for(size_t i = 0; i < 100; i++)
-//             kul::ram::HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-//         for(size_t i = 0; i < 100; i++)
-//             kul::ram::HTTPS_Post("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    //         for(size_t i = 0; i < 1000; i++)
+    //             kul::ram::HTTPS_Get("localhost", "index.html",
+    //             _KUL_HTTP_TEST_PORT_).send();
+    //         for(size_t i = 0; i < 1000; i++)
+    //             kul::ram::HTTPS_Post("localhost", "index.html",
+    //             _KUL_HTTP_TEST_PORT_).send();
+    // #endif//_KUL_INCLUDE_HTTPS_
 
-//         kul::this_thread::sleep(500);
-
-//         for(size_t i = 0; i < 1000; i++)
-//             kul::ram::HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-//         for(size_t i = 0; i < 1000; i++)
-//             kul::ram::HTTPS_Post("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-// #endif//_KUL_INCLUDE_HTTPS_
-
-    }catch(const kul::Exception& e){ 
-        KERR << e.stack(); return 1;
-    }catch(const std::exception& e){ 
-        KERR << e.what();  return 2;
-    }catch(...){ 
-        KERR << "UNKNOWN EXCEPTION CAUGHT";  return 3;
-    }
-    return 0;
+  } catch (const kul::Exception& e) {
+    KERR << e.stack();
+    return 1;
+  } catch (const std::exception& e) {
+    KERR << e.what();
+    return 2;
+  } catch (...) {
+    KERR << "UNKNOWN EXCEPTION CAUGHT";
+    return 3;
+  }
+  return 0;
 }

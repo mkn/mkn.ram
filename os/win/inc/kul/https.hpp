@@ -31,234 +31,272 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _KUL_HTTPS_HPP_
 #define _KUL_HTTPS_HPP_
 
-#include <openssl/ssl.h> 
-#include <openssl/err.h> 
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
-#include <openssl/rsa.h>
 #include <openssl/crypto.h>
-#include <openssl/x509.h>
 #include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
 
 #include "kul/http.hpp"
 
-#define KUL_HTTPS_METHOD_APPENDER2(x, y) x ## y
+#define KUL_HTTPS_METHOD_APPENDER2(x, y) x##y
 #define KUL_HTTPS_METHOD_APPENDER(x, y) KUL_HTTPS_METHOD_APPENDER2(x, y)
 
 #if !defined(_KUL_HTTPS_CLIENT_METHOD_) && !defined(_KUL_HTTPS_SERVER_METHOD_)
 
-#ifndef   _KUL_HTTPS_METHOD_
-#define   _KUL_HTTPS_METHOD_ TLS
+#ifndef _KUL_HTTPS_METHOD_
+#define _KUL_HTTPS_METHOD_ TLS
 #endif /* _KUL_HTTPS_METHOD_ */
 
-#define   _KUL_HTTPS_CLIENT_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _client_method)
-#define   _KUL_HTTPS_SERVER_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _server_method)
+#define _KUL_HTTPS_CLIENT_METHOD_                                              \
+  KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _client_method)
+#define _KUL_HTTPS_SERVER_METHOD_                                              \
+  KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _server_method)
 
 #else
 
-#ifndef   _KUL_HTTPS_CLIENT_METHOD_
-#define   _KUL_HTTPS_CLIENT_METHOD_ TLS_client_method
+#ifndef _KUL_HTTPS_CLIENT_METHOD_
+#define _KUL_HTTPS_CLIENT_METHOD_ TLS_client_method
 #endif /* _KUL_HTTPS_CLIENT_METHOD_ */
-#ifndef   _KUL_HTTPS_SERVER_METHOD_
-#define   _KUL_HTTPS_SERVER_METHOD_ TLS_server_method
+#ifndef _KUL_HTTPS_SERVER_METHOD_
+#define _KUL_HTTPS_SERVER_METHOD_ TLS_server_method
 #endif /* _KUL_HTTPS_SERVER_METHOD_ */
 
 #endif /* defined xyz */
 
+namespace kul {
+namespace https {
 
+class Server : public kul::http::Server
+{
+protected:
+  X509* cc = { 0 };
+  SSL* ssl_clients[_KUL_TCP_MAX_CLIENT_] = { 0 };
+  SSL_CTX* ctx = { 0 };
+  kul::File crt, key;
+  const std::string cs;
 
-namespace kul{ namespace https{
+  virtual void loop(std::map<int, uint8_t>& fds)
+    KTHROW(kul::tcp::Exception) override;
 
-class Server : public kul::http::Server{
-    protected:
-        X509* cc = {0};
-        SSL * ssl_clients[_KUL_TCP_MAX_CLIENT_] = {0};
-        SSL_CTX *ctx = {0};
-        kul::File crt, key;
-        const std::string cs;
+  virtual bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
-        virtual void loop(
-            std::map<int, uint8_t>& fds ) 
-                KTHROW(kul::tcp::Exception
-        ) override;
+  virtual void handleBuffer(std::map<int, uint8_t>& fds,
+                            const int& fd,
+                            char* in,
+                            const int& read,
+                            int& e);
 
-        virtual bool receive(
-            std::map<int, uint8_t>& fds , 
-            const int& fd
-        ) override;
-
-        virtual void handleBuffer(
-            std::map<int, uint8_t>& fds , 
-            const int& fd, 
-            char* in, 
-            const int& read, 
-            int& e
-        );
-    public:
-        Server(
-            const short& p, 
-            const kul::File& c, 
-            const kul::File& k, 
-            const std::string& cs = "") 
-                : kul::http::Server(p), crt(c), key(k), cs(cs){}
-        Server(
-            const kul::File& c, 
-            const kul::File& k, 
-            const std::string& cs = "") 
-                : kul::https::Server(443, c, k, cs){}
-        virtual ~Server(){
-            if(s) stop();
-        }
-        void setChain(const kul::File& f);
-        Server& init();
-        virtual void stop() override;
+public:
+  Server(const short& p,
+         const kul::File& c,
+         const kul::File& k,
+         const std::string& cs = "")
+    : kul::http::Server(p)
+    , crt(c)
+    , key(k)
+    , cs(cs)
+  {}
+  Server(const kul::File& c, const kul::File& k, const std::string& cs = "")
+    : kul::https::Server(443, c, k, cs)
+  {}
+  virtual ~Server()
+  {
+    if (s)
+      stop();
+  }
+  void setChain(const kul::File& f);
+  Server& init();
+  virtual void stop() override;
 };
 
-class MultiServer : public kul::https::Server{
-    protected:
-        uint8_t _acceptThreads, _workerThreads;
-        kul::Mutex m_mutex;
-        ChroncurrentThreadPool<> _acceptPool;
-        ChroncurrentThreadPool<> _workerPool;
+class MultiServer : public kul::https::Server
+{
+protected:
+  uint8_t _acceptThreads, _workerThreads;
+  kul::Mutex m_mutex;
+  ChroncurrentThreadPool<> _acceptPool;
+  ChroncurrentThreadPool<> _workerPool;
 
-        void operateAccept(
-            const size_t& threadID
-        ){
-            std::map<int, uint8_t> fds;
-            fds.insert(std::make_pair(0, 0));
-            for(size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i+=_acceptThreads) fds.insert(std::make_pair(i, 0));
-            while(s)
-                try{
-                    kul::ScopeLock lock(m_mutex);
-                    loop(fds);
-                }
-                catch(const kul::tcp::Exception& e1){ KERR << e1.stack();  }
-                catch(const std::exception& e1)     { KERR << e1.what();   }
-                catch(...)                          { KERR << "Loop Exception caught"; }
-        }
+  void operateAccept(const size_t& threadID)
+  {
+    std::map<int, uint8_t> fds;
+    fds.insert(std::make_pair(0, 0));
+    for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)
+      fds.insert(std::make_pair(i, 0));
+    while (s)
+      try {
+        kul::ScopeLock lock(m_mutex);
+        loop(fds);
+      } catch (const kul::tcp::Exception& e1) {
+        KERR << e1.stack();
+      } catch (const std::exception& e1) {
+        KERR << e1.what();
+      } catch (...) {
+        KERR << "Loop Exception caught";
+      }
+  }
 
-        virtual void handleBuffer(std::map<int, uint8_t>& fds , const int& fd, char* in, const int& read, int& e) override {
-            _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e), 
-                std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
-            e = 1;
-        }
-        
-        void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read, int& e){
-            kul::https::Server::handleBuffer(*fds, fd, in, read, e);
-            if(e < 0){
-                std::vector<int> del {fd};
-                closeFDs(*fds, del);
-            }
-        }
-        virtual void errorBuffer(const kul::Exception& e){ 
-            KERR << e.stack(); 
-        };
+  virtual void handleBuffer(std::map<int, uint8_t>& fds,
+                            const int& fd,
+                            char* in,
+                            const int& read,
+                            int& e) override
+  {
+    _workerPool.async(
+      std::bind(
+        &MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
+      std::bind(
+        &MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
+    e = 1;
+  }
 
-    public:
-        MultiServer(
-            const short& p, 
-            const uint8_t& acceptThreads, 
-            const uint8_t& workerThreads, 
-            const kul::File& c, 
-            const kul::File& k, 
-            const std::string& cs = "")
-                : kul::https::Server(p, c, k, cs), 
-                  _acceptThreads(acceptThreads), _workerThreads(workerThreads),
-                  _acceptPool(acceptThreads),    _workerPool(workerThreads)
-        {
-            if(acceptThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for accepting");
-            if(workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
-        }
-        MultiServer(
-            const uint8_t& acceptThreads, 
-            const uint8_t& workerThreads, 
-            const kul::File& c, 
-            const kul::File& k, 
-            const std::string& cs = "")
-                : MultiServer(443, acceptThreads, workerThreads, c, k, cs){}
+  void operateBuffer(std::map<int, uint8_t>* fds,
+                     const int& fd,
+                     char* in,
+                     const int& read,
+                     int& e)
+  {
+    kul::https::Server::handleBuffer(*fds, fd, in, read, e);
+    if (e < 0) {
+      std::vector<int> del{ fd };
+      closeFDs(*fds, del);
+    }
+  }
+  virtual void errorBuffer(const kul::Exception& e) { KERR << e.stack(); };
 
-        virtual ~MultiServer(){
-            _acceptPool.stop();
-            _workerPool.stop();
-        }
+public:
+  MultiServer(const short& p,
+              const uint8_t& acceptThreads,
+              const uint8_t& workerThreads,
+              const kul::File& c,
+              const kul::File& k,
+              const std::string& cs = "")
+    : kul::https::Server(p, c, k, cs)
+    , _acceptThreads(acceptThreads)
+    , _workerThreads(workerThreads)
+    , _acceptPool(acceptThreads)
+    , _workerPool(workerThreads)
+  {
+    if (acceptThreads < 1)
+      KEXCEPTION("MultiServer cannot have less than one threads for accepting");
+    if (workerThreads < 1)
+      KEXCEPTION("MultiServer cannot have less than one threads for working");
+  }
+  MultiServer(const uint8_t& acceptThreads,
+              const uint8_t& workerThreads,
+              const kul::File& c,
+              const kul::File& k,
+              const std::string& cs = "")
+    : MultiServer(443, acceptThreads, workerThreads, c, k, cs)
+  {}
 
-        virtual void start() KTHROW (kul::tcp::Exception) override;
+  virtual ~MultiServer()
+  {
+    _acceptPool.stop();
+    _workerPool.stop();
+  }
 
-        virtual void join(){
-            _acceptPool.join();
-            _workerPool.join();
-        }
-        virtual void stop() override {
-            kul::https::Server::stop();
-            _acceptPool.stop();
-            _workerPool.stop();
-        }
-        virtual void interrupt(){
-            _acceptPool.interrupt();
-            _workerPool.interrupt();
-        }
-        const std::exception_ptr& exception(){ 
-            return _acceptPool.exception();
-        }
+  virtual void start() KTHROW(kul::tcp::Exception) override;
+
+  virtual void join()
+  {
+    _acceptPool.join();
+    _workerPool.join();
+  }
+  virtual void stop() override
+  {
+    kul::https::Server::stop();
+    _acceptPool.stop();
+    _workerPool.stop();
+  }
+  virtual void interrupt()
+  {
+    _acceptPool.interrupt();
+    _workerPool.interrupt();
+  }
+  const std::exception_ptr& exception() { return _acceptPool.exception(); }
 };
 
 class A1_1Request;
 class Requester;
-class SSLReqHelper{
-    friend class A1_1Request;
-    friend class Requester;
-    private:
-        SSL_CTX *ctx;
-        SSLReqHelper(){
-            SSL_library_init();
-            SSL_load_error_strings();
-            OpenSSL_add_all_algorithms();
-            ctx = SSL_CTX_new(_KUL_HTTPS_CLIENT_METHOD_());
-            if ( ctx == NULL ) {
-                ERR_print_errors_fp(stderr);
-                abort();
-                KEXCEPTION("HTTPS Request SSL_CTX FAILED");
-            }
-        }
-        ~SSLReqHelper(){
-            SSL_CTX_free(ctx);
-        }
-        static SSLReqHelper& INSTANCE(){
-            static SSLReqHelper i;
-            return i;
-        }
+class SSLReqHelper
+{
+  friend class A1_1Request;
+  friend class Requester;
 
+private:
+  SSL_CTX* ctx;
+  SSLReqHelper()
+  {
+    SSL_library_init();
+    SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
+    ctx = SSL_CTX_new(_KUL_HTTPS_CLIENT_METHOD_());
+    if (ctx == NULL) {
+      ERR_print_errors_fp(stderr);
+      abort();
+      KEXCEPTION("HTTPS Request SSL_CTX FAILED");
+    }
+  }
+  ~SSLReqHelper() { SSL_CTX_free(ctx); }
+  static SSLReqHelper& INSTANCE()
+  {
+    static SSLReqHelper i;
+    return i;
+  }
 };
 
-class A1_1Request{
-    protected:
-        SSL *ssl = {0};
-        A1_1Request() : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx)){}
-        ~A1_1Request(){
-            SSL_free(ssl);
-        }
+class A1_1Request
+{
+protected:
+  SSL* ssl = { 0 };
+  A1_1Request()
+    : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx))
+  {}
+  ~A1_1Request() { SSL_free(ssl); }
 };
 
-class Requester{
-    public:
-        static void send(const std::string& h, const std::string& req, const uint16_t& p, std::stringstream& ss, SSL *ssl);
+class Requester
+{
+public:
+  static void send(const std::string& h,
+                   const std::string& req,
+                   const uint16_t& p,
+                   std::stringstream& ss,
+                   SSL* ssl);
 };
 
-class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request{
-    public:
-        _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
-            : http::_1_1GetRequest(host, path, port){}
-        virtual ~_1_1GetRequest(){}
-        virtual void send() KTHROW (kul::http::Exception) override;
+class _1_1GetRequest
+  : public http::_1_1GetRequest
+  , https::A1_1Request
+{
+public:
+  _1_1GetRequest(const std::string& host,
+                 const std::string& path = "",
+                 const uint16_t& port = 443)
+    : http::_1_1GetRequest(host, path, port)
+  {}
+  virtual ~_1_1GetRequest() {}
+  virtual void send() KTHROW(kul::http::Exception) override;
 };
 using Get = _1_1GetRequest;
 
-class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request{
-    public:
-        _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443) 
-            : http::_1_1PostRequest(host, path, port){}
-        virtual void send() KTHROW (kul::http::Exception) override;
+class _1_1PostRequest
+  : public http::_1_1PostRequest
+  , https::A1_1Request
+{
+public:
+  _1_1PostRequest(const std::string& host,
+                  const std::string& path = "",
+                  const uint16_t& port = 443)
+    : http::_1_1PostRequest(host, path, port)
+  {}
+  virtual void send() KTHROW(kul::http::Exception) override;
 };
 using Post = _1_1PostRequest;
-
-}}
-#endif//_KUL_INCLUDE_HTTPS_HPP_
+}
+}
+#endif //_KUL_INCLUDE_HTTPS_HPP_

@@ -50,7 +50,7 @@ profile:
 
   - name: test_fcgi
     main: test/fcgi.cpp
-    self: lib
+    self: fcgi
 
   - name: test 
     parent: lib

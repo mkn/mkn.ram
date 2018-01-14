@@ -28,24 +28,26 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef  _KUL_INCLUDE_HTTPS_
+#ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
 void
-kul::https::MultiServer::start() KTHROW (kul::tcp::Exception){
-    KUL_DBG_FUNC_ENTER
-    _started = kul::Now::MILLIS();
-    listen(lisock, 256);
-    clilen = sizeof(cli_addr);
-    s = true;
-    m_fds[0].fd = lisock;
-    m_fds[0].events = POLLIN; //|POLLPRI;
-    nfds = lisock + 1;
+kul::https::MultiServer::start() KTHROW(kul::tcp::Exception)
+{
+  KUL_DBG_FUNC_ENTER
+  _started = kul::Now::MILLIS();
+  listen(lisock, 256);
+  clilen = sizeof(cli_addr);
+  s = true;
+  m_fds[0].fd = lisock;
+  m_fds[0].events = POLLIN; //|POLLPRI;
+  nfds = lisock + 1;
 
-    for(size_t i = 0; i < _acceptThreads; i++)
-        _acceptPool.async(std::bind(&MultiServer::operateAccept, std::ref(*this), i));
-    _acceptPool.start();
-    _workerPool.start();
+  for (size_t i = 0; i < _acceptThreads; i++)
+    _acceptPool.async(
+      std::bind(&MultiServer::operateAccept, std::ref(*this), i));
+  _acceptPool.start();
+  _workerPool.start();
 }
 
-#endif//_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_

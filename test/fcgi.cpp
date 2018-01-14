@@ -28,35 +28,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define __KUL_RAM_NOMAIN__
-#include "usage.cpp"
+#include "kul/asio/fcgi.hpp"
+#include "kul/signal.hpp"
 
 int
 main(int argc, char* argv[])
 {
-  kul::Signal s;
-
-  uint8_t _threads = 4;
-
-  auto getter = []() {
-    kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-  };
-  auto except = [](const kul::Exception& e) { KLOG(ERR) << e.stack(); };
-
-  kul::ram::TestMultiHTTPServer serv;
+  kul::Signal sig;
   try {
+    kul::asio::fcgi::Server s(5863, 4, 8);
 
-    // kul::ChroncurrentThreadPool<> ctp(_threads, 1);
-    // for(size_t i = 0; i < 10000; i++) ctp.async(getter, except);
-    for (size_t i = 0; i < 1000; i++) {
-      KLOG(INF) << "SENDING: " << i;
-      kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-      if (serv.exception())
-        std::rethrow_exception(serv.exception());
-      KLOG(INF) << i;
-    }
-    // ctp.finish(1000000000);
-
+    sig.intr([&](int16_t) {
+      KERR << "Interrupted";
+      s.interrupt();
+      s.join();
+      exit(2);
+    });
+    s.join();
   } catch (const kul::Exception& e) {
     KERR << e.stack();
   } catch (const std::exception& e) {
@@ -64,9 +52,52 @@ main(int argc, char* argv[])
   } catch (...) {
     KERR << "UNKNOWN EXCEPTION CAUGHT";
   }
-  kul::this_thread::sleep(100);
-  serv.stop();
-  serv.join();
-
   return 0;
 }
+
+// #include <iostream>
+// #include "fcgio.h"
+
+// using namespace std;
+
+// int main(void) {
+//     // Backup the stdio streambufs
+//     streambuf * cin_streambuf  = cin.rdbuf();
+//     streambuf * cout_streambuf = cout.rdbuf();
+//     streambuf * cerr_streambuf = cerr.rdbuf();
+
+//     FCGX_Request request;
+
+//     FCGX_Init();
+//     FCGX_InitRequest(&request, 0, 0);
+
+//     while (FCGX_Accept_r(&request) == 0) {
+//         fcgi_streambuf cin_fcgi_streambuf(request.in);
+//         fcgi_streambuf cout_fcgi_streambuf(request.out);
+//         fcgi_streambuf cerr_fcgi_streambuf(request.err);
+
+//         cin.rdbuf(&cin_fcgi_streambuf);
+//         cout.rdbuf(&cout_fcgi_streambuf);
+//         cerr.rdbuf(&cerr_fcgi_streambuf);
+
+//         cout << "Content-type: text/html\r\n"
+//              << "\r\n"
+//              << "<html>\n"
+//              << "  <head>\n"
+//              << "    <title>Hello, World!</title>\n"
+//              << "  </head>\n"
+//              << "  <body>\n"
+//              << "    <h1>Hello, World!</h1>\n"
+//              << "  </body>\n"
+//              << "</html>\n";
+
+//         // Note: the fcgi_streambuf destructor will auto flush
+//     }
+
+//     // restore stdio streambufs
+//     cin.rdbuf(cin_streambuf);
+//     cout.rdbuf(cout_streambuf);
+//     cerr.rdbuf(cerr_streambuf);
+
+//     return 0;
+// }
