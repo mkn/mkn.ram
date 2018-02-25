@@ -40,29 +40,20 @@ kul::https::Requester::send(const std::string& h,
 {
   KUL_DBG_FUNC_ENTER
   {
-    KLOG(INF);
     kul::tcp::Socket<char> sock;
-    KLOG(INF);
     if (!sock.connect(h, p))
       KEXCEPTION("TCP FAILED TO CONNECT!");
-    KLOG(INF);
     SOCKET sck = sock.socket();
     SSL_set_fd(ssl, sck);
-    KLOG(INF);
     if (SSL_connect(ssl) == -1)
       KEXCEPTION("HTTPS REQUEST INIT FAILED");
-    KLOG(INF);
     SSL_write(ssl, req.c_str(), req.size());
-    KLOG(INF);
     char buffer[_KUL_TCP_REQUEST_BUFFER_];
     int d = 0;
     uint32_t i;
     do {
-      KLOG(INF);
       bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
-      KLOG(INF);
       d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
-      KLOG(INF);
       if (d == 0)
         break;
       if (d < 0) {
@@ -75,9 +66,7 @@ kul::https::Requester::send(const std::string& h,
       for (i = 0; i < d; i++)
         ss << buffer[i];
     } while (true);
-    KLOG(INF);
     ::closesocket(sck);
-    KLOG(INF);
   }
 }
 
