@@ -113,24 +113,25 @@ public:
   bool header(const std::string& s) const { return _hs.count(s); }
 };
 
-class _1_1Response : public Message
+class KUL_PUBLISH _1_1Response : public Message
 {
 protected:
   uint16_t _s = 200;
   std::string r = "OK";
   Headers hs;
   kul::hash::map::S2T<Cookie> cs;
-
 public:
-  _1_1Response() {}
-  _1_1Response(const std::string& b) { body(b); }
-  virtual ~_1_1Response() {}
-  void cookie(const std::string& k, const Cookie& c) { cs.insert(k, c); }
+  _1_1Response(){}
+  _1_1Response(const std::string& b){
+    body(b);
+  }
+  virtual ~_1_1Response(){}
+  void cookie(const std::string& k, const Cookie& c){ cs.insert(k, c); }
   const kul::hash::map::S2T<Cookie>& cookies() const { return cs; }
   const std::string& reason() const { return r; }
-  void reason(const std::string& r) { this->r = r; }
+  void reason(const std::string& r){ this->r = r; }
   const uint16_t& status() const { return _s; }
-  void status(const uint16_t& s) { this->_s = s; }
+  void status(const uint16_t& s){ this->_s = s; }
   virtual std::string version() const { return "HTTP/1.1"; }
   virtual std::string toString() const;
   friend std::ostream& operator<<(std::ostream&, const _1_1Response&);
@@ -174,7 +175,7 @@ operator<<(std::ostream& s, const _1_1Response& r)
   return s << r.toString();
 }
 
-class A1_1Request : public Message
+class KUL_PUBLISH A1_1Request : public Message
 {
 protected:
   uint16_t _port;
@@ -243,40 +244,38 @@ public:
   }
 };
 
-class _1_1GetRequest : public A1_1Request
-{
-public:
-  _1_1GetRequest(const std::string& host,
-                 const std::string& path = "",
-                 const uint16_t& port = 80)
-    : A1_1Request(host, path, port)
-  {}
-  virtual ~_1_1GetRequest() {}
-  virtual std::string method() const override { return "GET"; }
-  virtual std::string toString() const override;
+class KUL_PUBLISH _1_1GetRequest : public A1_1Request{
+    public:
+        _1_1GetRequest(
+                const std::string& host, 
+                const std::string& path = "", 
+                const uint16_t& port = 80
+        )              : A1_1Request(host, path, port){}
+        virtual ~_1_1GetRequest(){}
+        virtual std::string method() const override { return "GET";}
+        virtual std::string toString() const override;
 };
 using Get = _1_1GetRequest;
 
-class _1_1PostRequest : public A1_1Request
-{
-public:
-  _1_1PostRequest(const std::string& host,
-                  const std::string& path = "",
-                  const uint16_t& port = 80,
-                  const std::string& bdy = "")
-    : A1_1Request(host, path, port)
-  {
-    body(bdy);
-  }
-  virtual std::string method() const override { return "POST"; }
-  virtual std::string toString() const override;
+class KUL_PUBLISH _1_1PostRequest : public A1_1Request{
+    public:
+        _1_1PostRequest(
+                const std::string& host,
+                const std::string& path = "",
+                const uint16_t& port = 80,
+                const std::string& bdy = ""
+        )           : A1_1Request(host, path, port){
+            body(bdy);
+        }
+        virtual std::string method() const override { return "POST";}
+        virtual std::string toString() const override;
 };
 using Post = _1_1PostRequest;
 
-class AServer : public kul::tcp::SocketServer<char>
-{
-protected:
-  std::function<_1_1Response(const A1_1Request&)> m_func;
+class KUL_PUBLISH AServer : public kul::tcp::SocketServer<char>{
+    protected:
+        std::function<_1_1Response(const A1_1Request&)> m_func;
+// >>>>>>> conan module for windows libs
 
   void asAttributes(std::string a, kul::hash::map::S2S& atts)
   {

@@ -79,7 +79,7 @@ protected:
     return inBuffers[fd].get();
   }
 
-  virtual bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
+  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
 public:
   Server(const short& p = 80, const std::string& s = "localhost")
@@ -99,7 +99,7 @@ public:
   }
 };
 
-class MultiServer : public kul::http::Server
+class KUL_PUBLISH MultiServer : public kul::http::Server
 {
 protected:
   uint8_t _acceptThreads, _workerThreads;
