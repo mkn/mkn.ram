@@ -16,12 +16,6 @@ profile:
         bsd: ./os/nixish/src
         nix: ./os/nixish/src
         win: ./os/win/src
-    if_mod:
-      win:
-        - name: conan.install
-          arg:
-            init:
-              install: -s compiler="Visual Studio" -s compiler.version=15
 
   - name: lib
     parent: base
@@ -34,11 +28,15 @@ profile:
   - name: https
     parent: lib
     arg: -D_KUL_INCLUDE_HTTPS_
+    if_mod:
+      win:
+        - name: conan.install
+          arg:
+            init:
+              install: -s compiler="Visual Studio" -s compiler.version=15
     if_lib:
       nix: ssl crypto
       bsd: ssl crypto
-      # win is assumed to use the https://www.npcglib.org/~stathis/downloads/openssl-1.1.0f-vs2017.7z
-      # view: https://www.npcglib.org/~stathis/blog/precompiled-openssl/
       win: User32 Crypt32 libssl libcrypto
 
   - name: fcgi
@@ -52,7 +50,7 @@ profile:
         version: master
         profile: c++0x
 
-  - name: usage 
+  - name: usage
     self: lib
     main: usage.cpp
 
@@ -60,7 +58,7 @@ profile:
     main: test/fcgi.cpp
     self: fcgi
 
-  - name: test 
+  - name: test
     parent: lib
     main: test.cpp
 
