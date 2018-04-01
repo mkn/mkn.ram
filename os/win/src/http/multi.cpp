@@ -30,15 +30,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-void
-kul::http::MultiServer::start() KTHROW(kul::tcp::Exception)
-{
+void kul::http::MultiServer::start() KTHROW(kul::tcp::Exception) {
   KUL_DBG_FUNC_ENTER
   _started = kul::Now::MILLIS();
 
   for (size_t i = 0; i < _acceptThreads; i++)
     _acceptPool.async(
-      std::bind(&MultiServer::operateAccept, std::ref(*this), i));
+        std::bind(&MultiServer::operateAccept, std::ref(*this), i));
   _acceptPool.start();
   _workerPool.start();
 }

@@ -31,9 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/asio/fcgi.hpp"
 #include "kul/signal.hpp"
 
-int
-main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   kul::Signal sig;
   try {
     kul::asio::fcgi::Server s(5863, 4, 8);

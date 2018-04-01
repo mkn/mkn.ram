@@ -31,9 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __KUL_RAM_NOMAIN__
 #include "usage.cpp"
 
-int
-main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   kul::Signal s;
 
   uint8_t _threads = 4;
@@ -45,14 +43,12 @@ main(int argc, char* argv[])
 
   kul::ram::TestMultiHTTPServer serv;
   try {
-
     // kul::ChroncurrentThreadPool<> ctp(_threads, 1);
     // for(size_t i = 0; i < 10000; i++) ctp.async(getter, except);
     for (size_t i = 0; i < 1000; i++) {
       KLOG(INF) << "SENDING: " << i;
       kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-      if (serv.exception())
-        std::rethrow_exception(serv.exception());
+      if (serv.exception()) std::rethrow_exception(serv.exception());
       KLOG(INF) << i;
     }
     // ctp.finish(1000000000);

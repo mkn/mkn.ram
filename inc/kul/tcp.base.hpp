@@ -36,42 +36,36 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kul {
 namespace tcp {
 
-class Exception : public kul::Exception
-{
-public:
+class Exception : public kul::Exception {
+ public:
   Exception(const char* f, const uint16_t& l, const std::string& s)
-    : kul::Exception(f, l, s)
-  {}
+      : kul::Exception(f, l, s) {}
 };
 
-template<class T = uint8_t>
-class ASocket
-{
-protected:
+template <class T = uint8_t>
+class ASocket {
+ protected:
   bool open = 0;
 
-public:
+ public:
   virtual ~ASocket() {}
   virtual bool connect(const std::string& host, const int16_t& port) = 0;
   virtual bool close() = 0;
   virtual size_t read(T* data, const size_t& len)
-    KTHROW(kul::tcp::Exception) = 0;
+      KTHROW(kul::tcp::Exception) = 0;
   virtual size_t write(const T* data, const size_t& len) = 0;
 };
 
-template<class T = uint8_t>
-class ASocketServer
-{
-protected:
+template <class T = uint8_t>
+class ASocketServer {
+ protected:
   uint16_t p;
   uint64_t s;
 
   virtual void onConnect(const char* ip, const uint16_t& port) {}
-  ASocketServer(const uint16_t& p)
-    : p(p)
-  {}
+  ASocketServer(const uint16_t& p) : p(p) {}
 
-public:
+ public:
   virtual ~ASocketServer() {}
   virtual void start() KTHROW(kul::tcp::Exception) = 0;
   virtual void onDisconnect(const char* ip, const uint16_t& port) {}
@@ -80,7 +74,7 @@ public:
   bool started() const { return s; }
 };
 
-} // END NAMESPACE tcp
-} // END NAMESPACE kul
+}  // END NAMESPACE tcp
+}  // END NAMESPACE kul
 
 #endif /* _KUL_HTTP_BASE_HPP_ */

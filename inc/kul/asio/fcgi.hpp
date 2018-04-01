@@ -41,51 +41,44 @@ namespace kul {
 namespace asio {
 namespace fcgi {
 
-class Exception : public kul::Exception
-{
-public:
+class Exception : public kul::Exception {
+ public:
   Exception(const char* f, const uint16_t& l, const std::string& s)
-    : kul::Exception(f, l, s)
-  {}
+      : kul::Exception(f, l, s) {}
 };
 
 class Server;
-class FCGI_Message
-{
+class FCGI_Message {
   friend class Server;
 
-private:
+ private:
   bool d = 1;
   uint16_t rid = 0;
   std::function<void(const FCGI_Message& msg)> m_finish;
 
-private:
+ private:
   FCGI_Message(const FCGI_Message& msg) = delete;
   FCGI_Message& operator=(const FCGI_Message& msg) = delete;
 
   void finish() { m_finish(*this); }
-  void finish(const std::function<void(const FCGI_Message& msg)>& fin)
-  {
+  void finish(const std::function<void(const FCGI_Message& msg)>& fin) {
     m_finish = fin;
   }
 
-protected:
+ protected:
   virtual std::string response() const { return "FCGI-ed"; }
-  bool done()
-  {
-    if (d)
-      return true;
+  bool done() {
+    if (d) return true;
     d = !d;
     return false;
   }
 
-public:
+ public:
   FCGI_Message() {}
 };
 
-class Server : public kul::tcp::SocketServer<uint8_t>
-{
-protected:
+class Server : public kul::tcp::SocketServer<uint8_t> {
+ protected:
   int fdSize = _KUL_TCP_READ_BUFFER_;
   uint8_t m_acceptThreads, m_workerThreads;
 
@@ -96,32 +89,27 @@ protected:
   std::unordered_map<uint64_t, std::unique_ptr<FCGI_Message>> msgs;
   std::unordered_map<int, std::unique_ptr<uint8_t[]>> inBuffers;
 
-protected:
-  uint8_t* getOrCreateBufferFor(const int& fd)
-  {
+ protected:
+  uint8_t* getOrCreateBufferFor(const int& fd) {
     kul::ScopeLock lock(m_butex);
     if (!inBuffers.count(fd))
       inBuffers.insert(
-        std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
+          std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
     return inBuffers[fd].get();
   }
 
-  FCGI_Message& createFCGI_Message(const int& fd)
-  {
+  FCGI_Message& createFCGI_Message(const int& fd) {
     kul::ScopeLock lock(m_mapex);
     msgs[fd] = std::make_unique<FCGI_Message>();
     return *msgs[fd];
   }
 
-  int accept() override
-  {
+  int accept() override {
     kul::ScopeLock lock(m_actex);
     return ::accept(lisock, (struct sockaddr*)&cli_addr, &clilen);
   }
 
-  void cycle(const uint16_t& size, std::map<int, uint8_t>* fds, const int& fd)
-  {
-
+  void cycle(const uint16_t& size, std::map<int, uint8_t>* fds, const int& fd) {
     auto& msg(*msgs[fd]);
     work(msg);
     if (msg.done()) {
@@ -131,38 +119,30 @@ protected:
     }
   }
 
-  void write(std::map<int, uint8_t>& fds,
-             const int& fd,
-             const uint8_t* out,
+  void write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
              const size_t size);
 
   bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
   void PARAMS(uint8_t* const in, const int& inLen, FCGI_Message& msg) {}
 
-  void PARSE_FIRST(std::map<int, uint8_t>& fds,
-                   uint8_t* const in,
-                   const int& inLen,
-                   const int& fd) KTHROW(kul::fcgi::Exception);
+  void PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
+                   const int& inLen, const int& fd)
+      KTHROW(kul::fcgi::Exception);
 
-  void PARSE(std::map<int, uint8_t>& fds,
-             uint8_t* const in,
-             const int& inLen,
-             const int& fd,
-             size_t pos) KTHROW(kul::fcgi::Exception);
+  void PARSE(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen,
+             const int& fd, size_t pos) KTHROW(kul::fcgi::Exception);
 
   size_t FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out);
 
   virtual void work(FCGI_Message& msg) {}
 
-  void operateAccept(const size_t& threadID)
-  {
+  void operateAccept(const size_t& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += m_acceptThreads)
       fds.insert(std::make_pair(i, 0));
-    while (s)
-      try {
+    while (s) try {
         kul::ScopeLock lock(m_mutex);
         loop(fds);
       } catch (const kul::tcp::Exception& e1) {
@@ -173,77 +153,63 @@ protected:
         KERR << "Loop Exception caught";
       }
   }
-  void handleBuffer(std::map<int, uint8_t>& fds,
-                    const int& fd,
-                    uint8_t* in,
-                    const int& read,
-                    int& e)
-  {
-    m_workerPool.async(
-      std::bind(&Server::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
-      std::bind(&Server::errorBuffer, std::ref(*this), std::placeholders::_1));
+  void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, uint8_t* in,
+                    const int& read, int& e) {
+    m_workerPool.async(std::bind(&Server::operateBuffer, std::ref(*this), &fds,
+                                 fd, in, read, e),
+                       std::bind(&Server::errorBuffer, std::ref(*this),
+                                 std::placeholders::_1));
   }
 
-  void operateBuffer(std::map<int, uint8_t>* fds,
-                     const int& fd,
-                     uint8_t* in,
-                     const int& read,
-                     int& e)
-  {
+  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, uint8_t* in,
+                     const int& read, int& e) {
     PARSE_FIRST(*fds, in, read, fd);
     if (e < 0) {
-      std::vector<int> del{ fd };
+      std::vector<int> del{fd};
       closeFDs(*fds, del);
     }
   }
   void errorBuffer(const kul::Exception& e) { KERR << e.stack(); };
 
-public:
-  Server(const uint16_t& port,
-         const uint8_t& acceptThreads = 1,
+ public:
+  Server(const uint16_t& port, const uint8_t& acceptThreads = 1,
          const uint8_t& workerThreads = 1)
-    : kul::tcp::SocketServer<uint8_t>(port)
-    , m_acceptThreads(acceptThreads)
-    , m_workerThreads(workerThreads)
-    , m_acceptPool(acceptThreads)
-    , m_workerPool(workerThreads)
-  {
+      : kul::tcp::SocketServer<uint8_t>(port),
+        m_acceptThreads(acceptThreads),
+        m_workerThreads(workerThreads),
+        m_acceptPool(acceptThreads),
+        m_workerPool(workerThreads) {
     if (acceptThreads < 1)
       KEXCEPTION("FCGI Server cannot have less than one threads for accepting");
     if (workerThreads < 1)
       KEXCEPTION("FCGI Server cannot have less than one threads for working");
   }
 
-  virtual ~Server()
-  {
+  virtual ~Server() {
     m_acceptPool.stop();
     m_workerPool.stop();
   }
 
   void start() KTHROW(kul::tcp::Exception) override;
 
-  void join()
-  {
-    if (!started())
-      start();
+  void join() {
+    if (!started()) start();
     m_acceptPool.join();
     m_workerPool.join();
   }
-  void stop() override
-  {
+  void stop() override {
     kul::tcp::SocketServer<uint8_t>::stop();
     m_acceptPool.stop();
     m_workerPool.stop();
   }
-  void interrupt()
-  {
+  void interrupt() {
     m_acceptPool.interrupt();
     m_workerPool.interrupt();
   }
 };
 
-} // END NAMESPACE asio
-} // END NAMESPACE fcgi
-} // END NAMESPACE kul
+}  // namespace fcgi
+}  // namespace asio
+}  // END NAMESPACE kul
 
 #endif /* _KUL_ASIO_FCGI_HPP_ */

@@ -40,13 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace kul {
 
-class HTML
-{
-private:
-  static void replace(std::string& s,
-                      const std::string& f,
-                      const std::string& r)
-  {
+class HTML {
+ private:
+  static void replace(std::string& s, const std::string& f,
+                      const std::string& r) {
     size_t p = s.find(f);
     while (p != std::string::npos) {
       s.replace(p, f.size(), r);
@@ -54,9 +51,8 @@ private:
     }
   }
 
-public:
-  static std::string& ESC(std::string& s)
-  {
+ public:
+  static std::string& ESC(std::string& s) {
     replace(s, "&", "&amp;");
     replace(s, "<", "&lt;");
     replace(s, ">", "&gt;");
@@ -71,9 +67,8 @@ namespace html4 {
 
 class Page;
 
-class Tag
-{
-protected:
+class Tag {
+ protected:
   std::string v = "";
   std::vector<std::pair<std::string, std::string>> atts;
   std::unique_ptr<std::string> str;
@@ -81,61 +76,50 @@ protected:
   virtual const std::string tag() const { return ""; }
   virtual const std::string& value() const { return v; }
   Tag() {}
-  Tag(const std::string& v)
-    : v(v)
-  {}
+  Tag(const std::string& v) : v(v) {}
 
-  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_)
-  {
+  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_) {
     std::stringstream ss;
 #ifdef _KUL_HTML_FORMAT_
     ss << "\n";
-    for (int i = 0; i < tab; i++)
-      ss << "\t";
+    for (int i = 0; i < tab; i++) ss << "\t";
 #endif /* _KUL_HTML_FORMAT_ */
     ss << "<" << tag();
     for (const auto& p : atts) {
       ss << " " << p.first;
-      if (p.second.size())
-        ss << "=\"" << p.second << "\"";
+      if (p.second.size()) ss << "=\"" << p.second << "\"";
     }
     if (tags.size() || v.size())
       ss << ">";
     else
       ss << "/>";
     ++tab;
-    if (v.size())
-      ss << value();
+    if (v.size()) ss << value();
     if (tags.size())
       for (const auto& t : tags)
         ss << *t->render(
 #ifdef _KUL_HTML_FORMAT_
-          tab
+            tab
 #endif /* _KUL_HTML_FORMAT_ */
         );
 #ifdef _KUL_HTML_FORMAT_
+    if (tags.size()) ss << "\n";
     if (tags.size())
-      ss << "\n";
-    if (tags.size())
-      for (int i = 0; i < tab - 1; i++)
-        ss << "\t";
+      for (int i = 0; i < tab - 1; i++) ss << "\t";
 #endif /* _KUL_HTML_FORMAT_ */
-    if (tags.size() || v.size())
-      ss << "</" << tag() << ">";
+    if (tags.size() || v.size()) ss << "</" << tag() << ">";
     // #ifdef _KUL_HTML_FORMAT_
     // #endif /* _KUL_HTML_FORMAT_ */
     str = std::make_unique<std::string>(ss.str());
     return str.get();
   }
 
-public:
-  Tag& attribute(const std::string& k, const std::string& v = "")
-  {
+ public:
+  Tag& attribute(const std::string& k, const std::string& v = "") {
     atts.push_back(std::make_pair(k, v));
     return *this;
   }
-  Tag& add(const std::shared_ptr<Tag>& b)
-  {
+  Tag& add(const std::shared_ptr<Tag>& b) {
     tags.push_back(b);
     return *this;
   }
@@ -148,75 +132,57 @@ public:
 
 namespace tag {
 
-class Exception : public kul::Exception
-{
-public:
+class Exception : public kul::Exception {
+ public:
   Exception(const char* f, const uint16_t& l, const std::string& s)
-    : kul::Exception(f, l, s)
-  {}
+      : kul::Exception(f, l, s) {}
 };
 
-class Named : public Tag
-{
-private:
+class Named : public Tag {
+ private:
   const std::string n;
 
-protected:
+ protected:
   const std::string tag() const { return n; }
 
-public:
-  Named(const std::string& n)
-    : n(n)
-  {}
-  Named(const std::string& n, const std::string& v)
-    : Tag(v)
-    , n(n)
-  {}
+ public:
+  Named(const std::string& n) : n(n) {}
+  Named(const std::string& n, const std::string& v) : Tag(v), n(n) {}
 };
 
-class Label : public Tag
-{
-protected:
+class Label : public Tag {
+ protected:
   const std::string tag() const { return "label"; }
 
-public:
-  Label(const std::string& v)
-    : Tag(v)
-  {}
+ public:
+  Label(const std::string& v) : Tag(v) {}
 };
 
-class InputTag : public Tag
-{
-protected:
+class InputTag : public Tag {
+ protected:
   const std::string tag() const { return "input"; }
 };
 
-class TextBox : public InputTag
-{
-public:
-  TextBox(const std::string& n)
-  {
+class TextBox : public InputTag {
+ public:
+  TextBox(const std::string& n) {
     attribute("name", n);
     attribute("type", "text");
   }
 };
 
-class TextArea : public Tag
-{};
+class TextArea : public Tag {};
 
-class Select : public Tag
-{
-protected:
+class Select : public Tag {
+ protected:
   const std::string tag() const { return "select"; }
 
-public:
-  Select(const std::string& n)
-  {
+ public:
+  Select(const std::string& n) {
     attribute("id", n);
     attribute("name", n);
   }
-  Select& option(const std::string& k, const std::string& v)
-  {
+  Select& option(const std::string& k, const std::string& v) {
     std::shared_ptr<Named> o = std::make_shared<Named>("option", v);
     o->attribute("value", k);
     add(o);
@@ -224,67 +190,50 @@ public:
   }
 };
 
-class Radio : public Tag
-{};
+class Radio : public Tag {};
 
-class CheckBox : public InputTag
-{
-public:
-  CheckBox(const std::string& n, const std::string& v, bool c = 0)
-  {
-    if (c)
-      attribute("checked");
+class CheckBox : public InputTag {
+ public:
+  CheckBox(const std::string& n, const std::string& v, bool c = 0) {
+    if (c) attribute("checked");
     attribute("name", n).attribute("value", v).attribute("type", "checkbox");
   }
 };
 
-class CheckList : public Tag
-{};
+class CheckList : public Tag {};
 
-class Button : public InputTag
-{
-public:
-  Button(const std::string& n, const std::string& v = "Submit", bool h = 0)
-  {
+class Button : public InputTag {
+ public:
+  Button(const std::string& n, const std::string& v = "Submit", bool h = 0) {
     attribute("name", n).attribute("value", v).attribute("type", "submit");
     if (h)
       attribute("style",
                 "position: absolute; left: -9999px; width: 1px; height: 1px;")
-        .attribute("tabindex", "-1");
+          .attribute("tabindex", "-1");
   }
 };
 
-enum FormMethod
-{
-  POST = 0,
-  GET
-};
+enum FormMethod { POST = 0, GET };
 
-class Form : public Tag
-{
-protected:
+class Form : public Tag {
+ protected:
   FormMethod me;
   const std::string tag() const { return "form"; }
 
-public:
-  Form(const std::string& n, const FormMethod& me = FormMethod::POST)
-    : me(me)
-  {
+ public:
+  Form(const std::string& n, const FormMethod& me = FormMethod::POST) : me(me) {
     if (me == FormMethod::POST)
       attribute("method", "post");
     else
       attribute("method", "get");
     attribute("name", n);
   }
-  Form& button(const std::string& n,
-               const std::string& v = "Submit",
-               bool h = 0)
-  {
+  Form& button(const std::string& n, const std::string& v = "Submit",
+               bool h = 0) {
     add(std::make_shared<Button>(n, v, h));
     return *this;
   }
-  Form& hidden(const std::string& n, const std::string& v)
-  {
+  Form& hidden(const std::string& n, const std::string& v) {
     auto h = std::make_shared<Named>("input");
     h->attribute("type", "hidden");
     h->attribute("name", n);
@@ -294,101 +243,80 @@ public:
   }
 };
 
-class TableRow : public Tag
-{
-protected:
+class TableRow : public Tag {
+ protected:
   const std::string tag() const { return "tr"; }
 };
 
-class TableData : public Tag
-{
-protected:
+class TableData : public Tag {
+ protected:
   const std::string tag() const { return "td"; }
 
-public:
-  TableData(const std::string& v = "")
-    : Tag(v)
-  {}
+ public:
+  TableData(const std::string& v = "") : Tag(v) {}
 };
 
 class Table;
-class TableColumn : public Tag
-{
-protected:
+class TableColumn : public Tag {
+ protected:
   std::vector<std::shared_ptr<Tag>> tds;
   const std::string tag() const { return "th"; }
 
-public:
-  TableColumn(const std::string& v = "")
-    : Tag(v)
-  {}
-  TableColumn& data(const std::string& td)
-  {
+ public:
+  TableColumn(const std::string& v = "") : Tag(v) {}
+  TableColumn& data(const std::string& td) {
     tds.push_back(std::make_shared<TableData>(td));
     return *this;
   }
-  TableColumn& data(const std::shared_ptr<Tag>& td)
-  {
+  TableColumn& data(const std::shared_ptr<Tag>& td) {
     tds.push_back(td);
     return *this;
   }
   friend class Table;
 };
 
-class Table : public Tag
-{
-private:
+class Table : public Tag {
+ private:
   bool sh = 1;
   std::vector<std::shared_ptr<TableColumn>> cols;
 
-protected:
+ protected:
   const std::string tag() const { return "table"; }
 
-public:
-  Table(bool sh = 1)
-    : sh(sh)
-  {}
-  TableColumn& column(const std::string& v = "")
-  {
+ public:
+  Table(bool sh = 1) : sh(sh) {}
+  TableColumn& column(const std::string& v = "") {
     auto tc = std::make_shared<TableColumn>(v);
     cols.push_back(tc);
     return *tc.get();
   }
-  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_)
-  {
+  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_) {
     if (sh) {
       std::shared_ptr<TableRow> row = std::make_shared<TableRow>();
-      for (auto& h : cols)
-        row->add(h);
+      for (auto& h : cols) row->add(h);
       add(row);
     }
     if (cols.size())
       for (size_t i = 0; i < cols[0]->tds.size(); i++) {
         std::shared_ptr<TableRow> row = std::make_shared<TableRow>();
         for (const auto& c : cols)
-          if (i < c->tds.size())
-            row->add(c->tds[i]);
+          if (i < c->tds.size()) row->add(c->tds[i]);
         add(row);
       }
     return Tag::render(tab);
   }
 };
 
-} // END NAMESPACE tag
+}  // END NAMESPACE tag
 
-class Text : public Tag
-{
-public:
-  Text(const std::string& n)
-    : Tag(n)
-  {}
-  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_)
-  {
+class Text : public Tag {
+ public:
+  Text(const std::string& n) : Tag(n) {}
+  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_) {
     std::stringstream ss;
 #ifdef _KUL_HTML_FORMAT_
     ss << "\n";
-    for (uint16_t i = 0; i < tab; i++)
-      ss << "\t";
+    for (uint16_t i = 0; i < tab; i++) ss << "\t";
 #endif /* _KUL_HTML_FORMAT_ */
     ss << v;
     str = std::make_unique<std::string>(ss.str());
@@ -396,39 +324,27 @@ public:
   }
 };
 namespace esc {
-class Text : public kul::html4::Text
-{
-public:
-  Text(const std::string& n)
-    : kul::html4::Text(n)
-  {
-    kul::HTML::ESC(v);
-  }
-  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_)
-  {
+class Text : public kul::html4::Text {
+ public:
+  Text(const std::string& n) : kul::html4::Text(n) { kul::HTML::ESC(v); }
+  virtual const std::string* render(uint16_t tab = _KUL_HTML_FORMATED_) {
     return kul::html4::Text::render(tab);
   }
 };
-}
+}  // namespace esc
 
-} // END NAMESPACE html4
-} // END NAMESPACE kul
+}  // END NAMESPACE html4
+}  // END NAMESPACE kul
 
-inline kul::html4::Tag&
-kul::html4::Tag::br()
-{
+inline kul::html4::Tag& kul::html4::Tag::br() {
   tags.push_back(std::make_shared<tag::Named>("br"));
   return *this;
 }
-inline kul::html4::Tag&
-kul::html4::Tag::esc(const std::string& t)
-{
+inline kul::html4::Tag& kul::html4::Tag::esc(const std::string& t) {
   tags.push_back(std::make_shared<esc::Text>(t));
   return *this;
 }
-inline kul::html4::Tag&
-kul::html4::Tag::text(const std::string& t)
-{
+inline kul::html4::Tag& kul::html4::Tag::text(const std::string& t) {
   tags.push_back(std::make_shared<Text>(t));
   return *this;
 }

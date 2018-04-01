@@ -3,8 +3,7 @@
  */
 #define FCGI_LISTENSOCK_FILENO 0
 
-typedef struct
-{
+typedef struct {
   unsigned char version;
   unsigned char type;
   unsigned char requestIdB1;
@@ -47,16 +46,14 @@ typedef struct
  */
 #define FCGI_NULL_REQUEST_ID 0
 
-typedef struct
-{
+typedef struct {
   unsigned char roleB1;
   unsigned char roleB0;
   unsigned char flags;
   unsigned char reserved[5];
 } FCGI_BeginRequestBody;
 
-typedef struct
-{
+typedef struct {
   FCGI_Header header;
   FCGI_BeginRequestBody body;
 } FCGI_BeginRequestRecord;
@@ -73,8 +70,7 @@ typedef struct
 #define FCGI_AUTHORIZER 2
 #define FCGI_FILTER 3
 
-typedef struct
-{
+typedef struct {
   unsigned char appStatusB3;
   unsigned char appStatusB2;
   unsigned char appStatusB1;
@@ -83,8 +79,7 @@ typedef struct
   unsigned char reserved[3];
 } FCGI_EndRequestBody;
 
-typedef struct
-{
+typedef struct {
   FCGI_Header header;
   FCGI_EndRequestBody body;
 } FCGI_EndRequestRecord;
@@ -104,14 +99,12 @@ typedef struct
 #define FCGI_MAX_REQS "FCGI_MAX_REQS"
 #define FCGI_MPXS_CONNS "FCGI_MPXS_CONNS"
 
-typedef struct
-{
+typedef struct {
   unsigned char type;
   unsigned char reserved[7];
 } FCGI_UnknownTypeBody;
 
-typedef struct
-{
+typedef struct {
   FCGI_Header header;
   FCGI_UnknownTypeBody body;
 } FCGI_UnknownTypeRecord;

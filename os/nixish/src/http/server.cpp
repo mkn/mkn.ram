@@ -30,9 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-bool
-kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd)
-{
+bool kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER;
   char* in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);
@@ -42,15 +40,13 @@ kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd)
   else if (read > 0) {
     fds[fd] = 2;
     handleBuffer(fds, fd, in, read, e);
-    if (e)
-      return false;
+    if (e) return false;
   } else {
     getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
     onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
     KOUT(DBG) << "DISCO,  " << inet_ntoa(cli_addr.sin_addr)
               << ", port : " << ntohs(cli_addr.sin_port);
   }
-  if (e < 0)
-    KLOG(ERR) << "Error on receive: " << strerror(errno);
+  if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   return true;
 }

@@ -31,22 +31,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
-void
-kul::https::Requester::send(const std::string& h,
-                            const std::string& req,
-                            const uint16_t& p,
-                            std::stringstream& ss,
-                            SSL* ssl)
-{
-  KUL_DBG_FUNC_ENTER
-  {
+void kul::https::Requester::send(const std::string& h, const std::string& req,
+                                 const uint16_t& p, std::stringstream& ss,
+                                 SSL* ssl) {
+  KUL_DBG_FUNC_ENTER {
     kul::tcp::Socket<char> sock;
-    if (!sock.connect(h, p))
-      KEXCEPTION("TCP FAILED TO CONNECT!");
+    if (!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
     SOCKET sck = sock.socket();
     SSL_set_fd(ssl, sck);
-    if (SSL_connect(ssl) == -1)
-      KEXCEPTION("HTTPS REQUEST INIT FAILED");
+    if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
     SSL_write(ssl, req.c_str(), req.size());
     char buffer[_KUL_TCP_REQUEST_BUFFER_];
     int d = 0;
@@ -54,25 +47,20 @@ kul::https::Requester::send(const std::string& h,
     do {
       bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
       d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
-      if (d == 0)
-        break;
+      if (d == 0) break;
       if (d < 0) {
         short se = 0;
         SSL_get_error(ssl, se);
-        if (se)
-          KLOG(ERR) << "SSL_get_error: " << se;
+        if (se) KLOG(ERR) << "SSL_get_error: " << se;
         break;
       }
-      for (i = 0; i < d; i++)
-        ss << buffer[i];
+      for (i = 0; i < d; i++) ss << buffer[i];
     } while (true);
     ::closesocket(sck);
   }
 }
 
-void
-kul::https::_1_1GetRequest::send() KTHROW(kul::http::Exception)
-{
+void kul::https::_1_1GetRequest::send() KTHROW(kul::http::Exception) {
   KUL_DBG_FUNC_ENTER
   try {
     std::stringstream ss;
@@ -87,9 +75,7 @@ kul::https::_1_1GetRequest::send() KTHROW(kul::http::Exception)
   }
 }
 
-void
-kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception)
-{
+void kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception) {
   KUL_DBG_FUNC_ENTER
   try {
     std::stringstream ss;
@@ -104,4 +90,4 @@ kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception)
   }
 }
 
-#endif //_KUL_INCLUDE_HTTPS_
+#endif  //_KUL_INCLUDE_HTTPS_
