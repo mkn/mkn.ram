@@ -30,9 +30,8 @@ profile:
     if_mod:
       win:
         - name: conan.install
-          arg:
-            init:
-              install: -s compiler="Visual Studio" -s compiler.version=15
+          init:
+            install: -s compiler="Visual Studio" -s compiler.version=15
     if_lib:
       nix: ssl crypto
       bsd: ssl crypto
@@ -45,11 +44,10 @@ profile:
   - name: format
     mod:
     - name: clang.format
-      arg:
-        init:
-          style: google
-          types: cpp:cxx:cc:h:hpp
-          paths: .
+      init:
+        style: google
+        types: cpp:cxx:cc:h:hpp
+        paths: .
 
   - name: usage
     self: lib
