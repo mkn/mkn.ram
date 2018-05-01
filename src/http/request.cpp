@@ -38,14 +38,16 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
     if (!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
     const std::string& req(toString());
     sock.write(req.c_str(), req.size());
-    char buf[_KUL_TCP_REQUEST_BUFFER_];
-    uint32_t i;
-    int d = 0;
+    std::unique_ptr<char[]> buf(new char[_KUL_TCP_REQUEST_BUFFER_]);
+    size_t i, d = 0;
+    bool more = false;
     do {
-      bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
-      d = sock.read(buf, _KUL_TCP_REQUEST_BUFFER_ - 1);
+      bzero(buf.get(), _KUL_TCP_REQUEST_BUFFER_);
+      more = false;
+      d = sock.read(buf.get(), _KUL_TCP_REQUEST_BUFFER_ - 1, more);
+      if (d == -1) return;
       for (i = 0; i < d; i++) ss << buf[i];
-    } while (d == _KUL_TCP_REQUEST_BUFFER_ - 1);
+    } while (more);
   }
   std::string rec(ss.str());
   _1_1Response res(_1_1Response::FROM_STRING(rec));

@@ -54,7 +54,12 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds)
 
     if (m_fds[i].fd == lisock) {
       do {
-        newlisock = accept();
+        int newFD = nfds;
+        while (1) {
+          newFD++;
+          if (fds.count(newFD) && !fds[newFD]) break;
+        }
+        newlisock = accept(newFD);
         KLOG(DBG) << "lisock: " << lisock << ", newlisock: " << newlisock;
         if (newlisock < 0) {
           if (errno != EWOULDBLOCK) KEXCEPTION("HTTPS Server error on accept");
@@ -84,11 +89,7 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds)
                     << X509_NAME_oneline(X509_get_issuer_name(cc), 0, 0);
           X509_free(cc);
         }  // else KLOG(ERR) << "Client does not have certificate.";
-        int newFD = nfds;
-        while (1) {
-          newFD++;
-          if (fds.count(newFD) && !fds[newFD]) break;
-        }
+
         validAccept(fds, newlisock, newFD);
       } while (newlisock != -1);
     }
@@ -161,7 +162,7 @@ void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds,
     if (!f)
       KEXCEPTION(
           "Logic error encountered, probably https attempt on http port");
-    std::shared_ptr<kul::http::A1_1Request> req = handleRequest(s, res);
+    std::shared_ptr<kul::http::A1_1Request> req = handleRequest(fd, s, res);
     const kul::http::_1_1Response& rs(respond(*req.get()));
     std::string ret(rs.toString());
     e = ::SSL_write(ssl_clients[m_fds[fd].fd], ret.c_str(), ret.length());
@@ -186,7 +187,8 @@ bool kul::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
     if (e) return false;
   } else {
     getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
-    onDisconnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
+                 ntohs(cli_addr[fd].sin_port));
   }
   if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   SSL_shutdown(ssl_clients[m_fds[fd].fd]);

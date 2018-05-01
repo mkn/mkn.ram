@@ -42,9 +42,9 @@ bool kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
     handleBuffer(fds, fd, in, read, e);
     if (e) return false;
   } else {
-    // getpeername(m_fds[fd].fd , (struct sockaddr*) &cli_addr ,
-    // (socklen_t*)&clilen); onDisconnect(inet_ntoa(cli_addr.sin_addr),
-    // ntohs(cli_addr.sin_port));
+    // getpeername(m_fds[fd].fd , (struct sockaddr*) &cli_addr[fd],
+    // (socklen_t*)&clilen); onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
+    // ntohs(cli_addr[fd].sin_port));
   }
   if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   return true;

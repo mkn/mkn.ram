@@ -208,10 +208,6 @@ class Test {
       t.run();
       kul::this_thread::sleep(333);
 
-      // for(size_t i = 0; i < 10; i++){
-      //     if(t.exception()) std::rethrow_exception(t.exception());
-      //     HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-      // }
       std::atomic<uint16_t> index(0);
       auto getter = [&]() {
         HTTPS_Get("localhost", "index.html_" + std::to_string(index++),
@@ -274,8 +270,6 @@ class Test {
       char buf[_KUL_TCP_REQUEST_BUFFER_];
       bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
       sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
-      KLOG(INF) << buf;
-
       sock.close();
     }
     KOUT(NON) << "TCP Socket SERVER";
@@ -298,7 +292,6 @@ class Test {
         char buf[_KUL_TCP_REQUEST_BUFFER_];
         bzero(buf, _KUL_TCP_REQUEST_BUFFER_);
         sock.read(buf, _KUL_TCP_REQUEST_BUFFER_);
-        KLOG(INF) << buf;
 
         sock.close();
       }
@@ -306,7 +299,6 @@ class Test {
       serv.stop();
       t.join();
     }
-    //     KLOG(INF);
     //     kul::this_thread::sleep(100);
     //     {
     //         TestMultiHTTPServer serv;

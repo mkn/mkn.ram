@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/http.hpp"
 
 std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
-    const std::string& b, std::string& path) {
+    const int& fd, const std::string& b, std::string& path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
   std::shared_ptr<kul::http::A1_1Request> req;
@@ -59,9 +59,13 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
     }
 
     if (mode == "GET")
-      req = std::make_shared<_1_1GetRequest>(host, path, port());
+      req = std::make_shared<_1_1GetRequest>(host, path,
+                                             ntohs(cli_addr[fd].sin_port),
+                                             inet_ntoa(cli_addr[fd].sin_addr));
     else if (mode == "POST")
-      req = std::make_shared<_1_1PostRequest>(host, path, port());
+      req = std::make_shared<_1_1PostRequest>(host, path,
+                                              ntohs(cli_addr[fd].sin_port),
+                                              inet_ntoa(cli_addr[fd].sin_addr));
 
     {
       std::string l;
@@ -90,10 +94,12 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
         } else
           req->header(bits[0], v);
       }
+      size_t pos = ss.tellg(), total = ss.str().size();
+      std::string rest(total - pos, '\0');
+      ss.read(&rest[0], total - pos);
       std::stringstream ss1;
-      while (std::getline(ss, l)) ss1 << l;
-      if (a.empty()) a = ss1.str();
-      req->body(ss1.str());
+      if (a.empty()) a = rest;
+      req->body(rest);
     }
   }
   kul::hash::map::S2S atts;
@@ -120,10 +126,11 @@ void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds,
     if (!f)
       KEXCEPTION(
           "Logic error encountered, probably https attempt on http port");
-    std::shared_ptr<A1_1Request> req = handleRequest(s, res);
+    std::shared_ptr<A1_1Request> req = handleRequest(fd, s, res);
     const _1_1Response& rs(respond(*req.get()));
     std::string ret(rs.toString());
-    e = writeTo(fd, ret.c_str(), ret.length());
+    writeTo(fd, ret.c_str(), ret.length());
+    e = 0;
   } catch (const kul::http::Exception& e1) {
     KLOG(ERR) << e1.stack();
     e = -1;

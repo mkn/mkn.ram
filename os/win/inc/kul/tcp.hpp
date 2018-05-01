@@ -174,7 +174,7 @@ class SocketServer : public ASocketServer<T> {
   struct addrinfo hints;
 
   socklen_t clilen;
-  struct sockaddr_in serv_addr, cli_addr;
+  struct sockaddr_in serv_addr, cli_addr[_KUL_TCP_MAX_CLIENT_];
 
   virtual bool handle(T* const in, const size_t& inLen, T* const out,
                       size_t& outLen) {
@@ -249,16 +249,16 @@ class SocketServer : public ASocketServer<T> {
 
       if (m_fds[i].fd == lisock) {
         do {
-          newlisock = accept();
-          if (newlisock < 0) {
-            if (errno != EWOULDBLOCK)
-              KEXCEPTION("SockerServer error on accept");
-            break;
-          }
           int newFD = nfds;
           while (1) {
             newFD++;
             if (fds.count(newFD) && !fds[newFD]) break;
+          }
+          newlisock = accept(newFD);
+          if (newlisock < 0) {
+            if (errno != EWOULDBLOCK)
+              KEXCEPTION("SockerServer error on accept");
+            break;
           }
           validAccept(fds, newlisock, newFD);
         } while (newlisock != -1);
@@ -271,16 +271,18 @@ class SocketServer : public ASocketServer<T> {
     if (del.size()) closeFDs(fds, del);
   }
 
-  virtual SOCKET accept() {
-    return WSAAccept(lisock, (struct sockaddr*)&cli_addr, &clilen, NULL, NULL);
+  virtual SOCKET accept(const int& fd) {
+    return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL,
+                     NULL);
   }
   virtual void validAccept(std::map<int, uint8_t>& fds, const int& newlisock,
                            const int& nfd) {
     KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
-              << ", is : " << inet_ntoa(cli_addr.sin_addr)
-              << ", port : " << ntohs(cli_addr.sin_port);
-    this->onConnect(inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+              << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
+              << ", port : " << ntohs(cli_addr[nfd].sin_port);
+    this->onConnect(inet_ntoa(cli_addr[nfd].sin_addr),
+                    ntohs(cli_addr[nfd].sin_port));
     m_fds[nfd].fd = newlisock;
     m_fds[nfd].events = POLLIN;
     fds[nfd] = 1;

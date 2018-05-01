@@ -34,7 +34,7 @@ void kul::http::MultiServer::start() KTHROW(kul::tcp::Exception) {
   KUL_DBG_FUNC_ENTER
   _started = kul::Now::MILLIS();
   listen(lisock, 256);
-  clilen = sizeof(cli_addr);
+  clilen = sizeof(cli_addr[0]);
   s = true;
   m_fds[0].fd = lisock;
   m_fds[0].events = POLLIN;  //|POLLPRI;

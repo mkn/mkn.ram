@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 
+#include <mutex>
 #include "kul/http.hpp"
 
 #define KUL_HTTPS_METHOD_APPENDER2(x, y) x##y
@@ -102,17 +103,19 @@ class Server : public kul::http::Server {
 class MultiServer : public kul::https::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
-  kul::Mutex m_mutex;
+  std::mutex m_mutex;
   ChroncurrentThreadPool<> _acceptPool;
   ChroncurrentThreadPool<> _workerPool;
 
   void operateAccept(const size_t& threadID) {
+    KUL_DBG_FUNC_ENTER
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
-        kul::ScopeLock lock(m_mutex);
+        // kul::ScopeLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         loop(fds);
       } catch (const kul::tcp::Exception& e1) {
         KERR << e1.stack();
@@ -121,10 +124,13 @@ class MultiServer : public kul::https::Server {
       } catch (...) {
         KERR << "Loop Exception caught";
       }
+    KLOG(ERR) << "SHOULD NOT HAPPEN";
+    KEXCEPTION("SHOULD NOT HAPPEN");
   }
 
   virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd,
                             char* in, const int& read, int& e) override {
+    KUL_DBG_FUNC_ENTER
     _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this),
                                 &fds, fd, in, read, e),
                       std::bind(&MultiServer::errorBuffer, std::ref(*this),
@@ -134,8 +140,16 @@ class MultiServer : public kul::https::Server {
 
   void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in,
                      const int& read, int& e) {
+    KUL_DBG_FUNC_ENTER
     kul::https::Server::handleBuffer(*fds, fd, in, read, e);
-    if (e < 0) {
+    if (e <= 0) {
+      getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr,
+                  (socklen_t*)&clilen);
+      KOUT(DBG) << "DISCO "
+                << ", is : " << inet_ntoa(cli_addr[fd].sin_addr)
+                << ", port : " << ntohs(cli_addr[fd].sin_port);
+      onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
+                   ntohs(cli_addr[fd].sin_port));
       std::vector<int> del{fd};
       closeFDs(*fds, del);
     }

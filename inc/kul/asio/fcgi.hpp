@@ -104,9 +104,9 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
     return *msgs[fd];
   }
 
-  int accept() override {
+  int accept(const uint16_t& fd) override {
     kul::ScopeLock lock(m_actex);
-    return ::accept(lisock, (struct sockaddr*)&cli_addr, &clilen);
+    return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
   }
 
   void cycle(const uint16_t& size, std::map<int, uint8_t>* fds, const int& fd) {

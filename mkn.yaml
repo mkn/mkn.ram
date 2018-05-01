@@ -48,6 +48,7 @@ profile:
         style: google
         types: cpp:cxx:cc:h:hpp
         paths: .
+        args:  -D_KUL_INCLUDE_HTTPS_
 
   - name: usage
     self: lib
