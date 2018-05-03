@@ -80,7 +80,7 @@ class MultiServer : public kul::http::Server {
   void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in,
                      const int& read, int& e) {
     kul::http::Server::handleBuffer(*fds, fd, in, read, e);
-    if (e < 0) {
+    if (e <= 0) {
       std::vector<int> del{fd};
       closeFDs(*fds, del);
     }
@@ -104,6 +104,10 @@ class MultiServer : public kul::http::Server {
       }
   }
 
+  MultiServer(const MultiServer &) = delete;
+  MultiServer(const MultiServer &&) = delete;
+  MultiServer &operator=(const MultiServer &) = delete;
+  MultiServer &operator=(const MultiServer &&) = delete;
  public:
   MultiServer(const short& p = 80, const uint8_t& acceptThreads = 1,
               const uint8_t& workerThreads = 1,
@@ -111,6 +115,9 @@ class MultiServer : public kul::http::Server {
       : Server(p, w),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads) {}
+  ~MultiServer(){
+    KUL_DBG_FUNC_ENTER
+  }
 
   virtual void start() KTHROW(kul::tcp::Exception) override;
 
