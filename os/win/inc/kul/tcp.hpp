@@ -88,8 +88,11 @@ class Socket : public ASocket<T> {
     }
     return o1;
   }
-  virtual size_t read(T* data, const size_t& len)
-      KTHROW(kul::tcp::Exception) override {
+  virtual size_t read(T* data, const size_t& len) {
+    bool more = false;
+    return read(data, len, more);
+  }
+  virtual size_t read(T* data, const size_t& len, bool& more) {
     KUL_DBG_FUNC_ENTER
 
     int16_t d = recv(ConnectSocket, data, len, 0);
