@@ -51,8 +51,11 @@ profile:
         args:  -D_KUL_INCLUDE_HTTPS_
 
   - name: usage
-    self: lib
+    self: https
     main: usage.cpp
+    arg: -D_KUL_INCLUDE_HTTPS_
+    if_link:
+      win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
   - name: test_fcgi
     main: test/fcgi.cpp
