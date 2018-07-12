@@ -28,41 +28,45 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define __KUL_RAM_NOMAIN__
 #include "usage.cpp"
-
+class TestHTTPSServer : public kul::https::Server {
+ private:
+  void operator()() { start(); }
+ public:
+  TestHTTPSServer()
+      : kul::https::Server(_KUL_HTTP_TEST_PORT_,
+                           kul::File("res/test/server.crt"),
+                           kul::File("res/test/server.key")) {}
+  friend class kul::Thread;
+};
+class HTTPS_Get : public kul::https::_1_1GetRequest {
+ public:
+  HTTPS_Get(const std::string& host, const std::string& path = "",
+            const uint16_t& port = 80)
+      : kul::https::_1_1GetRequest(host, path, port) {}
+};
 int main(int argc, char* argv[]) {
-  kul::Signal s;
-
-  uint8_t _threads = 4;
-
-  auto getter = []() {
-    kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-  };
-  auto except = [](const kul::Exception& e) { KLOG(ERR) << e.stack(); };
-
-  kul::ram::TestMultiHTTPServer serv;
-  try {
-    // kul::ChroncurrentThreadPool<> ctp(_threads, 1);
-    // for(size_t i = 0; i < 10000; i++) ctp.async(getter, except);
-    for (size_t i = 0; i < 1000; i++) {
-      KLOG(INF) << "SENDING: " << i;
-      kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-      if (serv.exception()) std::rethrow_exception(serv.exception());
-      KLOG(INF) << i;
+  using namespace kul::http;
+  {
+    TestHTTPSServer serv;
+    serv.init().withResponse([&](const A1_1Request& r) -> _1_1Response{
+      KLOG(INF) << kul::os::EOL() << r.toString();
+      _1_1Response rs;
+      return rs.withBody("HELLO WORLD");
+    });
+    kul::Thread t(std::ref(serv));
+    t.run();
+    kul::this_thread::sleep(333);
+    if (t.exception()) std::rethrow_exception(t.exception());
+    {
+      HTTPS_Get get("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
+      KLOG(INF) << kul::os::EOL() << get.toString();
+      get.withResponse([&](const kul::http::_1_1Response &r) {
+        KLOG(INF) << kul::os::EOL() << r.toString();
+      }).send();
     }
-    // ctp.finish(1000000000);
-
-  } catch (const kul::Exception& e) {
-    KERR << e.stack();
-  } catch (const std::exception& e) {
-    KERR << e.what();
-  } catch (...) {
-    KERR << "UNKNOWN EXCEPTION CAUGHT";
+    serv.stop();
+    t.join();
   }
-  kul::this_thread::sleep(100);
-  serv.stop();
-  serv.join();
-
   return 0;
 }

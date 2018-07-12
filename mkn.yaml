@@ -62,7 +62,7 @@ profile:
     self: fcgi
 
   - name: test
-    parent: lib
+    self: https
     main: test.cpp
 
   - name: test.client
