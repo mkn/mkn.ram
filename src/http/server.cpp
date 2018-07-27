@@ -102,9 +102,6 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
       req->body(rest);
     }
   }
-  kul::hash::map::S2S atts;
-  asAttributes(a, atts);
-  for (const auto& att : atts) req->attribute(att.first, att.second);
   return req;
 }
 

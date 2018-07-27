@@ -40,7 +40,6 @@ bool kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   else if (read > 0) {
     fds[fd] = 2;
     handleBuffer(fds, fd, in, read, e);
-    KLOG(INF) << e;
     if (e) return false;
   } else {
     getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr[fd],
