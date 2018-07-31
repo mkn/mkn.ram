@@ -279,7 +279,7 @@ class SocketServer : public ASocketServer<T> {
     closeFDsNoCompress(fds, del);
   }
   virtual void loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
-    KUL_DBG_FUNC_ENTER
+    // KUL_DBG_FUNC_ENTER
     auto ret = poll();
     if (!s) return;
     if (ret < 0)
@@ -287,7 +287,6 @@ class SocketServer : public ASocketServer<T> {
                  " - " + std::string(strerror(errno)));
     // if(ret == 0) return;
     int newlisock = -1;
-    ;
     for (const auto& pair : fds) {
       auto& i = pair.first;
       if (pair.second == 1) continue;
