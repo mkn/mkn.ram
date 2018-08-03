@@ -38,7 +38,7 @@ void kul::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   clilen = sizeof(cli_addr);
   s = true;
   m_fds[0].fd = lisock;
-  m_fds[0].events = POLLIN; //|POLLPRI;
+  m_fds[0].events = POLLIN;  //|POLLPRI;
   nfds = lisock + 1;
 
   for (size_t i = 0; i < _acceptThreads; i++)
@@ -48,4 +48,4 @@ void kul::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   _workerPool.start();
 }
 
-#endif //_KUL_INCLUDE_HTTPS_
+#endif  //_KUL_INCLUDE_HTTPS_

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_HTML_DEF_HPP_
 
 #ifdef _KUL_HTML_FORMAT_
-#define _KUL_HTML_FORMATED_ 1 // boolean for pretty priting HTML
+#define _KUL_HTML_FORMATED_ 1  // boolean for pretty priting HTML
 #else
 #define _KUL_HTML_FORMATED_ 0
 #endif /* _KUL_HTML_FORMAT_ */

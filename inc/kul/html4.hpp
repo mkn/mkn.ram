@@ -37,12 +37,12 @@ namespace kul {
 namespace html4 {
 
 class Exception : public kul::Exception {
-public:
-  Exception(const char *f, const uint16_t &l, const std::string &s)
+ public:
+  Exception(const char* f, const uint16_t& l, const std::string& s)
       : kul::Exception(f, l, s) {}
 };
 
-} // END NAMESPACE html4
-} // END NAMESPACE kul
+}  // END NAMESPACE html4
+}  // END NAMESPACE kul
 
 #endif /* _KUL_HTML_HPP_ */

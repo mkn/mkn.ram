@@ -43,7 +43,7 @@ void kul::asio::fcgi::Server::start() KTHROW(Exception) {
   clilen = sizeof(cli_addr);
   s = true;
   m_fds[0].fd = lisock;
-  m_fds[0].events = POLLIN; //|POLLPRI;
+  m_fds[0].events = POLLIN;  //|POLLPRI;
   nfds = lisock + 1;
 
   for (size_t i = 0; i < m_acceptThreads; i++)
@@ -53,10 +53,10 @@ void kul::asio::fcgi::Server::start() KTHROW(Exception) {
   m_workerPool.start();
 }
 
-bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t> &fds,
-                                      const int &fd) {
+bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds,
+                                      const int& fd) {
   KUL_DBG_FUNC_ENTER
-  uint8_t *in = getOrCreateBufferFor(fd);
+  uint8_t* in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);
   int e = 0, read = readFrom(fd, in, MSG_DONTWAIT);
   if (read < 0)
@@ -64,21 +64,18 @@ bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t> &fds,
   else if (read > 0) {
     fds[fd] = 2;
     handleBuffer(fds, fd, in, read, e);
-    if (e)
-      return false;
+    if (e) return false;
   } else {
-    getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr,
-                (socklen_t *)&clilen);
+    getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
     onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
                  ntohs(cli_addr[fd].sin_port));
   }
-  if (e < 0)
-    KLOG(ERR) << "Error on receive: " << strerror(errno);
+  if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   return false;
 }
 
-void kul::asio::fcgi::Server::write(std::map<int, uint8_t> &fds, const int &fd,
-                                    const uint8_t *out, const size_t size) {
+void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd,
+                                    const uint8_t* out, const size_t size) {
   KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
   receive(fds, fd);
@@ -86,22 +83,21 @@ void kul::asio::fcgi::Server::write(std::map<int, uint8_t> &fds, const int &fd,
   closeFDs(fds, del);
 }
 
-void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t> &fds,
-                                          uint8_t *const in, const int &inLen,
-                                          const int &fd)
+void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds,
+                                          uint8_t* const in, const int& inLen,
+                                          const int& fd)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
-  if (inLen < 4)
-    KEXCEPTION("FCGI cannot parse input too short");
+  if (inLen < 4) KEXCEPTION("FCGI cannot parse input too short");
 
-  const uint8_t &type = in[1];
+  const uint8_t& type = in[1];
   if (type == FCGI_BEGIN_REQUEST) {
     uint16_t size = (in[5] | in[4] << 8);
-    auto &msg = createFCGI_Message(fd);
+    auto& msg = createFCGI_Message(fd);
     msg.rid = (in[3] | in[2] << 8);
-    msg.finish([&](const FCGI_Message &msg) {
-      uint8_t *out = getOrCreateBufferFor(fd);
+    msg.finish([&](const FCGI_Message& msg) {
+      uint8_t* out = getOrCreateBufferFor(fd);
       size_t size = FORM_RESPONSE(msg, out);
       write(fds, fd, out, size);
     });
@@ -113,23 +109,21 @@ void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t> &fds,
   }
 }
 
-void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t> &fds,
-                                    uint8_t *const in, const int &inLen,
-                                    const int &fd, size_t pos)
+void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds,
+                                    uint8_t* const in, const int& inLen,
+                                    const int& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
-  if ((inLen - pos) < 4)
-    KEXCEPTION("FCGI cannot parse input too short");
+  if ((inLen - pos) < 4) KEXCEPTION("FCGI cannot parse input too short");
 
-  const uint8_t &type = in[pos + 1];
+  const uint8_t& type = in[pos + 1];
   if (type == FCGI_PARAMS) {
     uint16_t size = (in[pos + 5] | in[pos + 4] << 8);
     uint8_t pad = in[pos + 6];
-    if (size == 0)
-      return PARSE(fds, in, inLen, fd, pos + 8);
+    if (size == 0) return PARSE(fds, in, inLen, fd, pos + 8);
     pos += 8;
-    auto &msg(*msgs[fd]);
+    auto& msg(*msgs[fd]);
     PARAMS(in + pos, size, msg);
     return PARSE(fds, in, inLen, fd, pos + pad + size);
   } else if (type == FCGI_STDIN) {
@@ -148,8 +142,8 @@ void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t> &fds,
   }
 }
 
-size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message &msg,
-                                              uint8_t *out) {
+size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg,
+                                              uint8_t* out) {
   KUL_DBG_FUNC_ENTER
   bzero(out, _KUL_TCP_READ_BUFFER_);
 
@@ -158,9 +152,9 @@ size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message &msg,
   out[pos++] = 6;
   uint8_t rid[2];
   {
-    const void *vp = &msg.rid;
-    rid[0] = *static_cast<const uint8_t *>(vp);
-    rid[1] = *static_cast<const uint8_t *>(vp + sizeof(uint8_t));
+    const void* vp = &msg.rid;
+    rid[0] = *static_cast<const uint8_t*>(vp);
+    rid[1] = *static_cast<const uint8_t*>(vp + sizeof(uint8_t));
 
     out[pos++] = rid[1];
     out[pos++] = rid[0];
@@ -170,34 +164,31 @@ size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message &msg,
   resp.header("Content-Type", "text/html");
   std::string response(resp.toString());
   auto ending(response.find("\r\n"));
-  if (ending != std::string::npos)
-    response.erase(ending, ending + 2);
+  if (ending != std::string::npos) response.erase(ending, ending + 2);
   response.pop_back();
   response.pop_back();
   response.pop_back();
 
   auto size = response.size();
   {
-    void *vp = &size;
+    void* vp = &size;
 
-    uint8_t sp1 = *static_cast<uint8_t *>(vp);
-    uint8_t sp2 = *static_cast<uint8_t *>(vp + sizeof(uint8_t));
+    uint8_t sp1 = *static_cast<uint8_t*>(vp);
+    uint8_t sp2 = *static_cast<uint8_t*>(vp + sizeof(uint8_t));
 
     out[pos++] = sp2;
     out[pos++] = sp1;
   }
 
   uint8_t pad = 8 - (size % 8);
-  if (pad == 8)
-    pad = 0;
+  if (pad == 8) pad = 0;
   out[pos++] = pad;
   out[pos++] = 0;
 
   std::memcpy(out + pos, response.c_str(), response.size());
   pos += response.size();
 
-  for (uint8_t i = 0; i < pad; i++)
-    out[pos++] = 0;
+  for (uint8_t i = 0; i < pad; i++) out[pos++] = 0;
 
   // blank
   {
@@ -205,8 +196,7 @@ size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message &msg,
     out[pos++] = 6;
     out[pos++] = rid[1];
     out[pos++] = rid[0];
-    for (uint8_t i = 0; i < 4; i++)
-      out[pos++] = 0;
+    for (uint8_t i = 0; i < 4; i++) out[pos++] = 0;
   }
 
   // end
@@ -217,11 +207,10 @@ size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message &msg,
     out[pos++] = rid[0];
     out[pos++] = 0;
     out[pos++] = 8;
-    for (uint8_t i = 0; i < 10; i++)
-      out[pos++] = 0;
+    for (uint8_t i = 0; i < 10; i++) out[pos++] = 0;
   }
 
   return size + pad + 40;
 }
 
-#endif //_KUL_INCLUDE_FCGI_
+#endif  //_KUL_INCLUDE_FCGI_
