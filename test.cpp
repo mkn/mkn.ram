@@ -30,9 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "usage.cpp"
 class TestHTTPSServer : public kul::https::Server {
- private:
+private:
   void operator()() { start(); }
- public:
+
+public:
   TestHTTPSServer()
       : kul::https::Server(_KUL_HTTP_TEST_PORT_,
                            kul::File("res/test/server.crt"),
@@ -40,16 +41,16 @@ class TestHTTPSServer : public kul::https::Server {
   friend class kul::Thread;
 };
 class HTTPS_Get : public kul::https::_1_1GetRequest {
- public:
-  HTTPS_Get(const std::string& host, const std::string& path = "",
-            const uint16_t& port = 80)
+public:
+  HTTPS_Get(const std::string &host, const std::string &path = "",
+            const uint16_t &port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
 };
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   using namespace kul::http;
   {
     TestHTTPSServer serv;
-    serv.init().withResponse([&](const A1_1Request& r) -> _1_1Response{
+    serv.init().withResponse([&](const A1_1Request &r) -> _1_1Response {
       KLOG(INF) << kul::os::EOL() << r.toString();
       _1_1Response rs;
       return rs.withBody("HELLO WORLD");
@@ -57,13 +58,15 @@ int main(int argc, char* argv[]) {
     kul::Thread t(std::ref(serv));
     t.run();
     kul::this_thread::sleep(333);
-    if (t.exception()) std::rethrow_exception(t.exception());
+    if (t.exception())
+      std::rethrow_exception(t.exception());
     {
       HTTPS_Get get("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
       KLOG(INF) << kul::os::EOL() << get.toString();
       get.withResponse([&](const kul::http::_1_1Response &r) {
-        KLOG(INF) << kul::os::EOL() << r.toString();
-      }).send();
+           KLOG(INF) << kul::os::EOL() << r.toString();
+         })
+          .send();
     }
     serv.stop();
     t.join();

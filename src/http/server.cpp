@@ -30,8 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
-    const int& fd, const std::string& b, std::string& path) {
+std::shared_ptr<kul::http::A1_1Request>
+kul::http::AServer::handleRequest(const int &fd, const std::string &b,
+                                  std::string &path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
   std::shared_ptr<kul::http::A1_1Request> req;
@@ -42,7 +43,8 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
       std::string r;
       std::getline(ss, r);
       std::vector<std::string> l0 = kul::String::SPLIT(r, ' ');
-      if (!l0.size()) KEXCEPTION("Malformed request found: " + b);
+      if (!l0.size())
+        KEXCEPTION("Malformed request found: " + b);
       std::string s(l0[1]);
       if (l0[0] == "GET") {
         // req = get();
@@ -51,7 +53,7 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
           s = s.substr(0, s.find("?"));
         }
       } else if (l0[0] == "POST") {
-      }  // req = post();
+      } // req = post();
       else
         KEXCEPTION("HTTP Server request type not handled: " + l0[0]);
       mode = l0[0];
@@ -70,25 +72,30 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
     {
       std::string l;
       while (std::getline(ss, l)) {
-        if (l.size() <= 1) break;
+        if (l.size() <= 1)
+          break;
         std::vector<std::string> bits;
         kul::String::SPLIT(l, ':', bits);
         kul::String::TRIM(bits[0]);
         std::stringstream sv;
-        if (bits.size() > 1) sv << bits[1];
-        for (size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
+        if (bits.size() > 1)
+          sv << bits[1];
+        for (size_t i = 2; i < bits.size(); i++)
+          sv << ":" << bits[i];
         std::string v(sv.str());
         kul::String::TRIM(v);
-        if (*v.rbegin() == '\r') v.pop_back();
+        if (*v.rbegin() == '\r')
+          v.pop_back();
         if (bits[0] == "Cookie") {
-          for (const auto& coo : kul::String::SPLIT(v, ';')) {
+          for (const auto &coo : kul::String::SPLIT(v, ';')) {
             if (coo.find("=") == std::string::npos) {
               req->cookie(coo, "");
               KOUT(ERR) << "Cookie without equals sign, skipping";
             } else {
               std::vector<std::string> kv;
               kul::String::ESC_SPLIT(coo, '=', kv);
-              if (kv[1].size()) req->cookie(kv[0], kv[1]);
+              if (kv[1].size())
+                req->cookie(kv[0], kv[1]);
             }
           }
         } else
@@ -98,16 +105,17 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
       std::string rest(total - pos, '\0');
       ss.read(&rest[0], total - pos);
       std::stringstream ss1;
-      if (a.empty()) a = rest;
+      if (a.empty())
+        a = rest;
       req->body(rest);
     }
   }
   return req;
 }
 
-void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds,
-                                      const int& fd, char* in, const int& read,
-                                      int& e) {
+void kul::http::AServer::handleBuffer(std::map<int, uint8_t> &fds,
+                                      const int &fd, char *in, const int &read,
+                                      int &e) {
   KUL_DBG_FUNC_ENTER;
   in[read] = '\0';
   std::string res;
@@ -116,19 +124,20 @@ void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds,
     std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
     std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
     bool f = 0;
-    for (const auto& ch : allowed) {
+    for (const auto &ch : allowed) {
       f = c.find(ch) != std::string::npos;
-      if (f) break;
+      if (f)
+        break;
     }
     if (!f)
       KEXCEPTION(
           "Logic error encountered, probably https attempt on http port");
     std::shared_ptr<A1_1Request> req = handleRequest(fd, s, res);
-    const _1_1Response& rs(respond(*req.get()));
+    const _1_1Response &rs(respond(*req.get()));
     std::string ret(rs.toString());
     writeTo(fd, ret.c_str(), ret.length());
     e = 0;
-  } catch (const kul::http::Exception& e1) {
+  } catch (const kul::http::Exception &e1) {
     KLOG(ERR) << e1.stack();
     e = -1;
   }

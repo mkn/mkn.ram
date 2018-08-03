@@ -35,8 +35,9 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
   std::stringstream ss;
   {
     kul::tcp::Socket<char> sock;
-    if (!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
-    const std::string& req(toString());
+    if (!sock.connect(_host, _port))
+      KEXCEPTION("TCP FAILED TO CONNECT!");
+    const std::string &req(toString());
     sock.write(req.c_str(), req.size());
     std::unique_ptr<char[]> buf(new char[_KUL_TCP_REQUEST_BUFFER_]);
     size_t i, d = 0;
@@ -45,8 +46,10 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
       bzero(buf.get(), _KUL_TCP_REQUEST_BUFFER_);
       more = false;
       d = sock.read(buf.get(), _KUL_TCP_REQUEST_BUFFER_ - 1, more);
-      if (d == -1) return;
-      for (i = 0; i < d; i++) ss << buf[i];
+      if (d == -1)
+        return;
+      for (i = 0; i < d; i++)
+        ss << buf[i];
     } while (more);
   }
   std::string rec(ss.str());
@@ -55,23 +58,24 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
 }
 
 class RequestHeaders {
- private:
+private:
   kul::hash::map::S2S _hs;
   RequestHeaders() {
     _hs.insert("Connection", "close");
     _hs.insert("Accept", "text/html");
   }
 
- public:
-  static RequestHeaders& I() {
+public:
+  static RequestHeaders &I() {
     static RequestHeaders i;
     return i;
   }
-  kul::hash::map::S2S defaultHeaders(const kul::http::A1_1Request& r,
-                                     const std::string& body = "") const {
+  kul::hash::map::S2S defaultHeaders(const kul::http::A1_1Request &r,
+                                     const std::string &body = "") const {
     kul::hash::map::S2S hs1;
-    for (const auto& h : _hs)
-      if (!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);
+    for (const auto &h : _hs)
+      if (!r.header("Transfer-Encoding"))
+        hs1.insert(h.first, h.second);
     if (!body.empty() && !r.header("Content-Length") &&
         !r.header("Transfer-Encoding"))
       hs1.insert("Content-Length", std::to_string(body.size()));
@@ -83,18 +87,22 @@ std::string kul::http::_1_1GetRequest::toString() const {
   KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   ss << method() << " /" << _path;
-  if (atts.size() > 0) ss << "?";
-  for (const std::pair<std::string, std::string>& p : atts)
+  if (atts.size() > 0)
+    ss << "?";
+  for (const std::pair<std::string, std::string> &p : atts)
     ss << p.first << "=" << p.second << "&";
-  if (atts.size() > 0) ss.seekp(-1, ss.cur);
+  if (atts.size() > 0)
+    ss.seekp(-1, ss.cur);
   ss << " " << version();
   ss << "\r\nHost: " << _host;
-  for (const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-  for (const auto& h : RequestHeaders::I().defaultHeaders(*this))
+  for (const auto &h : headers())
+    ss << "\r\n" << h.first << ": " << h.second;
+  for (const auto &h : RequestHeaders::I().defaultHeaders(*this))
     ss << "\r\n" << h.first << ": " << h.second;
   if (cookies().size()) {
     ss << "\r\nCookie: ";
-    for (const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
+    for (const auto &p : cookies())
+      ss << p.first << "=" << p.second << "; ";
   }
   ss << "\r\n\r\n";
   return ss.str();
@@ -106,15 +114,19 @@ std::string kul::http::_1_1PostRequest::toString() const {
   ss << method() << " /" << _path << " " << version();
   ss << "\r\nHost: " << _host;
   std::stringstream bo;
-  if (body().size()) bo << "\r\n" << body();
-  for (const auto& h : headers()) ss << "\r\n" << h.first << ": " << h.second;
-  for (const auto& h : RequestHeaders::I().defaultHeaders(*this, body()))
+  if (body().size())
+    bo << "\r\n" << body();
+  for (const auto &h : headers())
+    ss << "\r\n" << h.first << ": " << h.second;
+  for (const auto &h : RequestHeaders::I().defaultHeaders(*this, body()))
     ss << "\r\n" << h.first << ": " << h.second;
   if (cookies().size()) {
     ss << "\r\nCookie: ";
-    for (const auto& p : cookies()) ss << p.first << "=" << p.second << "; ";
+    for (const auto &p : cookies())
+      ss << p.first << "=" << p.second << "; ";
   }
   ss << "\r\n\r\n";
-  if (body().size()) ss << body();
+  if (body().size())
+    ss << body();
   return ss.str();
 }

@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
@@ -50,49 +50,49 @@ namespace kul {
 namespace ram {
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
- public:
-  HTTPS_Get(const std::string& host, const std::string& path = "",
-            const uint16_t& port = 80)
+public:
+  HTTPS_Get(const std::string &host, const std::string &path = "",
+            const uint16_t &port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
- public:
-  HTTPS_Post(const std::string& host, const std::string& path = "",
-             const uint16_t& port = 80)
+public:
+  HTTPS_Post(const std::string &host, const std::string &path = "",
+             const uint16_t &port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KUL_DBG_FUNC_ENTER
-    for (const auto& p : h)
+    for (const auto &p : h)
       KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 class Get : public kul::http::_1_1GetRequest {
- public:
-  Get(const std::string& host, const std::string& path = "",
-      const uint16_t& port = 80)
+public:
+  Get(const std::string &host, const std::string &path = "",
+      const uint16_t &port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KLOG(INF) << b;
     // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
     // KEXCEPTION("Body failed :" + b + ":");
   }
 };
 class Post : public kul::http::_1_1PostRequest {
- public:
-  Post(const std::string& host, const std::string& path = "",
-       const uint16_t& port = 80)
+public:
+  Post(const std::string &host, const std::string &path = "",
+       const uint16_t &port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     if (b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
       KEXCEPTION("Body failed :" + b + ":");
   }
@@ -100,13 +100,14 @@ class Post : public kul::http::_1_1PostRequest {
 }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   kul::Signal s;
   try {
     kul::ram::Get g("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
     kul::ChroncurrentThreadPool<> requests(10, 0);
 
-    for (size_t i = 0; i < 5000; i++) requests.async([&]() { g.send(); });
+    for (size_t i = 0; i < 5000; i++)
+      requests.async([&]() { g.send(); });
     requests.start().finish();
 
     // kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
@@ -143,10 +144,10 @@ int main(int argc, char* argv[]) {
     //             _KUL_HTTP_TEST_PORT_).send();
     // #endif//_KUL_INCLUDE_HTTPS_
 
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KERR << e.stack();
     return 1;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     KERR << e.what();
     return 2;
   } catch (...) {

@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
@@ -53,11 +53,11 @@ namespace kul {
 namespace ram {
 
 class TestHTTPServer : public kul::http::Server {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     kul::http::_1_1Response r;
     return r.withBody("HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
@@ -66,11 +66,11 @@ class TestHTTPServer : public kul::http::Server {
 };
 
 class TestMultiHTTPServer : public kul::http::MultiServer {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     kul::http::_1_1Response r;
     return r.withBody("MULTI HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
@@ -80,11 +80,11 @@ class TestMultiHTTPServer : public kul::http::MultiServer {
 
 #ifdef _KUL_INCLUDE_HTTPS_
 class TestHTTPSServer : public kul::https::Server {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     kul::http::_1_1Response r;
     return r.withBody("HTTPS PROVIDED BY KUL: " + req.method())
         .withDefaultHeaders();
@@ -97,17 +97,17 @@ class TestHTTPSServer : public kul::https::Server {
 };
 
 class TestMultiHTTPSServer : public kul::https::MultiServer {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     kul::http::_1_1Response r;
     return r.withBody("MULTI HTTPS PROVIDED BY KUL: " + req.method())
         .withDefaultHeaders();
   }
-  TestMultiHTTPSServer(const uint8_t& acceptThreads = 1,
-                       const uint8_t& workerThreads = 1)
+  TestMultiHTTPSServer(const uint8_t &acceptThreads = 1,
+                       const uint8_t &workerThreads = 1)
       : kul::https::MultiServer(_KUL_HTTP_TEST_PORT_, acceptThreads,
                                 workerThreads, kul::File("res/test/server.crt"),
                                 kul::File("res/test/server.key")) {}
@@ -115,34 +115,34 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
 };
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
- public:
-  HTTPS_Get(const std::string& host, const std::string& path = "",
-            const uint16_t& port = 80)
+public:
+  HTTPS_Get(const std::string &host, const std::string &path = "",
+            const uint16_t &port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::http::_1_1Response& r) override {
+  void handleResponse(const kul::http::_1_1Response &r) override {
     KLOG(INF) << "HTTPS GET RESPONSE: " << r.body();
   }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
- public:
-  HTTPS_Post(const std::string& host, const std::string& path = "",
-             const uint16_t& port = 80)
+public:
+  HTTPS_Post(const std::string &host, const std::string &path = "",
+             const uint16_t &port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::http::_1_1Response& r) override {
-    for (const auto& p : r.headers())
+  void handleResponse(const kul::http::_1_1Response &r) override {
+    for (const auto &p : r.headers())
       KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
   }
 };
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 class TestSocketServer : public kul::tcp::SocketServer<char> {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  bool handle(char* const in, const size_t& inLen, char* const out,
-              size_t& outLen) override {
+public:
+  bool handle(char *const in, const size_t &inLen, char *const out,
+              size_t &outLen) override {
     std::string rep("TCP PROVIDED BY KUL");
     std::strcpy(out, rep.c_str());
     outLen = rep.size();
@@ -153,28 +153,28 @@ class TestSocketServer : public kul::tcp::SocketServer<char> {
 };
 
 class Get : public kul::http::_1_1GetRequest {
- public:
-  Get(const std::string& host, const std::string& path = "",
-      const uint16_t& port = 80)
+public:
+  Get(const std::string &host, const std::string &path = "",
+      const uint16_t &port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::http::_1_1Response& r) override {
+  void handleResponse(const kul::http::_1_1Response &r) override {
     KLOG(INF) << "GET RESPONSE: " << r.body();
   }
 };
 class Post : public kul::http::_1_1PostRequest {
- public:
-  Post(const std::string& host, const std::string& path = "",
-       const uint16_t& port = 80)
+public:
+  Post(const std::string &host, const std::string &path = "",
+       const uint16_t &port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::http::_1_1Response& r) override {
-    for (const auto& p : r.headers())
+  void handleResponse(const kul::http::_1_1Response &r) override {
+    for (const auto &p : r.headers())
       KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
   }
 };
 
 class Test {
- public:
+public:
   Test() {
 #ifdef _KUL_INCLUDE_HTTPS_
     KOUT(NON) << "Single HTTPS SERVER";
@@ -184,16 +184,20 @@ class Test {
       kul::Thread t(std::ref(serv));
       t.run();
       kul::this_thread::sleep(333);
-      if (t.exception()) std::rethrow_exception(t.exception());
+      if (t.exception())
+        std::rethrow_exception(t.exception());
       {
         HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
         HTTPS_Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
         p.body("tsop");
         p.send();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
         HTTPS_Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
       }
       kul::this_thread::sleep(100);
       serv.stop();
@@ -214,12 +218,14 @@ class Test {
                   _KUL_HTTP_TEST_PORT_)
             .send();
       };
-      auto except = [&t](const kul::Exception& e) {
+      auto except = [&t](const kul::Exception &e) {
         KLOG(ERR) << e.stack();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
       };
       kul::ChroncurrentThreadPool<> ctp(3, 1);
-      for (size_t i = 0; i < 999; i++) ctp.async(getter, except);
+      for (size_t i = 0; i < 999; i++)
+        ctp.async(getter, except);
       ctp.finish(1000000000);
 
       kul::this_thread::sleep(100);
@@ -229,7 +235,7 @@ class Test {
       t.join();
     }
 
-#endif  // _KUL_HTTPS_
+#endif // _KUL_HTTPS_
 
     KOUT(NON) << "Single HTTP SERVER";
     {
@@ -237,15 +243,18 @@ class Test {
       kul::Thread t(std::ref(serv));
       t.run();
       kul::this_thread::sleep(333);
-      if (t.exception()) std::rethrow_exception(t.exception());
+      if (t.exception())
+        std::rethrow_exception(t.exception());
       {
         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
         Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
         Post p("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
         p.body("tsop");
         p.send();
-        if (t.exception()) std::rethrow_exception(t.exception());
+        if (t.exception())
+          std::rethrow_exception(t.exception());
       }
       kul::this_thread::sleep(100);
       serv.stop();
@@ -255,12 +264,14 @@ class Test {
     KLOG(INF) << "Test socket connection";
     {
       kul::tcp::Socket<char> sock;
-      if (!sock.connect("google.com", 80)) KEXCEPTION("TCP FAILED TO CONNECT!");
+      if (!sock.connect("google.com", 80))
+        KEXCEPTION("TCP FAILED TO CONNECT!");
       Get get("google.com");
       std::string req(get.toString());
       std::vector<char> v1, v2;
       KOUT(NON) << "Writing to TCP socket";
-      for (size_t i = 0; i < req.size() / 2; i++) v1.push_back(req.at(i));
+      for (size_t i = 0; i < req.size() / 2; i++)
+        v1.push_back(req.at(i));
       for (size_t i = req.size() / 2; i < req.size(); i++)
         v2.push_back(req.at(i));
       std::string s1(v1.begin(), v1.end()), s2(v2.begin(), v2.end());
@@ -279,14 +290,15 @@ class Test {
       kul::Thread t(std::ref(serv));
       t.run();
       kul::this_thread::sleep(333);
-      if (t.exception()) std::rethrow_exception(t.exception());
+      if (t.exception())
+        std::rethrow_exception(t.exception());
 
       for (size_t i = 0; i < 5; i++) {
         kul::tcp::Socket<char> sock;
         if (!sock.connect("localhost", _KUL_HTTP_TEST_PORT_))
           KEXCEPTION("TCP FAILED TO CONNECT!");
 
-        const char* c = "socketserver";
+        const char *c = "socketserver";
         sock.write(c, strlen(c));
 
         char buf[_KUL_TCP_REQUEST_BUFFER_];
@@ -317,19 +329,19 @@ class Test {
     //     KOUT(NON) << "FINISHED!";
   }
 };
-}  // namespace ram
-}  // namespace kul
+} // namespace ram
+} // namespace kul
 
 #ifndef __KUL_RAM_NOMAIN__
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   kul::Signal s;
   try {
     kul::ram::Test();
 
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KERR << e.stack();
     return 1;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     KERR << e.what();
     return 2;
   } catch (...) {
@@ -338,4 +350,4 @@ int main(int argc, char* argv[]) {
   }
   return 0;
 }
-#endif  //__KUL_RAM_NOMAIN__
+#endif //__KUL_RAM_NOMAIN__

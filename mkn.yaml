@@ -45,7 +45,7 @@ profile:
     mod:
     - name: clang.format
       init:
-        style: google
+        style: file
         types: cpp:cxx:cc:h:hpp
         paths: .
         args:  -D_KUL_INCLUDE_HTTPS_

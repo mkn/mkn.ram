@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 #include "kul/html4.hpp"
 
@@ -48,20 +48,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace kul {
 namespace ram {
 
-void addResponseHeaders(kul::http::_1_1Response& r) {
-  if (!r.header("Date")) r.header("Date", kul::DateTime::NOW());
-  if (!r.header("Connection")) r.header("Connection", "close");
-  if (!r.header("Content-Type")) r.header("Content-Type", "text/html");
+void addResponseHeaders(kul::http::_1_1Response &r) {
+  if (!r.header("Date"))
+    r.header("Date", kul::DateTime::NOW());
+  if (!r.header("Connection"))
+    r.header("Connection", "close");
+  if (!r.header("Content-Type"))
+    r.header("Content-Type", "text/html");
   if (!r.header("Content-Length"))
     r.header("Content-Length", std::to_string(r.body().size()));
 }
 
 class TestHTTPServer : public kul::http::Server {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("HTTP PROVIDED BY KUL");
@@ -73,18 +76,18 @@ class TestHTTPServer : public kul::http::Server {
 };
 
 class TestMultiHTTPServer : public kul::http::MultiServer {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("MULTI HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
     return r;
   }
-  TestMultiHTTPServer(const uint16_t& threads)
+  TestMultiHTTPServer(const uint16_t &threads)
       : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, threads) {}
   TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 2, 4) {}
   friend class kul::Thread;
@@ -92,11 +95,11 @@ class TestMultiHTTPServer : public kul::http::MultiServer {
 
 #ifdef _KUL_INCLUDE_HTTPS_
 class TestHTTPSServer : public kul::https::Server {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("HTTPS PROVIDED BY KUL: " + req.method());
@@ -111,11 +114,11 @@ class TestHTTPSServer : public kul::https::Server {
 };
 
 class TestMultiHTTPSServer : public kul::https::MultiServer {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request& req) {
+public:
+  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("MULTI HTTPS PROVIDED BY KUL");
@@ -130,75 +133,75 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
 };
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
- public:
-  HTTPS_Get(const std::string& host, const std::string& path = "",
-            const uint16_t& port = 80)
+public:
+  HTTPS_Get(const std::string &host, const std::string &path = "",
+            const uint16_t &port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
- public:
-  HTTPS_Post(const std::string& host, const std::string& path = "",
-             const uint16_t& port = 80)
+public:
+  HTTPS_Post(const std::string &host, const std::string &path = "",
+             const uint16_t &port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KUL_DBG_FUNC_ENTER
-    for (const auto& p : h)
+    for (const auto &p : h)
       KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_
 
 class TestSocketServer : public kul::tcp::SocketServer<char> {
- private:
+private:
   void operator()() { start(); }
 
- public:
-  bool handle(char* in, char* out) override {
+public:
+  bool handle(char *in, char *out) override {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response getResponse;
     addResponseHeaders(getResponse);
     getResponse.body("magicmansion");
     std::string getResponseStr(getResponse.toString());
     std::strcpy(out, getResponseStr.c_str());
-    return true;  // if true, close connection
+    return true; // if true, close connection
   }
   TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_) {}
   friend class kul::Thread;
 };
 
 class Get : public kul::http::_1_1GetRequest {
- public:
-  Get(const std::string& host, const std::string& path = "",
-      const uint16_t& port = 80)
+public:
+  Get(const std::string &host, const std::string &path = "",
+      const uint16_t &port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KLOG(INF) << "GET RESPONSE:\n" << b;
   }
 };
 class Post : public kul::http::_1_1PostRequest {
- public:
-  Post(const std::string& host, const std::string& path = "",
-       const uint16_t& port = 80)
+public:
+  Post(const std::string &host, const std::string &path = "",
+       const uint16_t &port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S& h,
-                      const std::string& b) override {
+  void handleResponse(const kul::hash::map::S2S &h,
+                      const std::string &b) override {
     KUL_DBG_FUNC_ENTER
-    for (const auto& p : h)
+    for (const auto &p : h)
       KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "POST RESPONSE:\n" << b;
   }
 };
-}  // namespace ram
-}  // namespace kul
+} // namespace ram
+} // namespace kul
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   kul::Signal s;
   try {
     // KOUT(NON) << "TCP Socket SERVER";
@@ -231,46 +234,47 @@ int main(int argc, char* argv[]) {
       s.abrt([&](int16_t i) { serv.stop(); });
 
       kul::this_thread::sleep(100);
-      if (t.exception()) std::rethrow_exception(t.exception());
+      if (t.exception())
+        std::rethrow_exception(t.exception());
       kul::this_thread::sleep(100);
       serv.join();
       serv.stop();
       kul::this_thread::sleep(100);
     }
 #ifdef _KUL_INCLUDE_HTTPS_
-    // KOUT(NON) << "Single HTTPS SERVER";
-    // {
-    //     kul::ram::TestHTTPSServer serv;
-    //     serv.init();
-    //     kul::Thread t(std::ref(serv));
-    //     t.run();
-    //     kul::this_thread::sleep(100);
-    //     if(t.exception()) std::rethrow_exception(t.exception());
-    //     kul::this_thread::sleep(1000);
-    //     serv.stop();
-    //     kul::this_thread::sleep(100);
-    //     t.join();
-    // }
-    // KOUT(NON) << "Multi HTTPS SERVER";
-    // {
-    //     kul::ram::TestMultiHTTPSServer serv;
-    //     serv.init();
-    //     kul::Thread t(std::ref(serv));
-    //     t.run();
-    //     kul::this_thread::sleep(100);
-    //     if(t.exception()) std::rethrow_exception(t.exception());
-    //     kul::this_thread::sleep(5000);
-    //     serv.join();
-    //     serv.stop();
-    //     kul::this_thread::sleep(100);
-    //     t.join();
-    // }
-#endif  //_KUL_INCLUDE_HTTPS_
+// KOUT(NON) << "Single HTTPS SERVER";
+// {
+//     kul::ram::TestHTTPSServer serv;
+//     serv.init();
+//     kul::Thread t(std::ref(serv));
+//     t.run();
+//     kul::this_thread::sleep(100);
+//     if(t.exception()) std::rethrow_exception(t.exception());
+//     kul::this_thread::sleep(1000);
+//     serv.stop();
+//     kul::this_thread::sleep(100);
+//     t.join();
+// }
+// KOUT(NON) << "Multi HTTPS SERVER";
+// {
+//     kul::ram::TestMultiHTTPSServer serv;
+//     serv.init();
+//     kul::Thread t(std::ref(serv));
+//     t.run();
+//     kul::this_thread::sleep(100);
+//     if(t.exception()) std::rethrow_exception(t.exception());
+//     kul::this_thread::sleep(5000);
+//     serv.join();
+//     serv.stop();
+//     kul::this_thread::sleep(100);
+//     t.join();
+// }
+#endif //_KUL_INCLUDE_HTTPS_
 
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KERR << e.stack();
     return 1;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     KERR << e.what();
     return 2;
   } catch (...) {

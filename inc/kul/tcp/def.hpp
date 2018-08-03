@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_TCP_DEF_HPP_
 
 #ifndef _KUL_TCP_SESSION_TTL_
-#define _KUL_TCP_SESSION_TTL_ 600  // seconds
-#endif                             /* _KUL_TCP_SESSION_TTL_ */
+#define _KUL_TCP_SESSION_TTL_ 600 // seconds
+#endif                            /* _KUL_TCP_SESSION_TTL_ */
 
 #ifndef _KUL_TCP_SESSION_CHECK_
-#define _KUL_TCP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
-#endif                                 /* _KUL_TCP_SESSION_CHECK_ */
+#define _KUL_TCP_SESSION_CHECK_ 10000 // milliseconds to sleep between checks
+#endif                                /* _KUL_TCP_SESSION_CHECK_ */
 
 #ifndef _KUL_TCP_READ_BUFFER_
-#define _KUL_TCP_READ_BUFFER_ 963210
+#define _KUL_TCP_READ_BUFFER_ 1963210
 #endif /* _KUL_TCP_READ_BUFFER_ */
 
 #ifndef _KUL_TCP_MAX_CLIENT_
@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* _KUL_TCP_MAX_CLIENT_ */
 
 #ifndef _KUL_TCP_REQUEST_BUFFER_
-#define _KUL_TCP_REQUEST_BUFFER_ 963210
+#define _KUL_TCP_REQUEST_BUFFER_ 1963210
 #endif /* _KUL_TCP_REQUEST_BUFFER_ */
 
 #ifdef _WIN32

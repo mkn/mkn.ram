@@ -31,9 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Requester::send(const std::string& h, const std::string& req,
-                                 const uint16_t& p, std::stringstream& ss,
-                                 SSL* ssl) {
+void kul::https::Requester::send(const std::string &h, const std::string &req,
+                                 const uint16_t &p, std::stringstream &ss,
+                                 SSL *ssl) {
   KUL_DBG_FUNC_ENTER
   int sck = 0;
   if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
@@ -41,7 +41,8 @@ void kul::https::Requester::send(const std::string& h, const std::string& req,
   if (!kul::tcp::Socket<char>::CONNECT(sck, h, p))
     KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
   SSL_set_fd(ssl, sck);
-  if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
+  if (SSL_connect(ssl) == -1)
+    KEXCEPTION("HTTPS REQUEST INIT FAILED");
   SSL_write(ssl, req.c_str(), req.size());
   char buffer[_KUL_TCP_REQUEST_BUFFER_];
   int d = 0;
@@ -49,14 +50,17 @@ void kul::https::Requester::send(const std::string& h, const std::string& req,
   do {
     bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
     d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
-    if (d == 0) break;
+    if (d == 0)
+      break;
     if (d < 0) {
       short se = 0;
       SSL_get_error(ssl, se);
-      if (se) KLOG(ERR) << "SSL_get_error: " << se;
+      if (se)
+        KLOG(ERR) << "SSL_get_error: " << se;
       break;
     }
-    for (i = 0; i < d; i++) ss << buffer[i];
+    for (i = 0; i < d; i++)
+      ss << buffer[i];
   } while (true);
   ::close(sck);
 }
@@ -70,7 +74,7 @@ void kul::https::_1_1GetRequest::send() KTHROW(kul::http::Exception) {
     auto rec(ss.str());
     kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
   }
@@ -85,10 +89,10 @@ void kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception) {
     auto rec(ss.str());
     kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP POST failed with host: " + _host);
   }
 }
 
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif //_KUL_INCLUDE_HTTPS_

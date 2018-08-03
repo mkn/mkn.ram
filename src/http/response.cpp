@@ -33,14 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 std::string kul::http::_1_1Response::toString() const {
   std::stringstream ss;
   ss << version() << " " << _s << " " << r << kul::os::EOL();
-  for (const auto& h : headers())
+  for (const auto &h : headers())
     ss << h.first << ": " << h.second << kul::os::EOL();
-  for (const auto& p : cookies()) {
+  for (const auto &p : cookies()) {
     ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
-    if (p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
-    if (p.second.path().size()) ss << "path=" << p.second.path() << "; ";
-    if (p.second.httpOnly()) ss << "httponly; ";
-    if (p.second.secure()) ss << "secure; ";
+    if (p.second.domain().size())
+      ss << "domain=" << p.second.domain() << "; ";
+    if (p.second.path().size())
+      ss << "path=" << p.second.path() << "; ";
+    if (p.second.httpOnly())
+      ss << "httponly; ";
+    if (p.second.secure())
+      ss << "secure; ";
     if (p.second.invalidated())
       ss << "expires=Sat, 25-Apr-2015 13:33:33 GMT; maxage=-1; ";
     else if (p.second.expires().size())
@@ -51,15 +55,17 @@ std::string kul::http::_1_1Response::toString() const {
   return ss.str();
 }
 
-kul::http::_1_1Response kul::http::_1_1Response::FROM_STRING(std::string& b) {
+kul::http::_1_1Response kul::http::_1_1Response::FROM_STRING(std::string &b) {
   _1_1Response res;
 
   std::stringstream ss(b);
   std::string line;
   std::getline(ss, line);
   auto bits(kul::String::SPLIT(line, " "));
-  if (bits.size() > 1) res.status(kul::String::UINT16(bits[1]));
-  if (bits.size() > 2) res.reason(bits[2]);
+  if (bits.size() > 1)
+    res.status(kul::String::UINT16(bits[1]));
+  if (bits.size() > 2)
+    res.reason(bits[2]);
   b.erase(0, b.find("\n") + 1);
   while (std::getline(ss, line)) {
     if (line.size() <= 2) {

@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "kul/asio/fcgi.hpp"
 #include "kul/signal.hpp"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   kul::Signal sig;
   try {
     kul::asio::fcgi::Server s(5863, 4, 8);
@@ -43,9 +43,9 @@ int main(int argc, char* argv[]) {
       exit(2);
     });
     s.join();
-  } catch (const kul::Exception& e) {
+  } catch (const kul::Exception &e) {
     KERR << e.stack();
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     KERR << e.what();
   } catch (...) {
     KERR << "UNKNOWN EXCEPTION CAUGHT";
