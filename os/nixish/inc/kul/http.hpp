@@ -42,43 +42,41 @@ namespace kul {
 namespace http {
 
 class Server : public kul::http::AServer {
-private:
+ private:
   int fdSize = _KUL_TCP_READ_BUFFER_;
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
-protected:
+ protected:
   virtual char *getOrCreateBufferFor(const int &fd) {
     if (!inBuffers.count(fd))
-      inBuffers.insert(
-          std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
+      inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
     return inBuffers[fd].get();
   }
 
   virtual bool receive(std::map<int, uint8_t> &fds, const int &fd) override;
 
-public:
-  Server(const short &p = 80, const std::string &w = "localhost")
-      : AServer(p) {}
+ public:
+  Server(const short &p = 80) : AServer(p) {}
+  virtual ~Server() {}
 };
 
 class MultiServer : public kul::http::Server {
-protected:
+ protected:
   uint8_t _acceptThreads, _workerThreads;
   kul::Mutex m_mutex;
   ConcurrentThreadPool<> _acceptPool;
   ConcurrentThreadPool<> _workerPool;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd,
-                            char *in, const int &read, int &e) override {
-    _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this),
-                                &fds, fd, in, read, e),
-                      std::bind(&MultiServer::errorBuffer, std::ref(*this),
-                                std::placeholders::_1));
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in, const int &read,
+                            int &e) override {
+    _workerPool.async(
+        std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
+        std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, const int &fd, char *in,
-                     const int &read, int &e) {
+  void operateBuffer(std::map<int, uint8_t> *fds, const int &fd, char *in, const int &read,
+                     int &e) {
     kul::http::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
       std::vector<int> del{fd};
@@ -92,8 +90,7 @@ protected:
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
-    while (s)
-      try {
+    while (s) try {
         kul::ScopeLock lock(m_mutex);
         loop(fds);
       } catch (const kul::tcp::Exception &e1) {
@@ -110,12 +107,10 @@ protected:
   MultiServer &operator=(const MultiServer &) = delete;
   MultiServer &operator=(const MultiServer &&) = delete;
 
-public:
+ public:
   MultiServer(const short &p = 80, const uint8_t &acceptThreads = 1,
-              const uint8_t &workerThreads = 1,
-              const std::string &w = "localhost")
-      : Server(p, w), _acceptThreads(acceptThreads),
-        _workerThreads(workerThreads) {}
+              const uint8_t &workerThreads = 1)
+      : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
   ~MultiServer() { KUL_DBG_FUNC_ENTER }
 
   virtual void start() KTHROW(kul::tcp::Exception) override;
@@ -135,7 +130,7 @@ public:
   }
   const std::exception_ptr &exception() { return _acceptPool.exception(); }
 };
-} // namespace http
-} // namespace kul
+}  // namespace http
+}  // namespace kul
 
 #endif /* _KUL_HTTP_HPP_ */

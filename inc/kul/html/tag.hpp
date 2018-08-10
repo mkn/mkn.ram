@@ -42,8 +42,7 @@ namespace kul {
 
 class HTML {
  private:
-  static void replace(std::string& s, const std::string& f,
-                      const std::string& r) {
+  static void replace(std::string& s, const std::string& f, const std::string& r) {
     size_t p = s.find(f);
     while (p != std::string::npos) {
       s.replace(p, f.size(), r);
@@ -134,8 +133,7 @@ namespace tag {
 
 class Exception : public kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
-      : kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
 };
 
 class Named : public Tag {
@@ -207,8 +205,7 @@ class Button : public InputTag {
   Button(const std::string& n, const std::string& v = "Submit", bool h = 0) {
     attribute("name", n).attribute("value", v).attribute("type", "submit");
     if (h)
-      attribute("style",
-                "position: absolute; left: -9999px; width: 1px; height: 1px;")
+      attribute("style", "position: absolute; left: -9999px; width: 1px; height: 1px;")
           .attribute("tabindex", "-1");
   }
 };
@@ -228,8 +225,7 @@ class Form : public Tag {
       attribute("method", "get");
     attribute("name", n);
   }
-  Form& button(const std::string& n, const std::string& v = "Submit",
-               bool h = 0) {
+  Form& button(const std::string& n, const std::string& v = "Submit", bool h = 0) {
     add(std::make_shared<Button>(n, v, h));
     return *this;
   }

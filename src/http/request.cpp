@@ -39,7 +39,7 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
     const std::string& req(toString());
     sock.write(req.c_str(), req.size());
     std::unique_ptr<char[]> buf(new char[_KUL_TCP_REQUEST_BUFFER_]);
-    size_t i, d = 0;
+    int64_t i, d = 0;
     bool more = false;
     do {
       bzero(buf.get(), _KUL_TCP_REQUEST_BUFFER_);
@@ -72,8 +72,7 @@ class RequestHeaders {
     kul::hash::map::S2S hs1;
     for (const auto& h : _hs)
       if (!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);
-    if (!body.empty() && !r.header("Content-Length") &&
-        !r.header("Transfer-Encoding"))
+    if (!body.empty() && !r.header("Content-Length") && !r.header("Transfer-Encoding"))
       hs1.insert("Content-Length", std::to_string(body.size()));
     return hs1;
   }
@@ -84,8 +83,7 @@ std::string kul::http::_1_1GetRequest::toString() const {
   std::stringstream ss;
   ss << method() << " /" << _path;
   if (atts.size() > 0) ss << "?";
-  for (const std::pair<std::string, std::string>& p : atts)
-    ss << p.first << "=" << p.second << "&";
+  for (const std::pair<std::string, std::string>& p : atts) ss << p.first << "=" << p.second << "&";
   if (atts.size() > 0) ss.seekp(-1, ss.cur);
   ss << " " << version();
   ss << "\r\nHost: " << _host;

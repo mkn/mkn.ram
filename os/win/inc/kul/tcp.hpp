@@ -101,16 +101,14 @@ class Socket : public ASocket<T> {
   }
   virtual size_t write(const T* data, const size_t& len) override {
     iResult = send(ConnectSocket, data, len, 0);
-    if (iResult == SOCKET_ERROR)
-      KEXCEPTION("Socket send failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("Socket send failed with error: ") << WSAGetLastError();
     return iResult;
   }
 
   SOCKET socket() { return ConnectSocket; }
 
  protected:
-  static bool CONNECT(Socket& sck, const std::string& host,
-                      const int16_t& port) {
+  static bool CONNECT(Socket& sck, const std::string& host, const int16_t& port) {
     KUL_DBG_FUNC_ENTER
     int16_t e = 0;
 
@@ -127,21 +125,18 @@ class Socket : public ASocket<T> {
     sck.hints.ai_protocol = IPPROTO_TCP;
 
     // Resolve the server address and port
-    iResult = getaddrinfo(host.c_str(), std::to_string(port).c_str(),
-                          &sck.hints, &sck.result);
+    iResult = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &sck.hints, &sck.result);
     if (iResult != 0) KEXCEPTION("getaddrinfo failed with error: ") << iResult;
 
     // Attempt to connect to an address until one succeeds
     for (sck.ptr = sck.result; sck.ptr != NULL; sck.ptr = sck.ptr->ai_next) {
       // Create a SOCKET for connecting to server
-      sck.ConnectSocket = ::socket(sck.ptr->ai_family, sck.ptr->ai_socktype,
-                                   sck.ptr->ai_protocol);
+      sck.ConnectSocket = ::socket(sck.ptr->ai_family, sck.ptr->ai_socktype, sck.ptr->ai_protocol);
       if (sck.ConnectSocket == INVALID_SOCKET)
         KEXCEPTION("socket failed with error: ") << WSAGetLastError();
 
       // Connect to server.
-      iResult = ::connect(sck.ConnectSocket, sck.ptr->ai_addr,
-                          (int)sck.ptr->ai_addrlen);
+      iResult = ::connect(sck.ConnectSocket, sck.ptr->ai_addr, (int)sck.ptr->ai_addrlen);
       if (iResult == SOCKET_ERROR) {
         closesocket(sck.ConnectSocket);
         sck.ConnectSocket = INVALID_SOCKET;
@@ -152,8 +147,7 @@ class Socket : public ASocket<T> {
 
     freeaddrinfo(sck.result);
 
-    if (sck.ConnectSocket == INVALID_SOCKET)
-      KEXCEPTION("Unable to connect to server!");
+    if (sck.ConnectSocket == INVALID_SOCKET) KEXCEPTION("Unable to connect to server!");
 
     return e >= 0;
   }
@@ -179,8 +173,7 @@ class SocketServer : public ASocketServer<T> {
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr[_KUL_TCP_MAX_CLIENT_];
 
-  virtual bool handle(T* const in, const size_t& inLen, T* const out,
-                      size_t& outLen) {
+  virtual bool handle(T* const in, const size_t& inLen, T* const out, size_t& outLen) {
     return true;
   }
 
@@ -207,14 +200,12 @@ class SocketServer : public ASocketServer<T> {
         cl = handle(in, iResult, out, outLen);
         auto sent = writeTo(ClientSocket, out, strlen(out));
         if (sent == SOCKET_ERROR)
-          KEXCEPTION("SocketServer send failed with error: ")
-              << WSAGetLastError();
+          KEXCEPTION("SocketServer send failed with error: ") << WSAGetLastError();
         if (cl) break;
       } else if (iResult == 0) {
         // printf("Connection closing...\n");
       } else
-        KEXCEPTION("SocketServer recv failed with error: ")
-            << WSAGetLastError();
+        KEXCEPTION("SocketServer recv failed with error: ") << WSAGetLastError();
 
     } while (iResult > 0);
 
@@ -237,8 +228,8 @@ class SocketServer : public ASocketServer<T> {
     auto ret = poll();
     if (!s) return;
     if (ret < 0)
-      KEXCEPTION("Socket Server error on select: " + std::to_string(errno) +
-                 " - " + std::string(strerror(errno)));
+      KEXCEPTION("Socket Server error on select: " + std::to_string(errno) + " - " +
+                 std::string(strerror(errno)));
     // if(ret == 0) return;
     int newlisock = -1;
     ;
@@ -247,8 +238,7 @@ class SocketServer : public ASocketServer<T> {
       if (pair.second == 1) continue;
       if (m_fds[i].revents == 0) continue;
       if (m_fds[i].revents != POLLIN)
-        KEXCEPTION("HTTP Server error on pollin " +
-                   std::to_string(m_fds[i].revents));
+        KEXCEPTION("HTTP Server error on pollin " + std::to_string(m_fds[i].revents));
 
       if (m_fds[i].fd == lisock) {
         do {
@@ -259,8 +249,7 @@ class SocketServer : public ASocketServer<T> {
           }
           newlisock = accept(newFD);
           if (newlisock < 0) {
-            if (errno != EWOULDBLOCK)
-              KEXCEPTION("SockerServer error on accept");
+            if (errno != EWOULDBLOCK) KEXCEPTION("SockerServer error on accept");
             break;
           }
           validAccept(fds, newlisock, newFD);
@@ -269,23 +258,19 @@ class SocketServer : public ASocketServer<T> {
     }
     std::vector<int> del;
     for (const auto& pair : fds)
-      if (pair.second == 1 && receive(fds, pair.first))
-        del.push_back(pair.first);
+      if (pair.second == 1 && receive(fds, pair.first)) del.push_back(pair.first);
     if (del.size()) closeFDs(fds, del);
   }
 
   virtual SOCKET accept(const int& fd) {
-    return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL,
-                     NULL);
+    return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL, NULL);
   }
-  virtual void validAccept(std::map<int, uint8_t>& fds, const int& newlisock,
-                           const int& nfd) {
+  virtual void validAccept(std::map<int, uint8_t>& fds, const int& newlisock, const int& nfd) {
     KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
               << ", port : " << ntohs(cli_addr[nfd].sin_port);
-    this->onConnect(inet_ntoa(cli_addr[nfd].sin_addr),
-                    ntohs(cli_addr[nfd].sin_port));
+    this->onConnect(inet_ntoa(cli_addr[nfd].sin_addr), ntohs(cli_addr[nfd].sin_port));
     m_fds[nfd].fd = newlisock;
     m_fds[nfd].events = POLLIN;
     fds[nfd] = 1;
@@ -299,8 +284,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
  public:
-  SocketServer(const uint16_t& p, bool _bind = 1)
-      : kul::tcp::ASocketServer<T>(p) {
+  SocketServer(const uint16_t& p, bool _bind = 1) : kul::tcp::ASocketServer<T>(p) {
     // if(_bind) bind(__KUL_TCP_BIND_SOCKTOPTS__);
   }
   void freeaddrinfo() {
@@ -314,8 +298,7 @@ class SocketServer : public ASocketServer<T> {
     if (ClientSocket) closesocket(ClientSocket);
     WSACleanup();
   }
-  virtual void bind(int sockOpt = __KUL_TCP_BIND_SOCKTOPTS__)
-      KTHROW(kul::Exception) {}
+  virtual void bind(int sockOpt = __KUL_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {}
   virtual void start() KTHROW(kul::tcp::Exception) {
     KUL_DBG_FUNC_ENTER
     _started = kul::Now::MILLIS();
@@ -329,20 +312,16 @@ class SocketServer : public ASocketServer<T> {
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    iResult =
-        getaddrinfo(NULL, std::to_string(port()).c_str(), &hints, &result);
+    iResult = getaddrinfo(NULL, std::to_string(port()).c_str(), &hints, &result);
     if (iResult != 0) {
       WSACleanup();
       KEXCEPTION("getaddrinfo failed with error: ") << iResult;
     }
 
-    lisock =
-        socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    lisock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     int iso = 1;
-    int rc =
-        setsockopt(lisock, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
-    if (lisock == INVALID_SOCKET)
-      KEXCEPTION("socket failed with error: ") << WSAGetLastError();
+    int rc = setsockopt(lisock, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
+    if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ") << WSAGetLastError();
 
     {
       unsigned long mode = 1;
@@ -350,19 +329,16 @@ class SocketServer : public ASocketServer<T> {
     }
     // Setup the TCP listening socket
     iResult = ::bind(lisock, result->ai_addr, (int)result->ai_addrlen);
-    if (iResult == SOCKET_ERROR)
-      KEXCEPTION("bind failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("bind failed with error: ") << WSAGetLastError();
 
     freeaddrinfo();
 
     iResult = listen(lisock, SOMAXCONN);
-    if (iResult == SOCKET_ERROR)
-      KEXCEPTION("listen failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("listen failed with error: ") << WSAGetLastError();
 
     s = true;
     std::map<int, uint8_t> fds;
-    for (int i = 0; i < _KUL_TCP_MAX_CLIENT_; i++)
-      fds.insert(std::make_pair(i, 0));
+    for (int i = 0; i < _KUL_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
     try {
       while (s) loop(fds);
     } catch (const kul::tcp::Exception& e1) {

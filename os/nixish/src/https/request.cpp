@@ -31,9 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Requester::send(const std::string &h, const std::string &req,
-                                 const uint16_t &p, std::stringstream &ss,
-                                 SSL *ssl) {
+void kul::https::Requester::send(const std::string &h, const std::string &req, const uint16_t &p,
+                                 std::stringstream &ss, SSL *ssl) {
   KUL_DBG_FUNC_ENTER
   int sck = 0;
   if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
@@ -41,26 +40,21 @@ void kul::https::Requester::send(const std::string &h, const std::string &req,
   if (!kul::tcp::Socket<char>::CONNECT(sck, h, p))
     KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
   SSL_set_fd(ssl, sck);
-  if (SSL_connect(ssl) == -1)
-    KEXCEPTION("HTTPS REQUEST INIT FAILED");
+  if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
   SSL_write(ssl, req.c_str(), req.size());
   char buffer[_KUL_TCP_REQUEST_BUFFER_];
-  int d = 0;
-  uint32_t i;
+  int64_t d = 0, i = 0;
   do {
     bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
     d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
-    if (d == 0)
-      break;
+    if (d == 0) break;
     if (d < 0) {
       short se = 0;
       SSL_get_error(ssl, se);
-      if (se)
-        KLOG(ERR) << "SSL_get_error: " << se;
+      if (se) KLOG(ERR) << "SSL_get_error: " << se;
       break;
     }
-    for (i = 0; i < d; i++)
-      ss << buffer[i];
+    for (i = 0; i < d; i++) ss << buffer[i];
   } while (true);
   ::close(sck);
 }
@@ -95,4 +89,4 @@ void kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception) {
   }
 }
 
-#endif //_KUL_INCLUDE_HTTPS_
+#endif  //_KUL_INCLUDE_HTTPS_

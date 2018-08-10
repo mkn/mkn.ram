@@ -44,8 +44,7 @@ class SessionServer;
 
 class Session {
  private:
-  static const constexpr std::time_t MAX =
-      (std::numeric_limits<std::time_t>::max)();
+  static const constexpr std::time_t MAX = (std::numeric_limits<std::time_t>::max)();
   std::time_t c;
 
  public:
@@ -53,9 +52,7 @@ class Session {
   void refresh() {
     if (c != MAX) this->c = std::time(0);
   }
-  const bool expired() const {
-    return c < (std::time(0) - _KUL_HTTP_SESSION_TTL_);
-  }
+  const bool expired() const { return c < (std::time(0) - _KUL_HTTP_SESSION_TTL_); }
   void invalidate() { c = MAX; }
   template <class S>
   friend class SessionServer;

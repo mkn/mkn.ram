@@ -50,10 +50,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _KUL_HTTPS_METHOD_ TLS
 #endif /* _KUL_HTTPS_METHOD_ */
 
-#define _KUL_HTTPS_CLIENT_METHOD_ \
-  KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _client_method)
-#define _KUL_HTTPS_SERVER_METHOD_ \
-  KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _server_method)
+#define _KUL_HTTPS_CLIENT_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _client_method)
+#define _KUL_HTTPS_SERVER_METHOD_ KUL_HTTPS_METHOD_APPENDER(_KUL_HTTPS_METHOD_, _server_method)
 
 #else
 
@@ -77,19 +75,15 @@ class Server : public kul::http::Server {
   kul::File crt, key;
   const std::string cs;
 
-  virtual KUL_PUBLISH void loop(std::map<int, uint8_t>& fds)
-      KTHROW(kul::tcp::Exception) override;
+  virtual KUL_PUBLISH void loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) override;
 
-  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds,
-                                   const int& fd) override;
+  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
-  virtual KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds,
-                                        const int& fd, char* in,
+  virtual KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
                                         const int& read, int& e);
 
  public:
-  Server(const short& p, const kul::File& c, const kul::File& k,
-         const std::string& cs = "")
+  Server(const short& p, const kul::File& c, const kul::File& k, const std::string& cs = "")
       : kul::http::Server(p), crt(c), key(k), cs(cs) {}
   Server(const kul::File& c, const kul::File& k, const std::string& cs = "")
       : kul::https::Server(443, c, k, cs) {}
@@ -125,17 +119,16 @@ class KUL_PUBLISH MultiServer : public kul::https::Server {
       }
   }
 
-  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd,
-                            char* in, const int& read, int& e) override {
-    _workerPool.async(std::bind(&MultiServer::operateBuffer, std::ref(*this),
-                                &fds, fd, in, read, e),
-                      std::bind(&MultiServer::errorBuffer, std::ref(*this),
-                                std::placeholders::_1));
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
+                            int& e) override {
+    _workerPool.async(
+        std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
+        std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in,
-                     const int& read, int& e) {
+  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read,
+                     int& e) {
     kul::https::Server::handleBuffer(*fds, fd, in, read, e);
     if (e < 0) {
       std::vector<int> del{fd};
@@ -145,9 +138,8 @@ class KUL_PUBLISH MultiServer : public kul::https::Server {
   virtual void errorBuffer(const kul::Exception& e) { KERR << e.stack(); };
 
  public:
-  MultiServer(const short& p, const uint8_t& acceptThreads,
-              const uint8_t& workerThreads, const kul::File& c,
-              const kul::File& k, const std::string& cs = "")
+  MultiServer(const short& p, const uint8_t& acceptThreads, const uint8_t& workerThreads,
+              const kul::File& c, const kul::File& k, const std::string& cs = "")
       : kul::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
@@ -155,12 +147,10 @@ class KUL_PUBLISH MultiServer : public kul::https::Server {
         _workerPool(workerThreads) {
     if (acceptThreads < 1)
       KEXCEPTION("MultiServer cannot have less than one threads for accepting");
-    if (workerThreads < 1)
-      KEXCEPTION("MultiServer cannot have less than one threads for working");
+    if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
   }
-  MultiServer(const uint8_t& acceptThreads, const uint8_t& workerThreads,
-              const kul::File& c, const kul::File& k,
-              const std::string& cs = "")
+  MultiServer(const uint8_t& acceptThreads, const uint8_t& workerThreads, const kul::File& c,
+              const kul::File& k, const std::string& cs = "")
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
@@ -221,14 +211,13 @@ class A1_1Request {
 
 class Requester {
  public:
-  static void send(const std::string& h, const std::string& req,
-                   const uint16_t& p, std::stringstream& ss, SSL* ssl);
+  static void send(const std::string& h, const std::string& req, const uint16_t& p,
+                   std::stringstream& ss, SSL* ssl);
 };
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request {
  public:
-  _1_1GetRequest(const std::string& host, const std::string& path = "",
-                 const uint16_t& port = 443)
+  _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443)
       : http::_1_1GetRequest(host, path, port) {}
   virtual ~_1_1GetRequest() {}
   virtual void send() KTHROW(kul::http::Exception) override;
@@ -237,8 +226,7 @@ using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request {
  public:
-  _1_1PostRequest(const std::string& host, const std::string& path = "",
-                  const uint16_t& port = 443)
+  _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443)
       : http::_1_1PostRequest(host, path, port) {}
   virtual void send() KTHROW(kul::http::Exception) override;
 };

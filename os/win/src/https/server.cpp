@@ -31,8 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Server::loop(std::map<int, uint8_t>& fds)
-    KTHROW(kul::tcp::Exception) {
+void kul::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
   KUL_DBG_FUNC_ENTER
 
   auto ret = poll(1000);
@@ -49,8 +48,7 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds)
     if (pair.second == 1) continue;
     if (m_fds[i].revents == 0) continue;
     if (m_fds[i].revents != POLLIN)
-      KEXCEPTION("HTTPS Server error on pollin " +
-                 std::to_string(m_fds[i].revents));
+      KEXCEPTION("HTTPS Server error on pollin " + std::to_string(m_fds[i].revents));
 
     if (m_fds[i].fd == lisock) {
       do {
@@ -66,8 +64,7 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds)
           break;
         }
         ssl_clients[newlisock] = SSL_new(ctx);
-        if (!ssl_clients[newlisock])
-          KEXCEPTION("HTTPS Server ssl failed to initialise");
+        if (!ssl_clients[newlisock]) KEXCEPTION("HTTPS Server ssl failed to initialise");
         SSL_set_fd(ssl_clients[newlisock], newlisock);
         int16_t ssl_err = SSL_accept(ssl_clients[newlisock]);
         if (ssl_err <= 0) {
@@ -76,17 +73,14 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds)
           SSL_shutdown(ssl_clients[newlisock]);
           SSL_free(ssl_clients[newlisock]);
           ::closesocket(newlisock);
-          KERR << "HTTPS Server SSL ERROR on SSL_ACCEPT error: " << ssl_err
-               << " :" << se;
+          KERR << "HTTPS Server SSL ERROR on SSL_ACCEPT error: " << ssl_err << " :" << se;
           KEXCEPTION("HTTPS Server SSL ERROR on SSL_ACCEPT error");
         }
         X509* cc = SSL_get_peer_certificate(ssl_clients[newlisock]);
         if (cc != NULL) {
           KLOG(DBG) << "Client certificate:";
-          KLOG(DBG) << "\t subject: "
-                    << X509_NAME_oneline(X509_get_subject_name(cc), 0, 0);
-          KLOG(DBG) << "\t issuer: %s\n"
-                    << X509_NAME_oneline(X509_get_issuer_name(cc), 0, 0);
+          KLOG(DBG) << "\t subject: " << X509_NAME_oneline(X509_get_subject_name(cc), 0, 0);
+          KLOG(DBG) << "\t issuer: %s\n" << X509_NAME_oneline(X509_get_issuer_name(cc), 0, 0);
           X509_free(cc);
         }  // else KLOG(ERR) << "Client does not have certificate.";
 
@@ -116,14 +110,11 @@ kul::https::Server& kul::https::Server::init() {
   OpenSSL_add_ssl_algorithms();
   ctx = SSL_CTX_new(_KUL_HTTPS_SERVER_METHOD_());
   if (!ctx) KEXCEPTION("HTTPS Server SSL_CTX failed SSL_CTX_new");
-  if (SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <=
-      0)
+  if (SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_certificate_file failed");
-  if (SSL_CTX_use_PrivateKey_file(ctx, key.mini().c_str(), SSL_FILETYPE_PEM) <=
-      0)
+  if (SSL_CTX_use_PrivateKey_file(ctx, key.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
-  if (!SSL_CTX_check_private_key(ctx))
-    KEXCEPTION("HTTPS Server SSL_CTX_check_private_key failed");
+  if (!SSL_CTX_check_private_key(ctx)) KEXCEPTION("HTTPS Server SSL_CTX_check_private_key failed");
   if (!cs.empty() && !SSL_CTX_set_cipher_list(ctx, cs.c_str()))
     KEXCEPTION("HTTPS Server SSL_CTX_set_cipher_listctx failed");
   return *this;
@@ -145,9 +136,8 @@ void kul::https::Server::stop() {
   kul::http::Server::stop();
 }
 
-void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds,
-                                      const int& fd, char* in, const int& read,
-                                      int& e) {
+void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
+                                      const int& read, int& e) {
   in[read] = '\0';
   std::string res;
   try {
@@ -159,9 +149,7 @@ void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds,
       f = c.find(ch) != std::string::npos;
       if (f) break;
     }
-    if (!f)
-      KEXCEPTION(
-          "Logic error encountered, probably https attempt on http port");
+    if (!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
     std::shared_ptr<kul::http::A1_1Request> req = handleRequest(fd, s, res);
     const kul::http::_1_1Response& rs(respond(*req.get()));
     std::string ret(rs.toString());
@@ -177,8 +165,7 @@ bool kul::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER
   char* in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);
-  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in,
-                               _KUL_TCP_READ_BUFFER_ - 1);
+  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, _KUL_TCP_READ_BUFFER_ - 1);
   if (read < 0)
     e = -1;
   else if (read > 0) {
@@ -187,8 +174,7 @@ bool kul::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
     if (e) return false;
   } else {
     getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
-    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
-                 ntohs(cli_addr[fd].sin_port));
+    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
   }
   if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   SSL_shutdown(ssl_clients[m_fds[fd].fd]);

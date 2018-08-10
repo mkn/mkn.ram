@@ -35,8 +35,7 @@ void kul::http::MultiServer::start() KTHROW(kul::tcp::Exception) {
   _started = kul::Now::MILLIS();
 
   for (size_t i = 0; i < _acceptThreads; i++)
-    _acceptPool.async(
-        std::bind(&MultiServer::operateAccept, std::ref(*this), i));
+    _acceptPool.async(std::bind(&MultiServer::operateAccept, std::ref(*this), i));
   _acceptPool.start();
   _workerPool.start();
 }

@@ -33,8 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 std::string kul::http::_1_1Response::toString() const {
   std::stringstream ss;
   ss << version() << " " << _s << " " << r << kul::os::EOL();
-  for (const auto& h : headers())
-    ss << h.first << ": " << h.second << kul::os::EOL();
+  for (const auto& h : headers()) ss << h.first << ": " << h.second << kul::os::EOL();
   for (const auto& p : cookies()) {
     ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
     if (p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";

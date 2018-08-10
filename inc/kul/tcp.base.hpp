@@ -38,40 +38,48 @@ namespace tcp {
 
 class Exception : public kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
-      : kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
 };
 
 template <class T = uint8_t>
 class ASocket {
- protected:
-  bool open = 0;
-
  public:
   virtual ~ASocket() {}
   virtual bool connect(const std::string& host, const int16_t& port) = 0;
   virtual bool close() = 0;
-  virtual size_t read(T* data, const size_t& len, bool& more)
-      KTHROW(kul::tcp::Exception) = 0;
+  virtual size_t read(T* data, const size_t& len, bool& more) KTHROW(kul::tcp::Exception) = 0;
   virtual size_t write(const T* data, const size_t& len) = 0;
+
+ protected:
+  bool open = 0;
 };
 
 template <class T = uint8_t>
 class ASocketServer {
- protected:
-  uint16_t p;
-  uint64_t s;
-
-  virtual void onConnect(const char* ip, const uint16_t& port) {}
-  ASocketServer(const uint16_t& p) : p(p) {}
-
  public:
   virtual ~ASocketServer() {}
   virtual void start() KTHROW(kul::tcp::Exception) = 0;
-  virtual void onDisconnect(const char* ip, const uint16_t& port) {}
-  const uint64_t up() const { return s - kul::Now::MILLIS(); }
+  uint64_t up() const { return s - kul::Now::MILLIS(); }
   const uint16_t& port() const { return p; }
   bool started() const { return s; }
+
+ protected:
+  ASocketServer(const uint16_t& p) : p(p) {}
+
+  virtual void onConnect(const char* ip, const uint16_t& port) {
+    // default overridable function
+    (void)ip;
+    (void)port;
+  }
+  virtual void onDisconnect(const char* ip, const uint16_t& port) {
+    // default overridable function
+    (void)ip;
+    (void)port;
+  }
+
+ protected:
+  uint16_t p;
+  uint64_t s;
 };
 
 }  // END NAMESPACE tcp

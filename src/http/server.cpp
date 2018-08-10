@@ -30,8 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
-    const int& fd, const std::string& b, std::string& path) {
+std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(const int& fd,
+                                                                          const std::string& b,
+                                                                          std::string& path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
   std::shared_ptr<kul::http::A1_1Request> req;
@@ -59,12 +60,10 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
     }
 
     if (mode == "GET")
-      req = std::make_shared<_1_1GetRequest>(host, path,
-                                             ntohs(cli_addr[fd].sin_port),
+      req = std::make_shared<_1_1GetRequest>(host, path, ntohs(cli_addr[fd].sin_port),
                                              inet_ntoa(cli_addr[fd].sin_addr));
     else if (mode == "POST")
-      req = std::make_shared<_1_1PostRequest>(host, path,
-                                              ntohs(cli_addr[fd].sin_port),
+      req = std::make_shared<_1_1PostRequest>(host, path, ntohs(cli_addr[fd].sin_port),
                                               inet_ntoa(cli_addr[fd].sin_addr));
 
     {
@@ -105,9 +104,8 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(
   return req;
 }
 
-void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds,
-                                      const int& fd, char* in, const int& read,
-                                      int& e) {
+void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
+                                      const int& read, int& e) {
   KUL_DBG_FUNC_ENTER;
   in[read] = '\0';
   std::string res;
@@ -120,9 +118,7 @@ void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds,
       f = c.find(ch) != std::string::npos;
       if (f) break;
     }
-    if (!f)
-      KEXCEPTION(
-          "Logic error encountered, probably https attempt on http port");
+    if (!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
     std::shared_ptr<A1_1Request> req = handleRequest(fd, s, res);
     const _1_1Response& rs(respond(*req.get()));
     std::string ret(rs.toString());

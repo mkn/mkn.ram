@@ -43,8 +43,7 @@ namespace fcgi {
 
 class Exception : public kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
-      : kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
 };
 
 class Server;
@@ -61,9 +60,7 @@ class FCGI_Message {
   FCGI_Message& operator=(const FCGI_Message& msg) = delete;
 
   void finish() { m_finish(*this); }
-  void finish(const std::function<void(const FCGI_Message& msg)>& fin) {
-    m_finish = fin;
-  }
+  void finish(const std::function<void(const FCGI_Message& msg)>& fin) { m_finish = fin; }
 
  protected:
   virtual std::string response() const { return "FCGI-ed"; }
@@ -93,8 +90,7 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
   uint8_t* getOrCreateBufferFor(const int& fd) {
     kul::ScopeLock lock(m_butex);
     if (!inBuffers.count(fd))
-      inBuffers.insert(
-          std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
+      inBuffers.insert(std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
     return inBuffers[fd].get();
   }
 
@@ -119,19 +115,17 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
     }
   }
 
-  void write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
-             const size_t size);
+  void write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out, const size_t size);
 
   bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
   void PARAMS(uint8_t* const in, const int& inLen, FCGI_Message& msg) {}
 
-  void PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
-                   const int& inLen, const int& fd)
+  void PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen, const int& fd)
       KTHROW(kul::fcgi::Exception);
 
-  void PARSE(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen,
-             const int& fd, size_t pos) KTHROW(kul::fcgi::Exception);
+  void PARSE(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen, const int& fd,
+             size_t pos) KTHROW(kul::fcgi::Exception);
 
   size_t FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out);
 
@@ -153,16 +147,14 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
         KERR << "Loop Exception caught";
       }
   }
-  void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, uint8_t* in,
-                    const int& read, int& e) {
-    m_workerPool.async(std::bind(&Server::operateBuffer, std::ref(*this), &fds,
-                                 fd, in, read, e),
-                       std::bind(&Server::errorBuffer, std::ref(*this),
-                                 std::placeholders::_1));
+  void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, uint8_t* in, const int& read,
+                    int& e) {
+    m_workerPool.async(std::bind(&Server::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
+                       std::bind(&Server::errorBuffer, std::ref(*this), std::placeholders::_1));
   }
 
-  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, uint8_t* in,
-                     const int& read, int& e) {
+  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, uint8_t* in, const int& read,
+                     int& e) {
     PARSE_FIRST(*fds, in, read, fd);
     if (e < 0) {
       std::vector<int> del{fd};
@@ -172,8 +164,7 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
   void errorBuffer(const kul::Exception& e) { KERR << e.stack(); };
 
  public:
-  Server(const uint16_t& port, const uint8_t& acceptThreads = 1,
-         const uint8_t& workerThreads = 1)
+  Server(const uint16_t& port, const uint8_t& acceptThreads = 1, const uint8_t& workerThreads = 1)
       : kul::tcp::SocketServer<uint8_t>(port),
         m_acceptThreads(acceptThreads),
         m_workerThreads(workerThreads),
@@ -181,8 +172,7 @@ class Server : public kul::tcp::SocketServer<uint8_t> {
         m_workerPool(workerThreads) {
     if (acceptThreads < 1)
       KEXCEPTION("FCGI Server cannot have less than one threads for accepting");
-    if (workerThreads < 1)
-      KEXCEPTION("FCGI Server cannot have less than one threads for working");
+    if (workerThreads < 1) KEXCEPTION("FCGI Server cannot have less than one threads for working");
   }
 
   virtual ~Server() {

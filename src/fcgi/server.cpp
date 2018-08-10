@@ -53,8 +53,7 @@ void kul::asio::fcgi::Server::start() KTHROW(Exception) {
   m_workerPool.start();
 }
 
-bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds,
-                                      const int& fd) {
+bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER
   uint8_t* in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);
@@ -67,15 +66,14 @@ bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds,
     if (e) return false;
   } else {
     getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
-    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr),
-                 ntohs(cli_addr[fd].sin_port));
+    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
   }
   if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
   return false;
 }
 
-void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd,
-                                    const uint8_t* out, const size_t size) {
+void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
+                                    const size_t size) {
   KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
   receive(fds, fd);
@@ -83,9 +81,8 @@ void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd,
   closeFDs(fds, del);
 }
 
-void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds,
-                                          uint8_t* const in, const int& inLen,
-                                          const int& fd)
+void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
+                                          const int& inLen, const int& fd)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
@@ -109,9 +106,8 @@ void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds,
   }
 }
 
-void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds,
-                                    uint8_t* const in, const int& inLen,
-                                    const int& fd, size_t pos)
+void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
+                                    const int& inLen, const int& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
@@ -129,8 +125,7 @@ void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds,
   } else if (type == FCGI_STDIN) {
     uint16_t size = (in[pos + 5] | in[pos + 4] << 8);
     if (size == 0) {
-      m_workerPool.async(
-          std::bind(&Server::cycle, std::ref(*this), size, &fds, fd));
+      m_workerPool.async(std::bind(&Server::cycle, std::ref(*this), size, &fds, fd));
     } else {
       // auto& msg(msgs[rid]);
       // msg.body(FORM_REQUEST(in, inLen, pos));
@@ -142,8 +137,7 @@ void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds,
   }
 }
 
-size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg,
-                                              uint8_t* out) {
+size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out) {
   KUL_DBG_FUNC_ENTER
   bzero(out, _KUL_TCP_READ_BUFFER_);
 

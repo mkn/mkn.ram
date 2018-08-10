@@ -42,8 +42,7 @@ typedef std::unordered_map<std::string, std::string> Headers;
 
 class Exception : public kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
-      : kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
 };
 
 class Cookie {
@@ -138,8 +137,7 @@ class KUL_PUBLISH _1_1Response : public Message {
     if (!header("Date")) header("Date", kul::DateTime::NOW());
     if (!header("Connection")) header("Connection", "close");
     if (!header("Content-Type")) header("Content-Type", "text/html");
-    if (!header("Content-Length"))
-      header("Content-Length", std::to_string(body().size()));
+    if (!header("Content-Length")) header("Content-Length", std::to_string(body().size()));
     return *this;
   }
 
@@ -161,21 +159,17 @@ class KUL_PUBLISH A1_1Request : public Message {
     if (m_func)
       m_func(s);
     else
-      std::cerr
-          << "kul::http::A1_1Request::handleResponse - no response defined"
-          << std::endl;
+      std::cerr << "kul::http::A1_1Request::handleResponse - no response defined" << std::endl;
   }
 
  public:
-  A1_1Request(const std::string& host, const std::string& path,
-              const uint16_t& port, const std::string& ip)
+  A1_1Request(const std::string& host, const std::string& path, const uint16_t& port,
+              const std::string& ip)
       : _port(port), _ip(ip), _host(host), _path(path) {}
   virtual ~A1_1Request() {}
   virtual std::string method() const = 0;
   virtual std::string toString() const = 0;
-  void cookie(const std::string& k, const std::string& v) {
-    this->cs.insert(k, v);
-  }
+  void cookie(const std::string& k, const std::string& v) { this->cs.insert(k, v); }
   const kul::hash::map::S2S& cookies() const { return cs; }
   A1_1Request& attribute(const std::string& k, const std::string& v) {
     atts[k] = v;
@@ -208,8 +202,8 @@ class KUL_PUBLISH A1_1Request : public Message {
 
 class KUL_PUBLISH _1_1GetRequest : public A1_1Request {
  public:
-  _1_1GetRequest(const std::string& host, const std::string& path = "",
-                 const uint16_t& port = 80, const std::string& ip = "")
+  _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80,
+                 const std::string& ip = "")
       : A1_1Request(host, path, port, ip) {}
   virtual ~_1_1GetRequest() {}
   virtual std::string method() const override { return "GET"; }
@@ -219,8 +213,8 @@ using Get = _1_1GetRequest;
 
 class KUL_PUBLISH _1_1PostRequest : public A1_1Request {
  public:
-  _1_1PostRequest(const std::string& host, const std::string& path = "",
-                  const uint16_t& port = 80, const std::string& ip = "")
+  _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80,
+                  const std::string& ip = "")
       : A1_1Request(host, path, port, ip) {}
   virtual std::string method() const override { return "POST"; }
   virtual std::string toString() const override;
@@ -246,19 +240,17 @@ class KUL_PUBLISH AServer : public kul::tcp::SocketServer<char> {
     }
   }
 
-  virtual std::shared_ptr<A1_1Request> handleRequest(const int& fd,
-                                                     const std::string& b,
+  virtual std::shared_ptr<A1_1Request> handleRequest(const int& fd, const std::string& b,
                                                      std::string& path);
 
-  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd,
-                            char* in, const int& read, int& e);
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
+                            int& e);
 
  public:
   AServer(const uint16_t& p) : kul::tcp::SocketServer<char>(p) {}
   virtual ~AServer() {}
 
-  AServer& withResponse(
-      const std::function<_1_1Response(const A1_1Request&)>& func) {
+  AServer& withResponse(const std::function<_1_1Response(const A1_1Request&)>& func) {
     m_func = func;
     return *this;
   }
