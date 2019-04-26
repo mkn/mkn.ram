@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2013, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,67 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define _KUL_INCLUDE_HTTPS_
-#define __KUL_RAM_NOMAIN__
-#include "usage.cpp"
-class TestHTTPSServer : public kul::https::Server {
- private:
-  void operator()() { start(); }
+#ifndef _KUL_TCP_HPP_
+#define _KUL_TCP_HPP_
 
+#include "kul/dbg.hpp"
+
+namespace kul { namespace tcp {
+
+class Exception : public kul::Exception {
  public:
-  TestHTTPSServer()
-      : kul::https::Server(_KUL_HTTP_TEST_PORT_, kul::File("res/test/server.crt"),
-                           kul::File("res/test/server.key")) {}
-  friend class kul::Thread;
+  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
 };
-class HTTPS_Get : public kul::https::_1_1GetRequest {
+
+template <class T = uint8_t>
+class ASocket {
  public:
-  HTTPS_Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
-      : kul::https::_1_1GetRequest(host, path, port) {}
+  virtual ~ASocket() {}
+  virtual bool connect(const std::string& host, const int16_t& port) = 0;
+  virtual bool close() = 0;
+  virtual size_t read(T* data, const size_t& len, bool& more) KTHROW(kul::tcp::Exception) = 0;
+  virtual size_t write(const T* data, const size_t& len) = 0;
+
+ protected:
+  bool open = 0;
 };
-int main(int argc, char *argv[]) {
-  using namespace kul::http;
-  {
-    TestHTTPSServer serv;
-    serv.init().withResponse([&](const A1_1Request &r) -> _1_1Response {
-      KLOG(INF) << kul::os::EOL() << r.toString();
-      _1_1Response rs;
-      return rs.withBody("HELLO WORLD");
-    });
-    kul::Thread t(std::ref(serv));
-    t.run();
-    kul::this_thread::sleep(333);
-    if (t.exception()) std::rethrow_exception(t.exception());
-    {
-      HTTPS_Get get("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-      KLOG(INF) << kul::os::EOL() << get.toString();
-      get.withResponse(
-             [&](const kul::http::_1_1Response &r) { KLOG(INF) << kul::os::EOL() << r.toString(); })
-          .send();
-    }
-    serv.stop();
-    t.join();
+
+template <class T = uint8_t>
+class ASocketServer {
+ public:
+  virtual ~ASocketServer() {}
+  virtual void start() KTHROW(kul::tcp::Exception) = 0;
+  uint64_t up() const { return s - kul::Now::MILLIS(); }
+  const uint16_t& port() const { return p; }
+  bool started() const { return s; }
+
+ protected:
+  ASocketServer(const uint16_t& p) : p(p) {}
+
+  virtual void onConnect(const char* ip, const uint16_t& port) {
+    // default overridable function
+    (void)ip;
+    (void)port;
   }
-  return 0;
-}
+  virtual void onDisconnect(const char* ip, const uint16_t& port) {
+    // default overridable function
+    (void)ip;
+    (void)port;
+  }
+
+ protected:
+  uint16_t p;
+  uint64_t s;
+};
+
+}  // END NAMESPACE tcp
+}  // END NAMESPACE kul
+
+
+#if defined(_WIN32)
+#include "kul/os/win/tcp.hpp"
+#else
+#include "kul/os/nixish/tcp.hpp"
+#endif
+
+#endif  //_KUL_TCP_HPP_

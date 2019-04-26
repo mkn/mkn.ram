@@ -28,15 +28,36 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTTP_HPP_
-#define _KUL_HTTP_HPP_
+//
+// MAY REQUIRE: runas admin - netsh http add urlacl url=http://localhost:666/
+// user=EVERYONE listen=yes delegate=no
+//
+#ifndef _KUL_OS_WIN_HTTP_HPP_
+#define _KUL_OS_WIN_HTTP_HPP_
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#include "kul/log.hpp"
+#include "kul/threads.hpp"
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+
+#ifndef MAX_ULONG_STR
+#define MAX_ULONG_STR ((ULONG)sizeof("4294967295"))
+#endif
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
 
 #include <unordered_map>
 
-#include "kul/http.hpp"
-#include "kul/http/def.hpp"
-#include "kul/tcp.hpp"
-#include "kul/threads.hpp"
+#pragma comment(lib, "httpapi.lib")
+#pragma comment(lib, "ws2_32.lib")
 
 namespace kul {
 namespace http {
@@ -47,71 +68,65 @@ class Server : public kul::http::AServer {
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
-  virtual char *getOrCreateBufferFor(const int &fd) {
+  virtual char* getOrCreateBufferFor(const int& fd) {
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
     return inBuffers[fd].get();
   }
 
-  virtual bool receive(std::map<int, uint8_t> &fds, const int &fd) override;
+  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
 
  public:
-  Server(const short &p = 80) : AServer(p) {}
+  Server(const short& p = 80) : AServer(p) {}
   virtual ~Server() {}
 };
 
-class MultiServer : public kul::http::Server {
+class KUL_PUBLISH MultiServer : public kul::http::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
   kul::Mutex m_mutex;
-  ConcurrentThreadPool<> _acceptPool;
-  ConcurrentThreadPool<> _workerPool;
+  ChroncurrentThreadPool<> _acceptPool;
+  ChroncurrentThreadPool<> _workerPool;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in, const int &read,
-                            int &e) override {
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
+                            int& e) override {
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
         std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, const int &fd, char *in, const int &read,
-                     int &e) {
+  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read,
+                     int& e) {
     kul::http::Server::handleBuffer(*fds, fd, in, read, e);
-    if (e <= 0) {
+    if (e < 0) {
       std::vector<int> del{fd};
-      closeFDs(*fds, del);
+      // closeFDs(*fds, del);
     }
   }
-  virtual void errorBuffer(const kul::Exception &e) { KERR << e.stack(); };
+  virtual void errorBuffer(const kul::Exception& e) { KERR << e.stack(); };
 
-  void operateAccept(const size_t &threadID) {
+  void operateAccept(const size_t& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
-    for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)
+    for (int i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
         kul::ScopeLock lock(m_mutex);
         loop(fds);
-      } catch (const kul::tcp::Exception &e1) {
+      } catch (const kul::tcp::Exception& e1) {
         KERR << e1.stack();
-      } catch (const std::exception &e1) {
+      } catch (const std::exception& e1) {
         KERR << e1.what();
       } catch (...) {
         KERR << "Loop Exception caught";
       }
   }
 
-  MultiServer(const MultiServer &) = delete;
-  MultiServer(const MultiServer &&) = delete;
-  MultiServer &operator=(const MultiServer &) = delete;
-  MultiServer &operator=(const MultiServer &&) = delete;
-
  public:
-  MultiServer(const short &p = 80, const uint8_t &acceptThreads = 1,
-              const uint8_t &workerThreads = 1)
+  MultiServer(const short& p = 80, const uint8_t& acceptThreads = 1,
+              const uint8_t& workerThreads = 1)
       : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
-  ~MultiServer() { KUL_DBG_FUNC_ENTER }
 
   virtual void start() KTHROW(kul::tcp::Exception) override;
 
@@ -128,9 +143,10 @@ class MultiServer : public kul::http::Server {
     _acceptPool.interrupt();
     _workerPool.interrupt();
   }
-  const std::exception_ptr &exception() { return _acceptPool.exception(); }
+  const std::exception_ptr& exception() { return _acceptPool.exception(); }
 };
-}  // namespace http
-}  // namespace kul
 
-#endif /* _KUL_HTTP_HPP_ */
+}  // END NAMESPACE http
+}  // END NAMESPACE kul
+
+#endif /* _KUL_OS_WIN_HTTP_HPP_ */

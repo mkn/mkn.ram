@@ -28,8 +28,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTTP_BASE_HPP_
-#define _KUL_HTTP_BASE_HPP_
+//
+// MAY REQUIRE: runas admin - netsh http add urlacl url=http://localhost:666/
+// user=EVERYONE listen=yes delegate=no
+//
+#ifndef _KUL_HTTP_HPP_
+#define _KUL_HTTP_HPP_
+
 
 #include "kul/map.hpp"
 #include "kul/string.hpp"
@@ -264,4 +269,10 @@ class KUL_PUBLISH AServer : public kul::tcp::SocketServer<char> {
 }  // END NAMESPACE http
 }  // END NAMESPACE kul
 
-#endif /* _KUL_HTTP_BASE_HPP_ */
+#if defined(_WIN32)
+#include "kul/os/win/http.hpp"
+#else
+#include "kul/os/nixish/http.hpp"
+#endif
+
+#endif /* _KUL_HTTP_HPP_ */

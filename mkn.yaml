@@ -7,10 +7,10 @@ parent: lib
 profile:
   - name: base
     inc: ./inc
-    if_inc:
-        bsd: ./os/nixish/inc
-        nix: ./os/nixish/inc
-        win: ./os/win/inc
+    # if_inc:
+    #     bsd: ./os/nixish/inc
+    #     nix: ./os/nixish/inc
+    #     win: ./os/win/inc
     src: ./src
     if_src:
         bsd: ./os/nixish/src

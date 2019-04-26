@@ -28,61 +28,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_TCP_BASE_HPP_
-#define _KUL_TCP_BASE_HPP_
+#ifndef _KUL_HTTPS_HPP_
+#define _KUL_HTTPS_HPP_
 
-#include "kul/dbg.hpp"
+#if defined(_WIN32)
+#include "kul/os/win/https.hpp"
+#else
+#include "kul/os/nixish/https.hpp"
+#endif
 
-namespace kul {
-namespace tcp {
-
-class Exception : public kul::Exception {
- public:
-  Exception(const char* f, const uint16_t& l, const std::string& s) : kul::Exception(f, l, s) {}
-};
-
-template <class T = uint8_t>
-class ASocket {
- public:
-  virtual ~ASocket() {}
-  virtual bool connect(const std::string& host, const int16_t& port) = 0;
-  virtual bool close() = 0;
-  virtual size_t read(T* data, const size_t& len, bool& more) KTHROW(kul::tcp::Exception) = 0;
-  virtual size_t write(const T* data, const size_t& len) = 0;
-
- protected:
-  bool open = 0;
-};
-
-template <class T = uint8_t>
-class ASocketServer {
- public:
-  virtual ~ASocketServer() {}
-  virtual void start() KTHROW(kul::tcp::Exception) = 0;
-  uint64_t up() const { return s - kul::Now::MILLIS(); }
-  const uint16_t& port() const { return p; }
-  bool started() const { return s; }
-
- protected:
-  ASocketServer(const uint16_t& p) : p(p) {}
-
-  virtual void onConnect(const char* ip, const uint16_t& port) {
-    // default overridable function
-    (void)ip;
-    (void)port;
-  }
-  virtual void onDisconnect(const char* ip, const uint16_t& port) {
-    // default overridable function
-    (void)ip;
-    (void)port;
-  }
-
- protected:
-  uint16_t p;
-  uint64_t s;
-};
-
-}  // END NAMESPACE tcp
-}  // END NAMESPACE kul
-
-#endif /* _KUL_HTTP_BASE_HPP_ */
+#endif  //_KUL_INCLUDE_HTTPS_HPP_

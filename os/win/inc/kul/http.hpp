@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "kul/http.base.hpp"
+#include "kul/http.hpp"
 #include "kul/log.hpp"
 #include "kul/threads.hpp"
 

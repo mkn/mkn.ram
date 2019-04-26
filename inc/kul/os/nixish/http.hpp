@@ -28,12 +28,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _KUL_HTTP_HPP_
-#define _KUL_HTTP_HPP_
+#ifndef _KUL_OS_NIXISH_HTTP_HPP_
+#define _KUL_OS_NIXISH_HTTP_HPP_
 
 #include <unordered_map>
 
-#include "kul/http.hpp"
 #include "kul/http/def.hpp"
 #include "kul/tcp.hpp"
 #include "kul/threads.hpp"
@@ -133,4 +132,4 @@ class MultiServer : public kul::http::Server {
 }  // namespace http
 }  // namespace kul
 
-#endif /* _KUL_HTTP_HPP_ */
+#endif /* _KUL_OS_NIXISH_HTTP_HPP_ */
