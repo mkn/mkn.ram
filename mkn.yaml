@@ -7,10 +7,6 @@ parent: lib
 profile:
   - name: base
     inc: ./inc
-    # if_inc:
-    #     bsd: ./os/nixish/inc
-    #     nix: ./os/nixish/inc
-    #     win: ./os/win/inc
     src: ./src
     if_src:
         bsd: ./os/nixish/src
@@ -19,8 +15,7 @@ profile:
 
   - name: lib
     parent: base
-    dep:
-      - name: mkn.kul
+    dep: mkn.kul
     if_arg:
         win_shared: -DKUL_SHARED -DKUL_EXPORT
 
@@ -40,15 +35,6 @@ profile:
   - name: fcgi
     parent: lib
     arg: -D_KUL_INCLUDE_FCGI_
-
-  - name: format
-    mod:
-    - name: clang.format
-      init:
-        style: file
-        types: cpp:cxx:cc:h:hpp
-        paths: .
-        args:  -D_KUL_INCLUDE_HTTPS_
 
   - name: usage
     self: https
@@ -72,3 +58,12 @@ profile:
   - name: test.server
     parent: lib
     main: test/server.cpp
+
+  - name: format
+    mod:
+    - name: clang.format
+      init:
+        style: file
+        types: cpp:cxx:cc:h:hpp
+        paths: .
+        args:  -D_KUL_INCLUDE_HTTPS_
