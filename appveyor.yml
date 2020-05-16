@@ -19,5 +19,5 @@ build_script:
   - rm "C:\Program Files\Git\usr\bin\link.exe" # messes with msvc link.exe
   - SET PYTHON=C:\Python37-x64\python.exe
   - C:\Python37-x64\Scripts\pip install conan flawfinder
-  - mkn clean build -dtKOp usage
+  - mkn clean build -dtKOp usage -a "-EHsc -std:c++17"
   - C:\Python37-x64\python C:\Python37-x64\Scripts\flawfinder .
