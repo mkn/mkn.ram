@@ -109,6 +109,7 @@ class Socket : public ASocket<T> {
       if (ret > 0) {
         return false;
       } else if (ret == 0) {
+        // skip
       } else {
         // there is an error, let's see what it is
         // error = errno; // or WSAGetLastError()
@@ -317,6 +318,7 @@ class SocketServer : public ASocketServer<T> {
       kul::this_thread::sleep(timeout);
       return 0;
     } else if (errno == 2 || errno == 17 || errno == 32) {
+        // skip
     } else if (errno) {
       KLOG(ERR) << std::to_string(errno) << " - " << std::string(strerror(errno));
       return -1;

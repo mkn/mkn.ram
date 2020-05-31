@@ -52,7 +52,8 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(const 
           s = s.substr(0, s.find("?"));
         }
       } else if (l0[0] == "POST") {
-      }  // req = post();
+        // req = post();
+      }
       else
         KEXCEPTION("HTTP Server request type not handled: " + l0[0]);
       mode = l0[0];

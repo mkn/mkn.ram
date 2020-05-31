@@ -65,16 +65,8 @@ class ASocketServer {
  protected:
   ASocketServer(const uint16_t& p) : p(p) {}
 
-  virtual void onConnect(const char* ip, const uint16_t& port) {
-    // default overridable function
-    (void)ip;
-    (void)port;
-  }
-  virtual void onDisconnect(const char* ip, const uint16_t& port) {
-    // default overridable function
-    (void)ip;
-    (void)port;
-  }
+  virtual void onConnect(const char* /*ip*/, const uint16_t& /*port*/) {}
+  virtual void onDisconnect(const char* /*ip*/, const uint16_t& /*port*/) {}
 
  protected:
   uint16_t p;
