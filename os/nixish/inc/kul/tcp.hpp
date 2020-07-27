@@ -66,7 +66,7 @@ class Socket : public ASocket<T> {
   virtual ~Socket() {
     if (this->open) close();
   }
-  virtual bool connect(const std::string &host, const int16_t &port) override {
+  virtual bool connect(std::string const& host, int16_t const& port) override {
     KUL_DBG_FUNC_ENTER
     if (!SOCKET(sck) || !CONNECT(sck, host, port)) return false;
     this->open = true;
@@ -81,11 +81,11 @@ class Socket : public ASocket<T> {
     }
     return o1;
   }
-  virtual size_t read(T *data, const size_t &len) {
+  virtual size_t read(T *data, size_t const& len) {
     bool more = false;
     return read(data, len, more);
   }
-  virtual size_t read(T *data, const size_t &len, bool &more) KTHROW(kul::tcp::Exception) override {
+  virtual size_t read(T *data, size_t const& len, bool &more) KTHROW(kul::tcp::Exception) override {
     KUL_DBG_FUNC_ENTER
     struct timeval tv;
     fd_set fds;
@@ -148,18 +148,18 @@ class Socket : public ASocket<T> {
     }
     return ret;
   }
-  virtual size_t write(const T *data, const size_t &len) override {
+  virtual size_t write(const T *data, size_t const& len) override {
     return ::send(sck, data, len, 0);
   }
 
-  static bool SOCKET(int &sck, const int16_t &domain = AF_INET, const int16_t &type = SOCK_STREAM,
-                     const int16_t &protocol = IPPROTO_TCP) {
+  static bool SOCKET(int &sck, int16_t const& domain = AF_INET, int16_t const& type = SOCK_STREAM,
+                     int16_t const& protocol = IPPROTO_TCP) {
     KUL_DBG_FUNC_ENTER
     sck = socket(domain, type, protocol);
     if (sck < 0) KLOG(ERR) << "SOCKET ERROR CODE: " << sck;
     return sck >= 0;
   }
-  static bool CONNECT(const int &sck, const std::string &host, const int16_t &port) {
+  static bool CONNECT(int const& sck, std::string const& host, int16_t const& port) {
     KUL_DBG_FUNC_ENTER
     struct sockaddr_in servAddr;
     memset(&servAddr, 0, sizeof(servAddr));
@@ -207,7 +207,7 @@ class SocketServer : public ASocketServer<T> {
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr[_KUL_TCP_MAX_CLIENT_];
 
-  virtual bool handle(T *const in, const size_t &inLen, T *const out, size_t &outLen) {
+  virtual bool handle(T *const in, size_t const& inLen, T *const out, size_t &outLen) {
     // default overridable function
     (void)in;
     (void)inLen;
@@ -216,7 +216,7 @@ class SocketServer : public ASocketServer<T> {
     return true;
   }
 
-  virtual int readFrom(const int &fd, T *in, int opts = 0) {
+  virtual int readFrom(int const& fd, T *in, int opts = 0) {
     size_t size = 0;
     int64_t val = 0;
     while (1) {
@@ -227,10 +227,10 @@ class SocketServer : public ASocketServer<T> {
     }
     return size;
   }
-  virtual int writeTo(const int &fd, const T *const out, size_t size) {
+  virtual int writeTo(int const& fd, const T *const out, size_t size) {
     return ::send(m_fds[fd].fd, out, size, 0);
   }
-  virtual bool receive(std::map<int, uint8_t> &fds, const int &fd) {
+  virtual bool receive(std::map<int, uint8_t> &fds, int const& fd) {
     (void)fds;
     KUL_DBG_FUNC_ENTER
     T in[_KUL_TCP_READ_BUFFER_];
@@ -324,10 +324,10 @@ class SocketServer : public ASocketServer<T> {
     }
     return p;
   }
-  virtual int accept(const int &fd) {
+  virtual int accept(int const& fd) {
     return ::accept(lisock, (struct sockaddr *)&cli_addr[fd], &clilen);
   }
-  virtual void validAccept(std::map<int, uint8_t> &fds, const int &newlisock, const int &nfd) {
+  virtual void validAccept(std::map<int, uint8_t> &fds, int const& newlisock, int const& nfd) {
     KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
@@ -340,7 +340,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
  public:
-  SocketServer(const uint16_t &p, bool _bind = 1) : kul::tcp::ASocketServer<T>(p) {
+  SocketServer(uint16_t const& p, bool _bind = 1) : kul::tcp::ASocketServer<T>(p) {
     if (_bind) bind(__KUL_TCP_BIND_SOCKTOPTS__);
     memset(m_fds, 0, sizeof(m_fds));
   }

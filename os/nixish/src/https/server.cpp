@@ -44,7 +44,7 @@ void kul::https::Server::loop(std::map<int, uint8_t> &fds) KTHROW(kul::tcp::Exce
   }
   if (ret == 0) return;
   int newlisock = -1;
-  ;
+
   for (const auto &pair : fds) {
     auto &i = pair.first;
     if (pair.second == 1) continue;
@@ -138,8 +138,8 @@ void kul::https::Server::stop() {
   kul::http::Server::stop();
 }
 
-void kul::https::Server::handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in,
-                                      const int &read, int &e) {
+void kul::https::Server::handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in,
+                                      int const& read, int &e) {
   KUL_DBG_FUNC_ENTER
   in[read] = '\0';
   std::string res;
@@ -165,7 +165,7 @@ void kul::https::Server::handleBuffer(std::map<int, uint8_t> &fds, const int &fd
   fds[fd] = 1;
 }
 
-bool kul::https::Server::receive(std::map<int, uint8_t> &fds, const int &fd) {
+bool kul::https::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
   KUL_DBG_FUNC_ENTER
   char *in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);

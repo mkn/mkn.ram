@@ -43,17 +43,16 @@ class TestHTTPSServer : public kul::https::Server {
 };
 class HTTPS_Get : public kul::https::_1_1GetRequest {
  public:
-  HTTPS_Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
 };
 int main(int argc, char *argv[]) {
   using namespace kul::http;
   {
     TestHTTPSServer serv;
-    serv.init().withResponse([&](const A1_1Request &r) -> _1_1Response {
-      KLOG(INF) << kul::os::EOL() << r.toString();
-      _1_1Response rs;
-      return rs.withBody("HELLO WORLD");
+    serv.init().withResponse([](const A1_1Request &r) {
+      KLOG(NON) << kul::os::EOL() << r.toString();
+      return _1_1Response{}.withBody("HELLO WORLD");
     });
     kul::Thread t(std::ref(serv));
     t.run();
@@ -61,9 +60,9 @@ int main(int argc, char *argv[]) {
     if (t.exception()) std::rethrow_exception(t.exception());
     {
       HTTPS_Get get("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-      KLOG(INF) << kul::os::EOL() << get.toString();
+      KLOG(NON) << kul::os::EOL() << get.toString();
       get.withResponse(
-             [&](const kul::http::_1_1Response &r) { KLOG(INF) << kul::os::EOL() << r.toString(); })
+             [](const kul::http::_1_1Response &r) { KLOG(INF) << kul::os::EOL() << r.toString(); })
           .send();
     }
     serv.stop();

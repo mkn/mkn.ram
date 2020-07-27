@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "kul/http.hpp"
 
-bool kul::http::Server::receive(std::map<int, uint8_t> &fds, const int &fd) {
+bool kul::http::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
   KUL_DBG_FUNC_ENTER;
   char *in = getOrCreateBufferFor(fd);
   bzero(in, _KUL_TCP_READ_BUFFER_);
