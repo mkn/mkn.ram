@@ -51,17 +51,17 @@ namespace ram {
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
  public:
-  HTTPS_Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
  public:
-  HTTPS_Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
@@ -71,9 +71,9 @@ class HTTPS_Post : public kul::https::_1_1PostRequest {
 
 class Get : public kul::http::_1_1GetRequest {
  public:
-  Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << b;
     // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
     // KEXCEPTION("Body failed :" + b + ":");
@@ -81,9 +81,9 @@ class Get : public kul::http::_1_1GetRequest {
 };
 class Post : public kul::http::_1_1PostRequest {
  public:
-  Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     if (b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
       KEXCEPTION("Body failed :" + b + ":");
   }

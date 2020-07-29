@@ -57,7 +57,7 @@ class TestHTTPServer : public kul::http::Server {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     kul::http::_1_1Response r;
     return r.withBody("HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
@@ -70,7 +70,7 @@ class TestMultiHTTPServer : public kul::http::MultiServer {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     kul::http::_1_1Response r;
     return r.withBody("MULTI HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
@@ -84,7 +84,7 @@ class TestHTTPSServer : public kul::https::Server {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     kul::http::_1_1Response r;
     return r.withBody("HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
   }
@@ -99,7 +99,7 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     kul::http::_1_1Response r;
     return r.withBody("MULTI HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
   }
@@ -112,7 +112,7 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
  public:
-  HTTPS_Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
   void handleResponse(const kul::http::_1_1Response &r) override {
     KLOG(INF) << "HTTPS GET RESPONSE: " << r.body();
@@ -120,7 +120,7 @@ class HTTPS_Get : public kul::https::_1_1GetRequest {
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
  public:
-  HTTPS_Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
   void handleResponse(const kul::http::_1_1Response &r) override {
     for (const auto &p : r.headers()) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
@@ -134,7 +134,7 @@ class TestSocketServer : public kul::tcp::SocketServer<char> {
   void operator()() { start(); }
 
  public:
-  bool handle(char *const in, const size_t &inLen, char *const out, size_t &outLen) override {
+  bool handle(char *const in, size_t const& inLen, char *const out, size_t &outLen) override {
     std::string rep("TCP PROVIDED BY KUL");
     std::strcpy(out, rep.c_str());
     outLen = rep.size();
@@ -146,7 +146,7 @@ class TestSocketServer : public kul::tcp::SocketServer<char> {
 
 class Get : public kul::http::_1_1GetRequest {
  public:
-  Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
   void handleResponse(const kul::http::_1_1Response &r) override {
     KLOG(INF) << "GET RESPONSE: " << r.body();
@@ -154,7 +154,7 @@ class Get : public kul::http::_1_1GetRequest {
 };
 class Post : public kul::http::_1_1PostRequest {
  public:
-  Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
   void handleResponse(const kul::http::_1_1Response &r) override {
     for (const auto &p : r.headers()) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;

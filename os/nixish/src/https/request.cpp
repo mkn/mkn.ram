@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_HTTPS_
 #include "kul/https.hpp"
 
-void kul::https::Requester::send(const std::string &h, const std::string &req, const uint16_t &p,
+void kul::https::Requester::send(std::string const& h, std::string const& req, uint16_t const& p,
                                  std::stringstream &ss, SSL *ssl) {
   KUL_DBG_FUNC_ENTER
   int sck = 0;

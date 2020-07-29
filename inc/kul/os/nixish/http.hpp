@@ -46,13 +46,13 @@ class Server : public kul::http::AServer {
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
-  virtual char *getOrCreateBufferFor(const int &fd) {
+  virtual char *getOrCreateBufferFor(int const& fd) {
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
     return inBuffers[fd].get();
   }
 
-  virtual bool receive(std::map<int, uint8_t> &fds, const int &fd) override;
+  virtual bool receive(std::map<int, uint8_t> &fds, int const& fd) override;
 
  public:
   Server(const short &p = 80) : AServer(p) {}
@@ -66,7 +66,7 @@ class MultiServer : public kul::http::Server {
   ConcurrentThreadPool<> _acceptPool;
   ConcurrentThreadPool<> _workerPool;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in, const int &read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
                             int &e) override {
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
@@ -74,7 +74,7 @@ class MultiServer : public kul::http::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, const int &fd, char *in, const int &read,
+  void operateBuffer(std::map<int, uint8_t> *fds, int const& fd, char *in, int const& read,
                      int &e) {
     kul::http::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
@@ -84,7 +84,7 @@ class MultiServer : public kul::http::Server {
   }
   virtual void errorBuffer(const kul::Exception &e) { KERR << e.stack(); };
 
-  void operateAccept(const size_t &threadID) {
+  void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _KUL_TCP_MAX_CLIENT_; i += _acceptThreads)

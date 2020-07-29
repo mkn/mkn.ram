@@ -82,15 +82,15 @@ class Server : public kul::http::Server {
 
   virtual void loop(std::map<int, uint8_t> &fds) KTHROW(kul::tcp::Exception) override;
 
-  virtual bool receive(std::map<int, uint8_t> &fds, const int &fd) override;
+  virtual bool receive(std::map<int, uint8_t> &fds, int const& fd) override;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in, const int &read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
                             int &e) override;
 
  public:
-  Server(const short &p, const kul::File &c, const kul::File &k, const std::string &cs = "")
+  Server(const short &p, const kul::File &c, const kul::File &k, std::string const& cs = "")
       : kul::http::Server(p), crt(c), key(k), cs(cs) {}
-  Server(const kul::File &c, const kul::File &k, const std::string &cs = "")
+  Server(const kul::File &c, const kul::File &k, std::string const& cs = "")
       : kul::https::Server(443, c, k, cs) {}
   virtual ~Server() {
     if (s) stop();
@@ -107,7 +107,7 @@ class MultiServer : public kul::https::Server {
   ChroncurrentThreadPool<> _acceptPool;
   ChroncurrentThreadPool<> _workerPool;
 
-  void operateAccept(const size_t &threadID) {
+  void operateAccept(size_t const& threadID) {
     KUL_DBG_FUNC_ENTER
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
@@ -128,7 +128,7 @@ class MultiServer : public kul::https::Server {
     KEXCEPTION("SHOULD NOT HAPPEN");
   }
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, const int &fd, char *in, const int &read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
                             int &e) override {
     KUL_DBG_FUNC_ENTER
     _workerPool.async(
@@ -137,7 +137,7 @@ class MultiServer : public kul::https::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, const int &fd, char *in, const int &read,
+  void operateBuffer(std::map<int, uint8_t> *fds, int const& fd, char *in, int const& read,
                      int &e) {
     KUL_DBG_FUNC_ENTER
     kul::https::Server::handleBuffer(*fds, fd, in, read, e);
@@ -155,7 +155,7 @@ class MultiServer : public kul::https::Server {
 
  public:
   MultiServer(const short &p, const uint8_t &acceptThreads, const uint8_t &workerThreads,
-              const kul::File &c, const kul::File &k, const std::string &cs = "")
+              const kul::File &c, const kul::File &k, std::string const& cs = "")
       : kul::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
@@ -166,7 +166,7 @@ class MultiServer : public kul::https::Server {
     if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
   }
   MultiServer(const uint8_t &acceptThreads, const uint8_t &workerThreads, const kul::File &c,
-              const kul::File &k, const std::string &cs = "")
+              const kul::File &k, std::string const& cs = "")
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
@@ -227,13 +227,13 @@ class A1_1Request {
 
 class Requester {
  public:
-  static void send(const std::string &h, const std::string &req, const uint16_t &p,
+  static void send(std::string const& h, std::string const& req, uint16_t const& p,
                    std::stringstream &ss, SSL *ssl);
 };
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request {
  public:
-  _1_1GetRequest(const std::string &host, const std::string &path = "", const uint16_t &port = 443)
+  _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1GetRequest(host, path, port) {}
   virtual ~_1_1GetRequest() {}
   virtual void send() KTHROW(kul::http::Exception) override;
@@ -242,7 +242,7 @@ using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request {
  public:
-  _1_1PostRequest(const std::string &host, const std::string &path = "", const uint16_t &port = 443)
+  _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1PostRequest(host, path, port) {}
   virtual void send() KTHROW(kul::http::Exception) override;
 };

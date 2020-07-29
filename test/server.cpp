@@ -60,7 +60,7 @@ class TestHTTPServer : public kul::http::Server {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("HTTP PROVIDED BY KUL");
@@ -76,14 +76,14 @@ class TestMultiHTTPServer : public kul::http::MultiServer {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("MULTI HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
     return r;
   }
-  TestMultiHTTPServer(const uint16_t &threads)
+  TestMultiHTTPServer(uint16_t const& threads)
       : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, threads) {}
   TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 2, 4) {}
   friend class kul::Thread;
@@ -95,7 +95,7 @@ class TestHTTPSServer : public kul::https::Server {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("HTTPS PROVIDED BY KUL: " + req.method());
@@ -113,7 +113,7 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(const kul::http::A1_1Request &req) {
+  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
     kul::http::_1_1Response r;
     r.body("MULTI HTTPS PROVIDED BY KUL");
@@ -128,17 +128,17 @@ class TestMultiHTTPSServer : public kul::https::MultiServer {
 
 class HTTPS_Get : public kul::https::_1_1GetRequest {
  public:
-  HTTPS_Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
 class HTTPS_Post : public kul::https::_1_1PostRequest {
  public:
-  HTTPS_Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
@@ -166,17 +166,17 @@ class TestSocketServer : public kul::tcp::SocketServer<char> {
 
 class Get : public kul::http::_1_1GetRequest {
  public:
-  Get(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "GET RESPONSE:\n" << b;
   }
 };
 class Post : public kul::http::_1_1PostRequest {
  public:
-  Post(const std::string &host, const std::string &path = "", const uint16_t &port = 80)
+  Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, const std::string &b) override {
+  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "POST RESPONSE:\n" << b;
