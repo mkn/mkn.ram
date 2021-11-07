@@ -86,8 +86,8 @@ class KUL_PUBLISH MultiServer : public mkn::ram::http::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
   mkn::kul::Mutex m_mutex;
-  ChroncurrentThreadPool<> _acceptPool;
-  ChroncurrentThreadPool<> _workerPool;
+  mkn::kul::ChroncurrentThreadPool<> _acceptPool;
+  mkn::kul::ChroncurrentThreadPool<> _workerPool;
 
   virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
                             int& e) override {

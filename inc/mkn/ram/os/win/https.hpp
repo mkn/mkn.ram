@@ -86,7 +86,7 @@ class Server : public mkn::ram::http::Server {
  public:
   Server(const short& p, const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
       : mkn::ram::http::Server(p), crt(c), key(k), cs(cs) {}
-  Server(const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
+  Server(mkn::kul::File const& c, mkn::kul::File const& k, std::string const& cs = "")
       : mkn::ram::https::Server(443, c, k, cs) {}
   virtual ~Server() {
     if (s) stop();
@@ -100,8 +100,8 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
   mkn::kul::Mutex m_mutex;
-  ChroncurrentThreadPool<> _acceptPool;
-  ChroncurrentThreadPool<> _workerPool;
+  mkn::kul::ChroncurrentThreadPool<> _acceptPool;
+  mkn::kul::ChroncurrentThreadPool<> _workerPool;
 
   void operateAccept(const size_t& threadID) {
     std::map<int, uint8_t> fds;
