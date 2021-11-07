@@ -29,4 +29,6 @@ jobs:
         bash -c "mkdir -p /c/Users/runneradmin/.conan && cp remotes.json /c/Users/runneradmin/.conan/remotes.json"
 
         bash -c "curl -Lo mkn.exe https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn.exe"
-        bash -c 'KLOG=3 ./mkn clean build run -dtKOp test -a "-EHsc -std:c++17"'
+        bash -c 'KLOG=3 ./mkn clean build -dtKOp test -a "-EHsc -std:c++17"'
+
+
