@@ -22,8 +22,11 @@ jobs:
         MKN_CL_PREFERRED: 1
       run: | # /bin/link interferes with cl/link.exe
         bash -c "rm /bin/link"
-        bash -c "curl -Lo mkn.exe https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn.exe"
         call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+
         bash -c "python3 -m pip install wheel --upgrade"
         bash -c "python3 -m pip install conan --upgrade"
+        bash -c "mkdir -p /c/Users/runneradmin/.conan && cp remotes.json /c/Users/runneradmin/.conan/remotes.json"
+
+        bash -c "curl -Lo mkn.exe https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn.exe"
         bash -c 'KLOG=3 ./mkn clean build run -dtKOp test -a "-EHsc -std:c++17"'
