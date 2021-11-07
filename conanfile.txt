@@ -1,2 +1,2 @@
 [requires]
-OpenSSL/1.1.0l@conan/stable
+OpenSSL/1.1.0k@conan/stable
