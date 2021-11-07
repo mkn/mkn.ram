@@ -28,23 +28,23 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "kul/http.hpp"
+#include "mkn/ram/http.hpp"
 
-void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
+void mkn::ram::http::A1_1Request::send() KTHROW(mkn::ram::http::Exception) {
   KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   {
-    kul::tcp::Socket<char> sock;
+    mkn::ram::tcp::Socket<char> sock;
     if (!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
     const std::string& req(toString());
     sock.write(req.c_str(), req.size());
-    std::unique_ptr<char[]> buf(new char[_KUL_TCP_REQUEST_BUFFER_]);
+    std::unique_ptr<char[]> buf(new char[_MKN_RAM_TCP_REQUEST_BUFFER_]);
     int64_t i, d = 0;
     bool more = false;
     do {
-      bzero(buf.get(), _KUL_TCP_REQUEST_BUFFER_);
+      bzero(buf.get(), _MKN_RAM_TCP_REQUEST_BUFFER_);
       more = false;
-      d = sock.read(buf.get(), _KUL_TCP_REQUEST_BUFFER_ - 1, more);
+      d = sock.read(buf.get(), _MKN_RAM_TCP_REQUEST_BUFFER_ - 1, more);
       if (d == -1) return;
       for (i = 0; i < d; i++) ss << buf[i];
     } while (more);
@@ -56,7 +56,7 @@ void kul::http::A1_1Request::send() KTHROW(kul::http::Exception) {
 
 class RequestHeaders {
  private:
-  kul::hash::map::S2S _hs;
+  mkn::kul::hash::map::S2S _hs;
   RequestHeaders() {
     _hs.insert("Connection", "close");
     _hs.insert("Accept", "text/html");
@@ -67,9 +67,9 @@ class RequestHeaders {
     static RequestHeaders i;
     return i;
   }
-  kul::hash::map::S2S defaultHeaders(const kul::http::A1_1Request& r,
+  mkn::kul::hash::map::S2S defaultHeaders(const mkn::ram::http::A1_1Request& r,
                                      const std::string& body = "") const {
-    kul::hash::map::S2S hs1;
+    mkn::kul::hash::map::S2S hs1;
     for (const auto& h : _hs)
       if (!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);
     if (!body.empty() && !r.header("Content-Length") && !r.header("Transfer-Encoding"))
@@ -78,7 +78,7 @@ class RequestHeaders {
   }
 };
 
-std::string kul::http::_1_1GetRequest::toString() const {
+std::string mkn::ram::http::_1_1GetRequest::toString() const {
   KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   ss << method() << " /" << _path;
@@ -98,7 +98,7 @@ std::string kul::http::_1_1GetRequest::toString() const {
   return ss.str();
 }
 
-std::string kul::http::_1_1PostRequest::toString() const {
+std::string mkn::ram::http::_1_1PostRequest::toString() const {
   KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   ss << method() << " /" << _path << " " << version();

@@ -28,41 +28,41 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define _KUL_INCLUDE_HTTPS_
-#define __KUL_RAM_NOMAIN__
+#define _MKN_RAM_INCLUDE_HTTPS_
+#define __MKN_RAM_NOMAIN__
 #include "usage.cpp"
-class TestHTTPSServer : public kul::https::Server {
+class TestHTTPSServer : public mkn::ram::https::Server {
  private:
   void operator()() { start(); }
 
  public:
   TestHTTPSServer()
-      : kul::https::Server(_KUL_HTTP_TEST_PORT_, kul::File("res/test/server.crt"),
-                           kul::File("res/test/server.key")) {}
-  friend class kul::Thread;
+      : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
+                           mkn::kul::File("res/test/server.key")) {}
+  friend class mkn::kul::Thread;
 };
-class HTTPS_Get : public kul::https::_1_1GetRequest {
+class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
  public:
   HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::https::_1_1GetRequest(host, path, port) {}
+      : mkn::ram::https::_1_1GetRequest(host, path, port) {}
 };
 int main(int argc, char *argv[]) {
-  using namespace kul::http;
+  using namespace mkn::ram::http;
   {
     TestHTTPSServer serv;
     serv.init().withResponse([](const A1_1Request &r) {
-      KLOG(NON) << kul::os::EOL() << r.toString();
+      KLOG(NON) << mkn::kul::os::EOL() << r.toString();
       return _1_1Response{}.withBody("HELLO WORLD");
     });
-    kul::Thread t(std::ref(serv));
+    mkn::kul::Thread t(std::ref(serv));
     t.run();
-    kul::this_thread::sleep(333);
+    mkn::kul::this_thread::sleep(333);
     if (t.exception()) std::rethrow_exception(t.exception());
     {
-      HTTPS_Get get("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-      KLOG(NON) << kul::os::EOL() << get.toString();
+      HTTPS_Get get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+      KLOG(NON) << mkn::kul::os::EOL() << get.toString();
       get.withResponse(
-             [](const kul::http::_1_1Response &r) { KLOG(INF) << kul::os::EOL() << r.toString(); })
+             [](const mkn::ram::http::_1_1Response &r) { KLOG(INF) << mkn::kul::os::EOL() << r.toString(); })
           .send();
     }
     serv.stop();

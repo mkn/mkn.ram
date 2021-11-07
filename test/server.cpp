@@ -30,153 +30,153 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <cstring>
 
-#include "kul/http.hpp"
-#include "kul/tcp.hpp"
+#include "mkn/ram/http.hpp"
+#include "mkn/kul/tcp.hpp"
 
-#ifdef _KUL_INCLUDE_HTTPS_
-#include "kul/https.hpp"
-#endif  //_KUL_INCLUDE_HTTPS_
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#include "mkn/ram/https.hpp"
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
 
-#include "kul/html4.hpp"
+#include "mkn/kul/html4.hpp"
 
-#include "kul/signal.hpp"
+#include "mkn/kul/signal.hpp"
 
-#ifndef _KUL_HTTP_TEST_PORT_
-#define _KUL_HTTP_TEST_PORT_ 8888
-#endif /*_KUL_HTTP_TEST_PORT_*/
+#ifndef _MKN_RAM_HTTP_TEST_PORT_
+#define _MKN_RAM_HTTP_TEST_PORT_ 8888
+#endif /*_MKN_RAM_HTTP_TEST_PORT_*/
 
-namespace kul {
+namespace mkn {
 namespace ram {
 
-void addResponseHeaders(kul::http::_1_1Response &r) {
-  if (!r.header("Date")) r.header("Date", kul::DateTime::NOW());
+void addResponseHeaders(mkn::ram::http::_1_1Response &r) {
+  if (!r.header("Date")) r.header("Date", mkn::kul::DateTime::NOW());
   if (!r.header("Connection")) r.header("Connection", "close");
   if (!r.header("Content-Type")) r.header("Content-Type", "text/html");
   if (!r.header("Content-Length")) r.header("Content-Length", std::to_string(r.body().size()));
 }
 
-class TestHTTPServer : public kul::http::Server {
+class TestHTTPServer : public mkn::ram::http::Server {
  private:
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
-    kul::http::_1_1Response r;
+    mkn::ram::http::_1_1Response r;
     r.body("HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
     return r;
   }
-  TestHTTPServer() : kul::http::Server(_KUL_HTTP_TEST_PORT_) {}
-  friend class kul::Thread;
+  TestHTTPServer() : mkn::ram::http::Server(_MKN_RAM_HTTP_TEST_PORT_) {}
+  friend class mkn::kul::Thread;
 };
 
-class TestMultiHTTPServer : public kul::http::MultiServer {
+class TestMultiHTTPServer : public mkn::ram::http::MultiServer {
  private:
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
-    kul::http::_1_1Response r;
+    mkn::ram::http::_1_1Response r;
     r.body("MULTI HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
     return r;
   }
   TestMultiHTTPServer(uint16_t const& threads)
-      : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, threads) {}
-  TestMultiHTTPServer() : kul::http::MultiServer(_KUL_HTTP_TEST_PORT_, 2, 4) {}
-  friend class kul::Thread;
+      : mkn::ram::http::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, threads) {}
+  TestMultiHTTPServer() : mkn::ram::http::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, 2, 4) {}
+  friend class mkn::kul::Thread;
 };
 
-#ifdef _KUL_INCLUDE_HTTPS_
-class TestHTTPSServer : public kul::https::Server {
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+class TestHTTPSServer : public mkn::ram::https::Server {
  private:
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
-    kul::http::_1_1Response r;
+    mkn::ram::http::_1_1Response r;
     r.body("HTTPS PROVIDED BY KUL: " + req.method());
     addResponseHeaders(r);
     return r;
   }
   TestHTTPSServer()
-      : kul::https::Server(_KUL_HTTP_TEST_PORT_, kul::File("res/test/server.crt"),
-                           kul::File("res/test/server.key")) {}
-  friend class kul::Thread;
+      : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
+                           mkn::kul::File("res/test/server.key")) {}
+  friend class mkn::kul::Thread;
 };
 
-class TestMultiHTTPSServer : public kul::https::MultiServer {
+class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
  private:
   void operator()() { start(); }
 
  public:
-  kul::http::_1_1Response respond(kul::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     KUL_DBG_FUNC_ENTER
-    kul::http::_1_1Response r;
+    mkn::ram::http::_1_1Response r;
     r.body("MULTI HTTPS PROVIDED BY KUL");
     addResponseHeaders(r);
     return r;
   }
   TestMultiHTTPSServer()
-      : kul::https::MultiServer(_KUL_HTTP_TEST_PORT_, 3, kul::File("res/test/server.crt"),
-                                kul::File("res/test/server.key")) {}
-  friend class kul::Thread;
+      : mkn::ram::https::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, 3, mkn::kul::File("res/test/server.crt"),
+                                mkn::kul::File("res/test/server.key")) {}
+  friend class mkn::kul::Thread;
 };
 
-class HTTPS_Get : public kul::https::_1_1GetRequest {
+class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
  public:
   HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::https::_1_1GetRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
-class HTTPS_Post : public kul::https::_1_1PostRequest {
+class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
  public:
   HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::https::_1_1PostRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
 
-class TestSocketServer : public kul::tcp::SocketServer<char> {
+class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
  private:
   void operator()() { start(); }
 
  public:
   bool handle(char *in, char *out) override {
     KUL_DBG_FUNC_ENTER
-    kul::http::_1_1Response getResponse;
+    mkn::ram::http::_1_1Response getResponse;
     addResponseHeaders(getResponse);
     getResponse.body("magicmansion");
     std::string getResponseStr(getResponse.toString());
     std::strcpy(out, getResponseStr.c_str());
     return true;  // if true, close connection
   }
-  TestSocketServer() : kul::tcp::SocketServer<char>(_KUL_HTTP_TEST_PORT_) {}
-  friend class kul::Thread;
+  TestSocketServer() : mkn::ram::tcp::SocketServer<char>(_MKN_RAM_HTTP_TEST_PORT_) {}
+  friend class mkn::kul::Thread;
 };
 
-class Get : public kul::http::_1_1GetRequest {
+class Get : public mkn::ram::http::_1_1GetRequest {
  public:
   Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::http::_1_1GetRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "GET RESPONSE:\n" << b;
   }
 };
-class Post : public kul::http::_1_1PostRequest {
+class Post : public mkn::ram::http::_1_1PostRequest {
  public:
   Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::http::_1_1PostRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "POST RESPONSE:\n" << b;
@@ -186,14 +186,14 @@ class Post : public kul::http::_1_1PostRequest {
 }  // namespace kul
 
 int main(int argc, char *argv[]) {
-  kul::Signal s;
+  mkn::kul::Signal s;
   try {
     // KOUT(NON) << "TCP Socket SERVER";
     // {
-    //     kul::ram::TestSocketServer serv;
-    //     kul::Thread t(std::ref(serv));
+    //     mkn::kul::ram::TestSocketServer serv;
+    //     mkn::kul::Thread t(std::ref(serv));
     //     t.run();
-    //     kul::this_thread::sleep(100);
+    //     mkn::kul::this_thread::sleep(100);
     //     if(t.exception()) std::rethrow_exception(t.exception());
     //     s.abrt([&](int16_t i){ serv.stop(); });
     //     t.join();
@@ -201,60 +201,60 @@ int main(int argc, char *argv[]) {
     // }
     // KOUT(NON) << "Single HTTP SERVER";
     // {
-    //     kul::ram::TestHTTPServer serv;
-    //     kul::Thread t(std::ref(serv));
+    //     mkn::kul::ram::TestHTTPServer serv;
+    //     mkn::kul::Thread t(std::ref(serv));
     //     t.run();
-    //     kul::this_thread::sleep(100);
+    //     mkn::kul::this_thread::sleep(100);
     //     if(t.exception()) std::rethrow_exception(t.exception());
     //     s.abrt([&](int16_t i){ serv.stop(); });
     //     t.join();
     // }
     KOUT(NON) << "Multi HTTP SERVER";
     {
-      kul::ram::TestMultiHTTPServer serv(10);
-      kul::Thread t(std::ref(serv));
+      mkn::kul::ram::TestMultiHTTPServer serv(10);
+      mkn::kul::Thread t(std::ref(serv));
 
       t.run();
       s.abrt([&](int16_t i) { serv.stop(); });
 
-      kul::this_thread::sleep(100);
+      mkn::kul::this_thread::sleep(100);
       if (t.exception()) std::rethrow_exception(t.exception());
-      kul::this_thread::sleep(100);
+      mkn::kul::this_thread::sleep(100);
       serv.join();
       serv.stop();
-      kul::this_thread::sleep(100);
+      mkn::kul::this_thread::sleep(100);
     }
-#ifdef _KUL_INCLUDE_HTTPS_
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
 // KOUT(NON) << "Single HTTPS SERVER";
 // {
-//     kul::ram::TestHTTPSServer serv;
+//     mkn::kul::ram::TestHTTPSServer serv;
 //     serv.init();
-//     kul::Thread t(std::ref(serv));
+//     mkn::kul::Thread t(std::ref(serv));
 //     t.run();
-//     kul::this_thread::sleep(100);
+//     mkn::kul::this_thread::sleep(100);
 //     if(t.exception()) std::rethrow_exception(t.exception());
-//     kul::this_thread::sleep(1000);
+//     mkn::kul::this_thread::sleep(1000);
 //     serv.stop();
-//     kul::this_thread::sleep(100);
+//     mkn::kul::this_thread::sleep(100);
 //     t.join();
 // }
 // KOUT(NON) << "Multi HTTPS SERVER";
 // {
-//     kul::ram::TestMultiHTTPSServer serv;
+//     mkn::kul::ram::TestMultiHTTPSServer serv;
 //     serv.init();
-//     kul::Thread t(std::ref(serv));
+//     mkn::kul::Thread t(std::ref(serv));
 //     t.run();
-//     kul::this_thread::sleep(100);
+//     mkn::kul::this_thread::sleep(100);
 //     if(t.exception()) std::rethrow_exception(t.exception());
-//     kul::this_thread::sleep(5000);
+//     mkn::kul::this_thread::sleep(5000);
 //     serv.join();
 //     serv.stop();
-//     kul::this_thread::sleep(100);
+//     mkn::kul::this_thread::sleep(100);
 //     t.join();
 // }
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
 
-  } catch (const kul::Exception &e) {
+  } catch (const mkn::kul::Exception &e) {
     KERR << e.stack();
     return 1;
   } catch (const std::exception &e) {

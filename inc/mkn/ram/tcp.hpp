@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2013, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,62 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "mkn/ram/http.hpp"
+#ifndef _MKN_RAM_TCP_HPP_
+#define _MKN_RAM_TCP_HPP_
 
-bool mkn::ram::http::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER;
-  char *in = getOrCreateBufferFor(fd);
-  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
-  int e = 0, read = readFrom(fd, in);
-  if (read < 0)
-    e = -1;
-  else if (read > 0) {
-    fds[fd] = 2;
-    handleBuffer(fds, fd, in, read, e);
-    if (e) return false;
-  } else {
-    getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr[fd], (socklen_t *)&clilen);
-    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
-    KOUT(DBG) << "DISCO,  " << inet_ntoa(cli_addr[fd].sin_addr)
-              << ", port : " << ntohs(cli_addr[fd].sin_port);
-  }
-  if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
-  return true;
-}
+#include "mkn/kul/dbg.hpp"
+
+namespace mkn {
+namespace ram {
+namespace tcp {
+
+class Exception : public mkn::kul::Exception {
+ public:
+  Exception(const char* f, const uint16_t& l, const std::string& s) : mkn::kul::Exception(f, l, s) {}
+};
+
+template <class T = uint8_t>
+class ASocket {
+ public:
+  virtual ~ASocket() {}
+  virtual bool connect(const std::string& host, const int16_t& port) = 0;
+  virtual bool close() = 0;
+  virtual size_t read(T* data, const size_t& len, bool& more) KTHROW(mkn::ram::tcp::Exception) = 0;
+  virtual size_t write(const T* data, const size_t& len) = 0;
+
+ protected:
+  bool open = 0;
+};
+
+template <class T = uint8_t>
+class ASocketServer {
+ public:
+  virtual ~ASocketServer() {}
+  virtual void start() KTHROW(mkn::ram::tcp::Exception) = 0;
+  uint64_t up() const { return s - mkn::kul::Now::MILLIS(); }
+  const uint16_t& port() const { return p; }
+  bool started() const { return s; }
+
+ protected:
+  ASocketServer(const uint16_t& p) : p(p) {}
+
+  virtual void onConnect(const char* /*ip*/, const uint16_t& /*port*/) {}
+  virtual void onDisconnect(const char* /*ip*/, const uint16_t& /*port*/) {}
+
+ protected:
+  uint16_t p;
+  uint64_t s;
+};
+
+}  // namespace tcp
+}  // namespace ram
+}  // namespace mkn
+
+
+#if defined(_WIN32)
+#include "mkn/ram/os/win/tcp.hpp"
+#else
+#include "mkn/ram/os/nixish/tcp.hpp"
+#endif
+
+#endif  //_MKN_RAM_TCP_HPP_

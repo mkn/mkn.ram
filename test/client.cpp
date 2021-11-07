@@ -30,60 +30,60 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include <cstring>
 
-#include "kul/http.hpp"
-#include "kul/tcp.hpp"
+#include "mkn/kul/signal.hpp"
 
-#ifdef _KUL_INCLUDE_HTTPS_
-#include "kul/https.hpp"
-#endif  //_KUL_INCLUDE_HTTPS_
+#include "mkn/ram/tcp.hpp"
+#include "mkn/ram/http.hpp"
 
-#include "kul/html4.hpp"
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#include "mkn/ram/https.hpp"
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
 
-#include "kul/signal.hpp"
+#include "mkn/ram/html4.hpp"
 
-#ifndef _KUL_HTTP_TEST_PORT_
-#define _KUL_HTTP_TEST_PORT_ 8888
-#endif /*_KUL_HTTP_TEST_PORT_*/
-#ifdef _KUL_INCLUDE_HTTPS_
+#ifndef _MKN_RAM_HTTP_TEST_PORT_
+#define _MKN_RAM_HTTP_TEST_PORT_ 8888
+#endif /*_MKN_RAM_HTTP_TEST_PORT_*/
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
 
-namespace kul {
+namespace mkn {
 namespace ram {
 
-class HTTPS_Get : public kul::https::_1_1GetRequest {
+class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
  public:
   HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::https::_1_1GetRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
-class HTTPS_Post : public kul::https::_1_1PostRequest {
+class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
  public:
   HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::https::_1_1PostRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
     for (const auto &p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
 
-class Get : public kul::http::_1_1GetRequest {
+class Get : public mkn::ram::http::_1_1GetRequest {
  public:
   Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::http::_1_1GetRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     KLOG(INF) << b;
     // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
     // KEXCEPTION("Body failed :" + b + ":");
   }
 };
-class Post : public kul::http::_1_1PostRequest {
+class Post : public mkn::ram::http::_1_1PostRequest {
  public:
   Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
-      : kul::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const kul::hash::map::S2S &h, std::string const& b) override {
+      : mkn::ram::http::_1_1PostRequest(host, path, port) {}
+  void handleResponse(const mkn::kul::hash::map::S2S &h, std::string const& b) override {
     if (b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
       KEXCEPTION("Body failed :" + b + ":");
   }
@@ -92,49 +92,49 @@ class Post : public kul::http::_1_1PostRequest {
 }
 
 int main(int argc, char *argv[]) {
-  kul::Signal s;
+  mkn::kul::Signal s;
   try {
-    kul::ram::Get g("localhost", "index.html", _KUL_HTTP_TEST_PORT_);
-    kul::ChroncurrentThreadPool<> requests(10, 0);
+    mkn::kul::ram::Get g("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+    mkn::kul::ChroncurrentThreadPool<> requests(10, 0);
 
     for (size_t i = 0; i < 5000; i++) requests.async([&]() { g.send(); });
     requests.start().finish();
 
-    // kul::ram::Get("localhost", "index.html", _KUL_HTTP_TEST_PORT_).send();
+    // mkn::kul::ram::Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
     // for(size_t i = 0; i < 100; i++)
-    //     kul::ram::Post("localhost", "index.html",
-    //     _KUL_HTTP_TEST_PORT_).send();
+    //     mkn::kul::ram::Post("localhost", "index.html",
+    //     _MKN_RAM_HTTP_TEST_PORT_).send();
 
-    // kul::this_thread::sleep(500);
+    // mkn::kul::this_thread::sleep(500);
 
     // for(size_t i = 0; i < 1000; i++)
-    //     kul::ram::Get("localhost", "index.html",
-    //     _KUL_HTTP_TEST_PORT_).send();
+    //     mkn::kul::ram::Get("localhost", "index.html",
+    //     _MKN_RAM_HTTP_TEST_PORT_).send();
     // for(size_t i = 0; i < 1000; i++)
-    //     kul::ram::Post("localhost", "index.html",
-    //     _KUL_HTTP_TEST_PORT_).send();
+    //     mkn::kul::ram::Post("localhost", "index.html",
+    //     _MKN_RAM_HTTP_TEST_PORT_).send();
 
-    // kul::this_thread::sleep(500);
+    // mkn::kul::this_thread::sleep(500);
 
-    // #ifdef  _KUL_INCLUDE_HTTPS_
+    // #ifdef  _MKN_RAM_INCLUDE_HTTPS_
     //         for(size_t i = 0; i < 100; i++)
-    //             kul::ram::HTTPS_Get("localhost", "index.html",
-    //             _KUL_HTTP_TEST_PORT_).send();
+    //             mkn::kul::ram::HTTPS_Get("localhost", "index.html",
+    //             _MKN_RAM_HTTP_TEST_PORT_).send();
     //         for(size_t i = 0; i < 100; i++)
-    //             kul::ram::HTTPS_Post("localhost", "index.html",
-    //             _KUL_HTTP_TEST_PORT_).send();
+    //             mkn::kul::ram::HTTPS_Post("localhost", "index.html",
+    //             _MKN_RAM_HTTP_TEST_PORT_).send();
 
-    //         kul::this_thread::sleep(500);
+    //         mkn::kul::this_thread::sleep(500);
 
     //         for(size_t i = 0; i < 1000; i++)
-    //             kul::ram::HTTPS_Get("localhost", "index.html",
-    //             _KUL_HTTP_TEST_PORT_).send();
+    //             mkn::kul::ram::HTTPS_Get("localhost", "index.html",
+    //             _MKN_RAM_HTTP_TEST_PORT_).send();
     //         for(size_t i = 0; i < 1000; i++)
-    //             kul::ram::HTTPS_Post("localhost", "index.html",
-    //             _KUL_HTTP_TEST_PORT_).send();
-    // #endif//_KUL_INCLUDE_HTTPS_
+    //             mkn::kul::ram::HTTPS_Post("localhost", "index.html",
+    //             _MKN_RAM_HTTP_TEST_PORT_).send();
+    // #endif//_MKN_RAM_INCLUDE_HTTPS_
 
-  } catch (const kul::Exception &e) {
+  } catch (const mkn::kul::Exception &e) {
     KERR << e.stack();
     return 1;
   } catch (const std::exception &e) {

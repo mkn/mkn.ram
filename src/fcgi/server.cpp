@@ -30,15 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef _KUL_INCLUDE_FCGI_
 
-#include "kul/asio/fcgi.hpp"
+#include "mkn/kul/asio/fcgi.hpp"
 
-#include "kul/http.hpp"
+#include "mkn/ram/http.hpp"
 
-void kul::asio::fcgi::Server::start() KTHROW(Exception) {
+void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
   KUL_DBG_FUNC_ENTER
   nfds = lisock + 1;
 
-  _started = kul::Now::MILLIS();
+  _started = mkn::kul::Now::MILLIS();
   listen(lisock, 256);
   clilen = sizeof(cli_addr);
   s = true;
@@ -53,10 +53,10 @@ void kul::asio::fcgi::Server::start() KTHROW(Exception) {
   m_workerPool.start();
 }
 
-bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER
   uint8_t* in = getOrCreateBufferFor(fd);
-  bzero(in, _KUL_TCP_READ_BUFFER_);
+  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
   int e = 0, read = readFrom(fd, in, MSG_DONTWAIT);
   if (read < 0)
     e = -1;
@@ -72,7 +72,7 @@ bool kul::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const int& fd
   return false;
 }
 
-void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
+void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
                                     const size_t size) {
   KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
@@ -81,7 +81,7 @@ void kul::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd, 
   closeFDs(fds, del);
 }
 
-void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
+void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
                                           const int& inLen, const int& fd)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
@@ -106,7 +106,7 @@ void kul::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* 
   }
 }
 
-void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
+void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
                                     const int& inLen, const int& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
@@ -137,9 +137,9 @@ void kul::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const 
   }
 }
 
-size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out) {
+size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out) {
   KUL_DBG_FUNC_ENTER
-  bzero(out, _KUL_TCP_READ_BUFFER_);
+  bzero(out, _MKN_RAM_TCP_READ_BUFFER_);
 
   size_t pos = 0;
   out[pos++] = 1;
@@ -154,7 +154,7 @@ size_t kul::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint8_t* 
     out[pos++] = rid[0];
   }
 
-  kul::http::_1_1Response resp(msg.response());
+  mkn::ram::http::_1_1Response resp(msg.response());
   resp.header("Content-Type", "text/html");
   std::string response(resp.toString());
   auto ending(response.find("\r\n"));

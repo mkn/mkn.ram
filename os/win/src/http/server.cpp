@@ -28,12 +28,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "kul/http.hpp"
+#include "mkn/ram/http.hpp"
 
-bool kul::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER;
   char* in = getOrCreateBufferFor(fd);
-  ZeroMemory(in, _KUL_TCP_READ_BUFFER_);
+  ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
   int e = 0, read = readFrom(fd, in);
   if (read < 0)
     e = -1;

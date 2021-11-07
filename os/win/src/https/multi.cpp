@@ -28,12 +28,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _KUL_INCLUDE_HTTPS_
-#include "kul/https.hpp"
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#include "mkn/ram/https.hpp"
 
-void kul::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
+void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   KUL_DBG_FUNC_ENTER
-  _started = kul::Now::MILLIS();
+  _started = mkn::kul::Now::MILLIS();
   listen(lisock, 256);
   clilen = sizeof(cli_addr);
   s = true;
@@ -47,4 +47,4 @@ void kul::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   _workerPool.start();
 }
 
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_
