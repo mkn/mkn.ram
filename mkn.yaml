@@ -26,7 +26,7 @@ profile:
       win:
         - name: conan.install
           init:
-            install: -s compiler="Visual Studio"
+            install: -s compiler="Visual Studio" -s compiler.version=19
     if_lib:
       nix: ssl crypto
       bsd: ssl crypto
