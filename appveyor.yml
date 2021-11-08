@@ -18,6 +18,8 @@ build_script:
   - SET KLOG=3
   - rm "C:\Program Files\Git\usr\bin\link.exe" # messes with msvc link.exe
   - SET PYTHON=C:\Python37-x64\python.exe
-  - C:\Python37-x64\Scripts\pip install conan flawfinder
+  - C:\Python37-x64\Scripts\pip install wheel --upgrade
+  - C:\Python37-x64\Scripts\pip install conan flawfinder --upgrade
+  - bash -c "mkdir -p /c/Users/runneradmin/.conan && cp remotes.json /c/Users/runneradmin/.conan/remotes.json"
   - mkn clean build -dtKOp usage -a "-EHsc -std:c++17"
   - C:\Python37-x64\python C:\Python37-x64\Scripts\flawfinder .
