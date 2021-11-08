@@ -4,7 +4,7 @@ extraction:
       packages: "build-essential"
     configure:
       command:
-      - git clone https://github.com/Dekken/maiken -b master --depth 1 maiken
+      - git clone https://github.com/PhilipDeegan/maiken -b master --depth 1 maiken
       - cd maiken; make nix; mv mkn ..; cd ..; rm -rf maiken
     index:
       build_command: ./mkn
