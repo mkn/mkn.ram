@@ -314,7 +314,7 @@ class Test {
 int main(int argc, char *argv[]) {
   mkn::kul::Signal s;
   try {
-    mkn::kul::ram::Test();
+    mkn::ram::Test();
 
   } catch (const mkn::kul::Exception &e) {
     KERR << e.stack();
