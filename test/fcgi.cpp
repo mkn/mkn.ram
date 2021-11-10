@@ -28,13 +28,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "kul/asio/fcgi.hpp"
-#include "kul/signal.hpp"
+#include "mkn/kul/asio/fcgi.hpp"
+#include "mkn/kul/signal.hpp"
 
 int main(int argc, char *argv[]) {
-  kul::Signal sig;
+  mkn::kul::Signal sig;
   try {
-    kul::asio::fcgi::Server s(5863, 4, 8);
+    mkn::ram::asio::fcgi::Server s(5863, 4, 8);
 
     sig.intr([&](int16_t) {
       KERR << "Interrupted";
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
       exit(2);
     });
     s.join();
-  } catch (const kul::Exception &e) {
+  } catch (const mkn::kul::Exception &e) {
     KERR << e.stack();
   } catch (const std::exception &e) {
     KERR << e.what();

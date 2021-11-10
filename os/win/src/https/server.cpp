@@ -28,10 +28,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _KUL_INCLUDE_HTTPS_
-#include "kul/https.hpp"
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#include "mkn/ram/https.hpp"
 
-void kul::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
+void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
   KUL_DBG_FUNC_ENTER
 
   auto ret = poll(1000);
@@ -95,20 +95,20 @@ void kul::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exce
   if (del.size()) closeFDs(fds, del);
 }
 
-void kul::https::Server::setChain(const kul::File& f) {
+void mkn::ram::https::Server::setChain(const mkn::kul::File& f) {
   if (!f) KEXCEPTION("HTTPS Server chain file does not exist: " + f.full());
   if (SSL_CTX_use_certificate_chain_file(ctx, f.mini().c_str()) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
 }
 
-kul::https::Server& kul::https::Server::init() {
+mkn::ram::https::Server& mkn::ram::https::Server::init() {
   KUL_DBG_FUNC_ENTER
   if (!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
   if (!key) KEXCEPTION("HTTPS Server key file does not exist: " + key.full());
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
-  ctx = SSL_CTX_new(_KUL_HTTPS_SERVER_METHOD_());
+  ctx = SSL_CTX_new(_MKN_RAM_HTTPS_SERVER_METHOD_());
   if (!ctx) KEXCEPTION("HTTPS Server SSL_CTX failed SSL_CTX_new");
   if (SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_certificate_file failed");
@@ -120,12 +120,12 @@ kul::https::Server& kul::https::Server::init() {
   return *this;
 }
 
-void kul::https::Server::stop() {
+void mkn::ram::https::Server::stop() {
   KUL_DBG_FUNC_ENTER
   s = 0;
   ERR_free_strings();
   EVP_cleanup();
-  for (size_t i = 0; i < _KUL_TCP_MAX_CLIENT_; i++) {
+  for (size_t i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) {
     auto ssl = ssl_clients[i];
     if (ssl) {
       SSL_shutdown(ssl);
@@ -133,10 +133,10 @@ void kul::https::Server::stop() {
     }
   }
   if (ctx) SSL_CTX_free(ctx);
-  kul::http::Server::stop();
+  mkn::ram::http::Server::stop();
 }
 
-void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
+void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
                                       const int& read, int& e) {
   in[read] = '\0';
   std::string res;
@@ -150,22 +150,22 @@ void kul::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd
       if (f) break;
     }
     if (!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
-    std::shared_ptr<kul::http::A1_1Request> req = handleRequest(fd, s, res);
-    const kul::http::_1_1Response& rs(respond(*req.get()));
+    std::shared_ptr<mkn::ram::http::A1_1Request> req = handleRequest(fd, s, res);
+    const mkn::ram::http::_1_1Response& rs(respond(*req.get()));
     std::string ret(rs.toString());
     e = ::SSL_write(ssl_clients[m_fds[fd].fd], ret.c_str(), ret.length());
-  } catch (const kul::http::Exception& e1) {
+  } catch (const mkn::ram::http::Exception& e1) {
     KERR << e1.stack();
     e = -1;
   }
   fds[fd] = 1;
 }
 
-bool kul::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   KUL_DBG_FUNC_ENTER
   char* in = getOrCreateBufferFor(fd);
-  bzero(in, _KUL_TCP_READ_BUFFER_);
-  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, _KUL_TCP_READ_BUFFER_ - 1);
+  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
+  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, _MKN_RAM_TCP_READ_BUFFER_ - 1);
   if (read < 0)
     e = -1;
   else if (read > 0) {
@@ -183,4 +183,4 @@ bool kul::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
   return true;
 }
 
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_

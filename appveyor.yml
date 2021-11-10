@@ -13,11 +13,13 @@ cache:
 build_script:
   - SET PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.23.28105\bin\Hostx64\x64;C:\Program Files\Git\usr\bin;%PATH%
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
-  - curl -Lo mkn.exe https://github.com/Dekken/maiken/raw/binaries/win10_x64/mkn.exe
+  - curl -Lo mkn.exe https://github.com/PhilipDeegan/maiken/releases/download/latest/mkn.exe
   - SET MKN_CL_PREFERRED=1
   - SET KLOG=3
   - rm "C:\Program Files\Git\usr\bin\link.exe" # messes with msvc link.exe
   - SET PYTHON=C:\Python37-x64\python.exe
-  - C:\Python37-x64\Scripts\pip install conan flawfinder
+  - C:\Python37-x64\Scripts\pip install wheel --upgrade
+  - C:\Python37-x64\Scripts\pip install conan flawfinder --upgrade
+  - bash -c "mkdir -p /c/Users/appveyor/.conan && cp remotes.json /c/Users/appveyor/.conan/remotes.json"
   - mkn clean build -dtKOp usage -a "-EHsc -std:c++17"
-  - C:\Python37-x64\python C:\Python37-x64\Scripts\flawfinder .
+  - C:\Python37-x64\Scripts\flawfinder.exe .

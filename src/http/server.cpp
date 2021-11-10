@@ -28,21 +28,21 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "kul/http.hpp"
+#include "mkn/ram/http.hpp"
 
-std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(const int& fd,
+std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(const int& fd,
                                                                           const std::string& b,
                                                                           std::string& path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
-  std::shared_ptr<kul::http::A1_1Request> req;
+  std::shared_ptr<mkn::ram::http::A1_1Request> req;
   {
     std::string mode, host;
     std::stringstream ss(b);
     {
       std::string r;
       std::getline(ss, r);
-      std::vector<std::string> l0 = kul::String::SPLIT(r, ' ');
+      std::vector<std::string> l0 = mkn::kul::String::SPLIT(r, ' ');
       if (!l0.size()) KEXCEPTION("Malformed request found: " + b);
       std::string s(l0[1]);
       if (l0[0] == "GET") {
@@ -72,22 +72,22 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(const 
       while (std::getline(ss, l)) {
         if (l.size() <= 1) break;
         std::vector<std::string> bits;
-        kul::String::SPLIT(l, ':', bits);
-        kul::String::TRIM(bits[0]);
+        mkn::kul::String::SPLIT(l, ':', bits);
+        mkn::kul::String::TRIM(bits[0]);
         std::stringstream sv;
         if (bits.size() > 1) sv << bits[1];
         for (size_t i = 2; i < bits.size(); i++) sv << ":" << bits[i];
         std::string v(sv.str());
-        kul::String::TRIM(v);
+        mkn::kul::String::TRIM(v);
         if (*v.rbegin() == '\r') v.pop_back();
         if (bits[0] == "Cookie") {
-          for (const auto& coo : kul::String::SPLIT(v, ';')) {
+          for (const auto& coo : mkn::kul::String::SPLIT(v, ';')) {
             if (coo.find("=") == std::string::npos) {
               req->cookie(coo, "");
               KOUT(ERR) << "Cookie without equals sign, skipping";
             } else {
               std::vector<std::string> kv;
-              kul::String::ESC_SPLIT(coo, '=', kv);
+              mkn::kul::String::ESC_SPLIT(coo, '=', kv);
               if (kv[1].size()) req->cookie(kv[0], kv[1]);
             }
           }
@@ -105,7 +105,7 @@ std::shared_ptr<kul::http::A1_1Request> kul::http::AServer::handleRequest(const 
   return req;
 }
 
-void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
+void mkn::ram::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
                                       const int& read, int& e) {
   KUL_DBG_FUNC_ENTER;
   in[read] = '\0';
@@ -125,7 +125,7 @@ void kul::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd
     std::string ret(rs.toString());
     writeTo(fd, ret.c_str(), ret.length());
     e = 0;
-  } catch (const kul::http::Exception& e1) {
+  } catch (const mkn::ram::http::Exception& e1) {
     KLOG(ERR) << e1.stack();
     e = -1;
   }

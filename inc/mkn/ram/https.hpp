@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2013, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,25 +28,28 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "mkn/ram/http.hpp"
+#ifndef _MKN_RAM_HTTPS_HPP_
+#define _MKN_RAM_HTTPS_HPP_
 
-bool mkn::ram::http::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER;
-  char *in = getOrCreateBufferFor(fd);
-  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
-  int e = 0, read = readFrom(fd, in);
-  if (read < 0)
-    e = -1;
-  else if (read > 0) {
-    fds[fd] = 2;
-    handleBuffer(fds, fd, in, read, e);
-    if (e) return false;
-  } else {
-    getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr[fd], (socklen_t *)&clilen);
-    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
-    KOUT(DBG) << "DISCO,  " << inet_ntoa(cli_addr[fd].sin_addr)
-              << ", port : " << ntohs(cli_addr[fd].sin_port);
-  }
-  if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
-  return true;
-}
+#include "mkn/kul/except.hpp"
+
+namespace mkn {
+namespace ram {
+namespace https {
+class Exception : public mkn::kul::Exception {
+ public:
+  Exception(const char* f, const uint16_t& l, const std::string& s) : mkn::kul::Exception(f, l, s) {}
+};
+}  // namespace https
+}  // namespace ram
+}  // namespace mkn
+
+#if defined(_WIN32)
+#include "mkn/ram/os/win/https.hpp"
+#else
+#include "mkn/ram/os/nixish/https.hpp"
+#endif
+
+
+
+#endif  //_MKN_RAM_INCLUDE_HTTPS_HPP_

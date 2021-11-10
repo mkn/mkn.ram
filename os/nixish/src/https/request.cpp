@@ -28,25 +28,25 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _KUL_INCLUDE_HTTPS_
-#include "kul/https.hpp"
+#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#include "mkn/ram/https.hpp"
 
-void kul::https::Requester::send(std::string const& h, std::string const& req, uint16_t const& p,
+void mkn::ram::https::Requester::send(std::string const& h, std::string const& req, uint16_t const& p,
                                  std::stringstream &ss, SSL *ssl) {
   KUL_DBG_FUNC_ENTER
   int sck = 0;
-  if (!kul::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
-    KEXCEPT(kul::http::Exception, "Error opening socket");
-  if (!kul::tcp::Socket<char>::CONNECT(sck, h, p))
-    KEXCEPT(kul::http::Exception, "Failed to connect to host: " + h);
+  if (!mkn::ram::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))
+    KEXCEPT(mkn::ram::http::Exception, "Error opening socket");
+  if (!mkn::ram::tcp::Socket<char>::CONNECT(sck, h, p))
+    KEXCEPT(mkn::ram::http::Exception, "Failed to connect to host: " + h);
   SSL_set_fd(ssl, sck);
   if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
   SSL_write(ssl, req.c_str(), req.size());
-  char buffer[_KUL_TCP_REQUEST_BUFFER_];
+  char buffer[_MKN_RAM_TCP_REQUEST_BUFFER_];
   int64_t d = 0, i = 0;
   do {
-    bzero(buffer, _KUL_TCP_REQUEST_BUFFER_);
-    d = SSL_read(ssl, buffer, _KUL_TCP_REQUEST_BUFFER_ - 1);
+    bzero(buffer, _MKN_RAM_TCP_REQUEST_BUFFER_);
+    d = SSL_read(ssl, buffer, _MKN_RAM_TCP_REQUEST_BUFFER_ - 1);
     if (d == 0) break;
     if (d < 0) {
       short se = 0;
@@ -59,34 +59,34 @@ void kul::https::Requester::send(std::string const& h, std::string const& req, u
   ::close(sck);
 }
 
-void kul::https::_1_1GetRequest::send() KTHROW(kul::http::Exception) {
+void mkn::ram::https::_1_1GetRequest::send() KTHROW(mkn::ram::http::Exception) {
   KUL_DBG_FUNC_ENTER
   try {
     std::stringstream ss;
     Requester::send(_host, toString(), _port, ss, ssl);
 
     auto rec(ss.str());
-    kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
+    mkn::ram::http::_1_1Response res(mkn::ram::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const kul::Exception &e) {
+  } catch (const mkn::kul::Exception &e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
   }
 }
 
-void kul::https::_1_1PostRequest::send() KTHROW(kul::http::Exception) {
+void mkn::ram::https::_1_1PostRequest::send() KTHROW(mkn::ram::http::Exception) {
   KUL_DBG_FUNC_ENTER
   try {
     std::stringstream ss;
     Requester::send(_host, toString(), _port, ss, ssl);
 
     auto rec(ss.str());
-    kul::http::_1_1Response res(kul::http::_1_1Response::FROM_STRING(rec));
+    mkn::ram::http::_1_1Response res(mkn::ram::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const kul::Exception &e) {
+  } catch (const mkn::kul::Exception &e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP POST failed with host: " + _host);
   }
 }
 
-#endif  //_KUL_INCLUDE_HTTPS_
+#endif  //_MKN_RAM_INCLUDE_HTTPS_

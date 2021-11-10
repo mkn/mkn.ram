@@ -28,25 +28,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "mkn/ram/http.hpp"
+#ifndef _MKN_RAM_HTTP_DEF_HPP_
+#define _MKN_RAM_HTTP_DEF_HPP_
 
-bool mkn::ram::http::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER;
-  char *in = getOrCreateBufferFor(fd);
-  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
-  int e = 0, read = readFrom(fd, in);
-  if (read < 0)
-    e = -1;
-  else if (read > 0) {
-    fds[fd] = 2;
-    handleBuffer(fds, fd, in, read, e);
-    if (e) return false;
-  } else {
-    getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr[fd], (socklen_t *)&clilen);
-    onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
-    KOUT(DBG) << "DISCO,  " << inet_ntoa(cli_addr[fd].sin_addr)
-              << ", port : " << ntohs(cli_addr[fd].sin_port);
-  }
-  if (e < 0) KLOG(ERR) << "Error on receive: " << strerror(errno);
-  return true;
-}
+#ifndef _MKN_RAM_HTTP_SESSION_TTL_
+#define _MKN_RAM_HTTP_SESSION_TTL_ 600  // seconds
+#endif                              /* _MKN_RAM_HTTP_SESSION_TTL_ */
+
+#ifndef _MKN_RAM_HTTP_SESSION_CHECK_
+#define _MKN_RAM_HTTP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
+#endif                                  /* _MKN_RAM_HTTP_SESSION_CHECK_ */
+
+#endif /* _MKN_RAM_HTTP_DEF_HPP_ */

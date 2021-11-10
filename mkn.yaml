@@ -21,12 +21,12 @@ profile:
 
   - name: https
     parent: lib
-    arg: -D_KUL_INCLUDE_HTTPS_
+    arg: -D_MKN_RAM_INCLUDE_HTTPS_
     if_mod:
       win:
         - name: conan.install
           init:
-            install: -s compiler="Visual Studio" -s compiler.version=15
+            install: -s compiler="Visual Studio"
     if_lib:
       nix: ssl crypto
       bsd: ssl crypto
@@ -39,7 +39,7 @@ profile:
   - name: usage
     self: https
     main: usage.cpp
-    arg: -D_KUL_INCLUDE_HTTPS_
+    arg: -D_MKN_RAM_INCLUDE_HTTPS_
     if_link:
       win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
@@ -49,6 +49,7 @@ profile:
 
   - name: test
     self: https
+    mode: none
     main: test.cpp
 
   - name: test.client
@@ -66,4 +67,4 @@ profile:
         style: file
         types: cpp:cxx:cc:h:hpp
         paths: .
-        args:  -D_KUL_INCLUDE_HTTPS_
+        args:  -D_MKN_RAM_INCLUDE_HTTPS_
