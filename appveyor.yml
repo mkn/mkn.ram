@@ -22,4 +22,4 @@ build_script:
   - C:\Python37-x64\Scripts\pip install conan flawfinder --upgrade
   - bash -c "mkdir -p /c/Users/appveyor/.conan && cp remotes.json /c/Users/appveyor/.conan/remotes.json"
   - mkn clean build -dtKOp usage -a "-EHsc -std:c++17"
-  - C:\Python37-x64\python C:\Python37-x64\Scripts\flawfinder .
+  - C:\Python37-x64\Scripts\flawfinder.exe .
