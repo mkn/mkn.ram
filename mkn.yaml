@@ -30,25 +30,27 @@ profile:
   if_lib:
     nix: ssl crypto
     bsd: ssl crypto
-    win: User32 Crypt32 libssl libcrypto
+    win: User32 Crypt32 libssl libcrypto zlib
+  if_link:
+    win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
 - name: fcgi
   parent: lib
   arg: -D_KUL_INCLUDE_FCGI_
 
 - name: usage
-  self: https
+  parent: https
   main: test/usage.cpp
-  arg: -D_MKN_RAM_INCLUDE_HTTPS_
-  if_link:
-    win_cl: -nodefaultlib:libucrt.lib ucrt.lib
+  # arg: -D_MKN_RAM_INCLUDE_HTTPS_
+  # if_link:
+  #   win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
 - name: test_fcgi
   main: test/fcgi.cpp
   self: fcgi
 
 - name: test
-  self: https
+  parent: https
   mode: none
   main: test/test.cpp
 
