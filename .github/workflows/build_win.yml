@@ -10,25 +10,24 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: amd64
 
     - uses: actions/setup-python@v2
       with:
-        python-version: '3.9.6' # 3.10 is possibly too new
+        python-version: '3.11.9'
 
     - name: "Build/Test"
       shell: cmd
       env:
         MKN_CL_PREFERRED: 1
+        MKN_LIB_LINK_LIB: 1
       run: | # /bin/link interferes with cl/link.exe
         bash -c "rm /bin/link"
-        call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-
-        bash -c "python3 -m pip install wheel --upgrade"
-        bash -c "python3 -m pip install conan --upgrade"
-        bash -c "mkdir -p /c/Users/runneradmin/.conan && cp remotes.json /c/Users/runneradmin/.conan/remotes.json"
-
-        bash -c "curl -Lo mkn.exe https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn.exe"
-        bash -c 'KLOG=3 ./mkn clean build -dtKOp test -a "-EHsc -std:c++17"'
-
-
+        bash -c "set -ex; python3 -m pip install wheel -U && python3 -m pip install conan -U && python3 -m conans.conan profile detect"
+        bash -c "mkdir -p /c/Users/runneradmin/.conan && cp conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
+        bash -c "curl -Lo mkn.exe https://github.com/mkn/mkn/releases/download/latest/mkn.exe"
+        bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++17"'

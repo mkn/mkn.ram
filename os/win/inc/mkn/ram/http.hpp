@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,9 +39,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIN32_LEAN_AND_MEAN
 #endif
 
-#include "mkn/ram/http.hpp"
 #include "mkn/kul/log.hpp"
 #include "mkn/kul/threads.hpp"
+#include "mkn/ram/http.hpp"
 
 #ifndef UNICODE
 #define UNICODE

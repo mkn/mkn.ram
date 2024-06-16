@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <unordered_map>
 
-#include "mkn/ram/http.hpp"
 #include "mkn/kul/http/def.hpp"
-#include "mkn/ram/tcp.hpp"
-
 #include "mkn/kul/threads.hpp"
+#include "mkn/ram/http.hpp"
+#include "mkn/ram/tcp.hpp"
 
 namespace mkn {
 namespace ram {
@@ -49,13 +48,13 @@ class Server : public mkn::ram::http::AServer {
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
-  virtual char *getOrCreateBufferFor(int const& fd) {
+  virtual char *getOrCreateBufferFor(int const &fd) {
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
     return inBuffers[fd].get();
   }
 
-  virtual bool receive(std::map<int, uint8_t> &fds, int const& fd) override;
+  virtual bool receive(std::map<int, uint8_t> &fds, int const &fd) override;
 
  public:
   Server(const short &p = 80) : AServer(p) {}
@@ -69,7 +68,7 @@ class MultiServer : public mkn::ram::http::Server {
   ConcurrentThreadPool<> _acceptPool;
   ConcurrentThreadPool<> _workerPool;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
                             int &e) override {
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
@@ -77,7 +76,7 @@ class MultiServer : public mkn::ram::http::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, int const& fd, char *in, int const& read,
+  void operateBuffer(std::map<int, uint8_t> *fds, int const &fd, char *in, int const &read,
                      int &e) {
     mkn::ram::http::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
@@ -87,7 +86,7 @@ class MultiServer : public mkn::ram::http::Server {
   }
   virtual void errorBuffer(const mkn::kul::Exception &e) { KERR << e.stack(); };
 
-  void operateAccept(size_t const& threadID) {
+  void operateAccept(size_t const &threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
@@ -134,6 +133,6 @@ class MultiServer : public mkn::ram::http::Server {
 };
 }  // namespace http
 }  // namespace ram
-}  // namespace kul
+}  // namespace mkn
 
 #endif /* _MKN_RAM_NIXISH_HTTP_HPP_ */

@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -138,8 +138,8 @@ void mkn::ram::https::Server::stop() {
   mkn::ram::http::Server::stop();
 }
 
-void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in,
-                                      int const& read, int &e) {
+void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in,
+                                           int const &read, int &e) {
   KUL_DBG_FUNC_ENTER
   in[read] = '\0';
   std::string res;
@@ -165,7 +165,7 @@ void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t> &fds, int cons
   fds[fd] = 1;
 }
 
-bool mkn::ram::https::Server::receive(std::map<int, uint8_t> &fds, int const& fd) {
+bool mkn::ram::https::Server::receive(std::map<int, uint8_t> &fds, int const &fd) {
   KUL_DBG_FUNC_ENTER
   char *in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);

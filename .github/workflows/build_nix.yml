@@ -10,10 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
-    - name: "Build/Test" # contains slash so use quotes otherwise UB
+    - name: "Build/Test"
       run: |
-        wget https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn_nix
-        chmod +x mkn_nix
-        KLOG=3 ./mkn_nix clean build run -dtOp test -a "-std=c++17 -fPIC" -l -pthread
+        curl -Lo mkn https://github.com/mkn/mkn/releases/download/latest/mkn_nix
+        chmod +x mkn
+        KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++17 -fPIC" -l -pthread

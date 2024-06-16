@@ -6,16 +6,9 @@ C++ Remote Applications Management
 Convenience library providing cross platform http/https services
 
 How to use:
-view tst/kul.ram.test.hpp
+view test/usage.cpp
 
 License: BSD
-
-OpenSSL on Windows found @
-  https://www.npcglib.org/~stathis/blog/precompiled-openssl/
-
-mkn command for compiling with windows looks like
-
-  mkn clean build -dtKa "-EHsc -Zc:inline -O2 -MT" -l "libsslMT.lib libcryptoMT.lib Crypt32.lib User32.lib" 
 
 Switches - OSX is considered BSD for swiches unless otherwise noted
  

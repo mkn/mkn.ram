@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _MKN_RAM_INCLUDE_HTTPS_
 #include "mkn/ram/https.hpp"
 
-void mkn::ram::https::Requester::send(std::string const& h, std::string const& req, uint16_t const& p,
-                                 std::stringstream &ss, SSL *ssl) {
+void mkn::ram::https::Requester::send(std::string const &h, std::string const &req,
+                                      uint16_t const &p, std::stringstream &ss, SSL *ssl) {
   KUL_DBG_FUNC_ENTER
   int sck = 0;
   if (!mkn::ram::tcp::Socket<char>::SOCKET(sck, PF_INET, SOCK_STREAM, 0))

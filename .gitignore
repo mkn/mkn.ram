@@ -1,8 +1,6 @@
 bin
-ext/pugixml/bin
-ext/pugixml/trunk
-ext/sparsehash
 .mkn
 bin
-conanbuildinfo.txt
-conaninfo.txt
+conan*
+build
+deactivate*

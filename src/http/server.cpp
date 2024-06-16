@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,9 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
 
-std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(const int& fd,
-                                                                          const std::string& b,
-                                                                          std::string& path) {
+std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(
+    const int& fd, const std::string& b, std::string& path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
   std::shared_ptr<mkn::ram::http::A1_1Request> req;
@@ -53,8 +52,7 @@ std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequ
         }
       } else if (l0[0] == "POST") {
         // req = post();
-      }
-      else
+      } else
         KEXCEPTION("HTTP Server request type not handled: " + l0[0]);
       mode = l0[0];
       path = s;
@@ -106,7 +104,7 @@ std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequ
 }
 
 void mkn::ram::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
-                                      const int& read, int& e) {
+                                           const int& read, int& e) {
   KUL_DBG_FUNC_ENTER;
   in[read] = '\0';
   std::string res;

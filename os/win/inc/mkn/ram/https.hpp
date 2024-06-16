@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _MKN_RAM_HTTPS_HPP_
 #define _MKN_RAM_HTTPS_HPP_
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
 #include <openssl/crypto.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <openssl/ssl.h>
 #include <openssl/x509.h>
 
 #include "mkn/ram/http.hpp"
@@ -50,8 +49,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _MKN_RAM_HTTPS_METHOD_ TLS
 #endif /* _MKN_RAM_HTTPS_METHOD_ */
 
-#define _MKN_RAM_HTTPS_CLIENT_METHOD_ MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _client_method)
-#define _MKN_RAM_HTTPS_SERVER_METHOD_ MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _server_method)
+#define _MKN_RAM_HTTPS_CLIENT_METHOD_ \
+  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _client_method)
+#define _MKN_RAM_HTTPS_SERVER_METHOD_ \
+  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _server_method)
 
 #else
 
@@ -84,7 +85,8 @@ class Server : public mkn::ram::http::Server {
                                         const int& read, int& e);
 
  public:
-  Server(const short& p, const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
+  Server(const short& p, const mkn::kul::File& c, const mkn::kul::File& k,
+         const std::string& cs = "")
       : mkn::ram::http::Server(p), crt(c), key(k), cs(cs) {}
   Server(const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
       : mkn::ram::https::Server(443, c, k, cs) {}
@@ -235,5 +237,5 @@ using Post = _1_1PostRequest;
 
 }  // namespace https
 }  // namespace ram
-}  // namespace kul
+}  // namespace mkn
 #endif  //_MKN_RAM_INCLUDE_HTTPS_HPP_

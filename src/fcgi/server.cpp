@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _KUL_INCLUDE_FCGI_
 
 #include "mkn/kul/asio/fcgi.hpp"
-
 #include "mkn/ram/http.hpp"
 
 void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
@@ -72,8 +71,8 @@ bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const in
   return false;
 }
 
-void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out,
-                                    const size_t size) {
+void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd,
+                                         const uint8_t* out, const size_t size) {
   KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
   receive(fds, fd);
@@ -82,7 +81,7 @@ void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int&
 }
 
 void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
-                                          const int& inLen, const int& fd)
+                                               const int& inLen, const int& fd)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
@@ -107,7 +106,7 @@ void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint
 }
 
 void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
-                                    const int& inLen, const int& fd, size_t pos)
+                                         const int& inLen, const int& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
