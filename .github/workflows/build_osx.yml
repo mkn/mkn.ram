@@ -10,13 +10,12 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
-    - name: "Build/Test" # contains slash so use quotes otherwise UB
+    - name: "Build/Test"
       env:
         MKN_LIB_LINK_LIB: 1
+        SSL_DIR: /opt/homebrew/Cellar/openssl@3/3.3.1
       run: |
-        brew install openssl
-        wget https://github.com/PhilipDeegan/mkn/releases/download/latest/mkn_osx
-        chmod +x mkn_osx
-        KLOG=3 ./mkn_osx clean build run -dtOp test -a "-std=c++17 -fPIC" -b /usr/local/opt/openssl@3/include -B /usr/local/opt/openssl@3/lib
+        curl -Lo mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
+        KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++17 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"

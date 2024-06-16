@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,7 +39,8 @@ namespace tcp {
 
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s) : mkn::kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s)
+      : mkn::kul::Exception(f, l, s) {}
 };
 
 template <class T = uint8_t>
@@ -78,7 +79,6 @@ class ASocketServer {
 }  // namespace tcp
 }  // namespace ram
 }  // namespace mkn
-
 
 #if defined(_WIN32)
 #include "mkn/ram/os/win/tcp.hpp"

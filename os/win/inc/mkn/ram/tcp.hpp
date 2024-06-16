@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,17 +36,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #undef UNICODE
 #define WIN32_LEAN_AND_MEAN
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "mkn/kul/tcp.base.hpp"
-
 #include <map>
 #include <unordered_set>
+
+#include "mkn/kul/tcp.base.hpp"
 
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")

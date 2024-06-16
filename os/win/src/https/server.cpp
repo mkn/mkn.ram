@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -137,7 +137,7 @@ void mkn::ram::https::Server::stop() {
 }
 
 void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
-                                      const int& read, int& e) {
+                                           const int& read, int& e) {
   in[read] = '\0';
   std::string res;
   try {

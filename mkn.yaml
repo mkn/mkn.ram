@@ -5,66 +5,66 @@ name: mkn.ram
 parent: lib
 
 profile:
-  - name: base
-    inc: ./inc
-    src: ./src
-    if_src:
-        bsd: ./os/nixish/src
-        nix: ./os/nixish/src
-        win: ./os/win/src
+- name: base
+  inc: ./inc
+  src: ./src
+  if_src:
+    bsd: ./os/nixish/src
+    nix: ./os/nixish/src
+    win: ./os/win/src
 
-  - name: lib
-    parent: base
-    dep: mkn.kul
-    if_arg:
-        win_shared: -DKUL_SHARED -DKUL_EXPORT
+- name: lib
+  parent: base
+  dep: mkn.kul
+  if_arg:
+    win_shared: -DKUL_SHARED -DKUL_EXPORT
 
-  - name: https
-    parent: lib
-    arg: -D_MKN_RAM_INCLUDE_HTTPS_
-    if_mod:
-      win:
-        - name: conan.install
-          init:
-            install: -s compiler="Visual Studio"
-    if_lib:
-      nix: ssl crypto
-      bsd: ssl crypto
-      win: User32 Crypt32 libssl libcrypto
-
-  - name: fcgi
-    parent: lib
-    arg: -D_KUL_INCLUDE_FCGI_
-
-  - name: usage
-    self: https
-    main: usage.cpp
-    arg: -D_MKN_RAM_INCLUDE_HTTPS_
-    if_link:
-      win_cl: -nodefaultlib:libucrt.lib ucrt.lib
-
-  - name: test_fcgi
-    main: test/fcgi.cpp
-    self: fcgi
-
-  - name: test
-    self: https
-    mode: none
-    main: test.cpp
-
-  - name: test.client
-    parent: lib
-    main: test/client.cpp
-
-  - name: test.server
-    parent: lib
-    main: test/server.cpp
-
-  - name: format
-    mod:
-    - name: clang.format
+- name: https
+  parent: lib
+  arg: -D_MKN_RAM_INCLUDE_HTTPS_
+  if_mod:
+    win:
+    - name: conan.install
       init:
-        style: file
-        types: cpp:cxx:cc:h:hpp
-        paths: .
-        args:  -D_MKN_RAM_INCLUDE_HTTPS_
+        install: -s compiler="msvc"
+  if_lib:
+    nix: ssl crypto
+    bsd: ssl crypto
+    win: User32 Crypt32 libssl libcrypto
+
+- name: fcgi
+  parent: lib
+  arg: -D_KUL_INCLUDE_FCGI_
+
+- name: usage
+  self: https
+  main: test/usage.cpp
+  arg: -D_MKN_RAM_INCLUDE_HTTPS_
+  if_link:
+    win_cl: -nodefaultlib:libucrt.lib ucrt.lib
+
+- name: test_fcgi
+  main: test/fcgi.cpp
+  self: fcgi
+
+- name: test
+  self: https
+  mode: none
+  main: test/test.cpp
+
+- name: test.client
+  parent: lib
+  main: test/client.cpp
+
+- name: test.server
+  parent: lib
+  main: test/server.cpp
+
+- name: format
+  mod:
+  - name: clang.format
+    init:
+    style: file
+    types: cpp:cxx:cc:h:hpp
+    paths: .
+    args:  -D_MKN_RAM_INCLUDE_HTTPS_

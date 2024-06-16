@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2013, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,12 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _MKN_RAM_OS_NIXISH_HTTPS_HPP_
 #define _MKN_RAM_OS_NIXISH_HTTPS_HPP_
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
 #include <openssl/crypto.h>
+#include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
+#include <openssl/ssl.h>
 #include <openssl/x509.h>
 
 #include <mutex>
@@ -56,8 +55,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* OPENSSL_VERSION_NUMBER < 0x10100000L */
 #endif /* _MKN_RAM_HTTPS_METHOD_ */
 
-#define _MKN_RAM_HTTPS_CLIENT_METHOD_ MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _client_method)
-#define _MKN_RAM_HTTPS_SERVER_METHOD_ MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _server_method)
+#define _MKN_RAM_HTTPS_CLIENT_METHOD_ \
+  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _client_method)
+#define _MKN_RAM_HTTPS_SERVER_METHOD_ \
+  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _server_method)
 
 #else
 
@@ -84,15 +85,16 @@ class Server : public mkn::ram::http::Server {
 
   virtual void loop(std::map<int, uint8_t> &fds) KTHROW(mkn::ram::tcp::Exception) override;
 
-  virtual bool receive(std::map<int, uint8_t> &fds, int const& fd) override;
+  virtual bool receive(std::map<int, uint8_t> &fds, int const &fd) override;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
                             int &e) override;
 
  public:
-  Server(const short &p, const mkn::kul::File &c, const mkn::kul::File &k, std::string const& cs = "")
+  Server(const short &p, const mkn::kul::File &c, const mkn::kul::File &k,
+         std::string const &cs = "")
       : mkn::ram::http::Server(p), crt(c), key(k), cs(cs) {}
-  Server(const mkn::kul::File &c, const mkn::kul::File &k, std::string const& cs = "")
+  Server(const mkn::kul::File &c, const mkn::kul::File &k, std::string const &cs = "")
       : mkn::ram::https::Server(443, c, k, cs) {}
   virtual ~Server() {
     if (s) stop();
@@ -109,7 +111,7 @@ class MultiServer : public mkn::ram::https::Server {
   mkn::kul::ChroncurrentThreadPool<> _acceptPool;
   mkn::kul::ChroncurrentThreadPool<> _workerPool;
 
-  void operateAccept(size_t const& threadID) {
+  void operateAccept(size_t const &threadID) {
     KUL_DBG_FUNC_ENTER
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
@@ -130,7 +132,7 @@ class MultiServer : public mkn::ram::https::Server {
     KEXCEPTION("SHOULD NOT HAPPEN");
   }
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const& fd, char *in, int const& read,
+  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
                             int &e) override {
     KUL_DBG_FUNC_ENTER
     _workerPool.async(
@@ -139,7 +141,7 @@ class MultiServer : public mkn::ram::https::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, int const& fd, char *in, int const& read,
+  void operateBuffer(std::map<int, uint8_t> *fds, int const &fd, char *in, int const &read,
                      int &e) {
     KUL_DBG_FUNC_ENTER
     mkn::ram::https::Server::handleBuffer(*fds, fd, in, read, e);
@@ -157,7 +159,7 @@ class MultiServer : public mkn::ram::https::Server {
 
  public:
   MultiServer(const short &p, const uint8_t &acceptThreads, const uint8_t &workerThreads,
-              const mkn::kul::File &c, const mkn::kul::File &k, std::string const& cs = "")
+              const mkn::kul::File &c, const mkn::kul::File &k, std::string const &cs = "")
       : mkn::ram::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
@@ -168,7 +170,7 @@ class MultiServer : public mkn::ram::https::Server {
     if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
   }
   MultiServer(const uint8_t &acceptThreads, const uint8_t &workerThreads, const mkn::kul::File &c,
-              const mkn::kul::File &k, std::string const& cs = "")
+              const mkn::kul::File &k, std::string const &cs = "")
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
@@ -229,13 +231,13 @@ class A1_1Request {
 
 class Requester {
  public:
-  static void send(std::string const& h, std::string const& req, uint16_t const& p,
+  static void send(std::string const &h, std::string const &req, uint16_t const &p,
                    std::stringstream &ss, SSL *ssl);
 };
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request {
  public:
-  _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
+  _1_1GetRequest(std::string const &host, std::string const &path = "", uint16_t const &port = 443)
       : http::_1_1GetRequest(host, path, port) {}
   virtual ~_1_1GetRequest() {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
@@ -244,7 +246,7 @@ using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request {
  public:
-  _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
+  _1_1PostRequest(std::string const &host, std::string const &path = "", uint16_t const &port = 443)
       : http::_1_1PostRequest(host, path, port) {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
 };

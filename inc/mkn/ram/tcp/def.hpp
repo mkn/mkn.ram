@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef _MKN_RAM_TCP_SESSION_TTL_
 #define _MKN_RAM_TCP_SESSION_TTL_ 600  // seconds
-#endif                             /* _MKN_RAM_TCP_SESSION_TTL_ */
+#endif                                 /* _MKN_RAM_TCP_SESSION_TTL_ */
 
 #ifndef _MKN_RAM_TCP_SESSION_CHECK_
 #define _MKN_RAM_TCP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
-#endif                                 /* _MKN_RAM_TCP_SESSION_CHECK_ */
+#endif                                     /* _MKN_RAM_TCP_SESSION_CHECK_ */
 
 #ifndef _MKN_RAM_TCP_READ_BUFFER_
 #define _MKN_RAM_TCP_READ_BUFFER_ 963210

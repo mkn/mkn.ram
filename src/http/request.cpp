@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ class RequestHeaders {
     return i;
   }
   mkn::kul::hash::map::S2S defaultHeaders(const mkn::ram::http::A1_1Request& r,
-                                     const std::string& body = "") const {
+                                          const std::string& body = "") const {
     mkn::kul::hash::map::S2S hs1;
     for (const auto& h : _hs)
       if (!r.header("Transfer-Encoding")) hs1.insert(h.first, h.second);

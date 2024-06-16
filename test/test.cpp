@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ class TestHTTPSServer : public mkn::ram::https::Server {
  public:
   TestHTTPSServer()
       : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
-                           mkn::kul::File("res/test/server.key")) {}
+                                mkn::kul::File("res/test/server.key")) {}
   friend class mkn::kul::Thread;
 };
 class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
@@ -46,11 +46,11 @@ class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
   HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::https::_1_1GetRequest(host, path, port) {}
 };
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   using namespace mkn::ram::http;
   {
     TestHTTPSServer serv;
-    serv.init().withResponse([](const A1_1Request &r) {
+    serv.init().withResponse([](const A1_1Request& r) {
       KLOG(NON) << mkn::kul::os::EOL() << r.toString();
       return _1_1Response{}.withBody("HELLO WORLD");
     });
@@ -61,8 +61,9 @@ int main(int argc, char *argv[]) {
     {
       HTTPS_Get get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
       KLOG(NON) << mkn::kul::os::EOL() << get.toString();
-      get.withResponse(
-             [](const mkn::ram::http::_1_1Response &r) { KLOG(INF) << mkn::kul::os::EOL() << r.toString(); })
+      get.withResponse([](const mkn::ram::http::_1_1Response& r) {
+           KLOG(INF) << mkn::kul::os::EOL() << r.toString();
+         })
           .send();
     }
     serv.stop();

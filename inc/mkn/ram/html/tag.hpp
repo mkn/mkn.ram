@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,11 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _MKN_RAM_HTML_TAG_HPP_
 #define _MKN_RAM_HTML_TAG_HPP_
 
+#include "mkn/kul/except.hpp"
 #include "mkn/kul/log.hpp"
 #include "mkn/kul/map.hpp"
-#include "mkn/kul/except.hpp"
 #include "mkn/kul/string.hpp"
-
 #include "mkn/ram/html/def.hpp"
 
 namespace mkn {
@@ -134,7 +133,8 @@ namespace tag {
 
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s) : mkn::kul::Exception(f, l, s) {}
+  Exception(const char* f, const uint16_t& l, const std::string& s)
+      : mkn::kul::Exception(f, l, s) {}
 };
 
 class Named : public Tag {

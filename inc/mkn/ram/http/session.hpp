@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2016, Philip Deegan.
+Copyright (c) 2024, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _MKN_RAM_HTTP_SESSION_HPP_
 #define _MKN_RAM_HTTP_SESSION_HPP_
 
-#include "mkn/ram/http.hpp"
-#include "mkn/ram/http/def.hpp"
 #include "mkn/kul/threads.hpp"
 #include "mkn/kul/time.hpp"
+#include "mkn/ram/http.hpp"
+#include "mkn/ram/http/def.hpp"
 
 namespace mkn {
 namespace ram {
