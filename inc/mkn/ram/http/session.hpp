@@ -45,7 +45,7 @@ class SessionServer;
 
 class Session {
  private:
-  static const constexpr std::time_t MAX = (std::numeric_limits<std::time_t>::max)();
+  static constexpr std::time_t const MAX = (std::numeric_limits<std::time_t>::max)();
   std::time_t c;
 
  public:
@@ -53,7 +53,7 @@ class Session {
   void refresh() {
     if (c != MAX) this->c = std::time(0);
   }
-  const bool expired() const { return c < (std::time(0) - _MKN_RAM_HTTP_SESSION_TTL_); }
+  bool const expired() const { return c < (std::time(0) - _MKN_RAM_HTTP_SESSION_TTL_); }
   void invalidate() { c = MAX; }
   template <class S>
   friend class SessionServer;
@@ -71,10 +71,10 @@ class SessionServer {
       {
         auto copy = sss;
         std::vector<std::string> erase;
-        for (const auto& p : copy)
+        for (auto const& p : copy)
           if (p.second->expired()) erase.push_back(p.first);
         mkn::kul::ScopeLock lock(mutex);
-        for (const std::string& e : erase) sss.erase(e);
+        for (std::string const& e : erase) sss.erase(e);
       }
     }
   }
@@ -84,14 +84,14 @@ class SessionServer {
     sss.setDeletedKey("DELETED");
     th1.run();
   }
-  S* get(const std::string& id) {
+  S* get(std::string const& id) {
     S* s = 0;
     mkn::kul::ScopeLock lock(mutex);
     if (sss.count(id)) s = (*sss.find(id)).second.get();
     if (s && !s->expired()) s->c -= 5;
     return s;
   }
-  bool has(const std::string& id) {
+  bool has(std::string const& id) {
     mkn::kul::ScopeLock lock(mutex);
     if (sss.count(id)) {
       S& s = *(*sss.find(id)).second.get();
@@ -99,13 +99,13 @@ class SessionServer {
     }
     return sss.count(id);
   }
-  S& add(const std::string& id, const std::shared_ptr<S>& s) {
+  S& add(std::string const& id, std::shared_ptr<S> const& s) {
     mkn::kul::ScopeLock lock(mutex);
     sss.insert(id, s);
     return *s.get();
   }
-  S& add(const std::string& id) { return add(id, std::make_shared<S>()); }
-  void refresh(const std::string& id) {
+  S& add(std::string const& id) { return add(id, std::make_shared<S>()); }
+  void refresh(std::string const& id) {
     S* s = 0;
     mkn::kul::ScopeLock lock(mutex);
     if (sss.count(id)) s = (*sss.find(id)).second.get();

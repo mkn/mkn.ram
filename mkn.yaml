@@ -66,7 +66,7 @@ profile:
   mod:
   - name: clang.format
     init:
-    style: file
-    types: cpp:cxx:cc:h:hpp
-    paths: .
-    args:  -D_MKN_RAM_INCLUDE_HTTPS_
+      style: file
+      types: cpp cxx cc h hpp
+      paths: .
+      args:  -D_MKN_RAM_INCLUDE_HTTPS_

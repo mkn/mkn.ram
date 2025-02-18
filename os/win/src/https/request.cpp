@@ -31,8 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef _MKN_RAM_INCLUDE_HTTPS_
 #include "mkn/ram/https.hpp"
 
-void mkn::ram::https::Requester::send(const std::string& h, const std::string& req,
-                                      const uint16_t& p, std::stringstream& ss, SSL* ssl) {
+void mkn::ram::https::Requester::send(std::string const& h, std::string const& req,
+                                      uint16_t const& p, std::stringstream& ss, SSL* ssl) {
   KUL_DBG_FUNC_ENTER {
     mkn::ram::tcp::Socket<char> sock;
     if (!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
@@ -68,7 +68,7 @@ void mkn::ram::https::_1_1GetRequest::send() KTHROW(mkn::ram::http::Exception) {
     auto rec(ss.str());
     mkn::ram::http::_1_1Response res(mkn::ram::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const mkn::kul::Exception& e) {
+  } catch (mkn::kul::Exception const& e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP GET failed with host: " + _host);
   }
@@ -83,7 +83,7 @@ void mkn::ram::https::_1_1PostRequest::send() KTHROW(mkn::ram::http::Exception) 
     auto rec(ss.str());
     mkn::ram::http::_1_1Response res(mkn::ram::http::_1_1Response::FROM_STRING(rec));
     handleResponse(res);
-  } catch (const mkn::kul::Exception& e) {
+  } catch (mkn::kul::Exception const& e) {
     KLOG(ERR) << e.debug();
     KEXCEPT(Exception, "HTTP POST failed with host: " + _host);
   }

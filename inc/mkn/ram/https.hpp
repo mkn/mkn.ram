@@ -38,7 +38,7 @@ namespace ram {
 namespace https {
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
+  Exception(char const* f, uint16_t const& l, std::string const& s)
       : mkn::kul::Exception(f, l, s) {}
 };
 }  // namespace https

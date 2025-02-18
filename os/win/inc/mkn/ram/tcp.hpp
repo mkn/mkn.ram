@@ -68,7 +68,7 @@ class Socket : public ASocket<T> {
   virtual ~Socket() {
     if (this->open) close();
   }
-  virtual bool connect(const std::string& host, const int16_t& port) override {
+  virtual bool connect(std::string const& host, int16_t const& port) override {
     KUL_DBG_FUNC_ENTER
     if (!CONNECT(*this, host, port)) return false;
     this->open = true;
@@ -88,18 +88,18 @@ class Socket : public ASocket<T> {
     }
     return o1;
   }
-  virtual size_t read(T* data, const size_t& len) {
+  virtual size_t read(T* data, size_t const& len) {
     bool more = false;
     return read(data, len, more);
   }
-  virtual size_t read(T* data, const size_t& len, bool& more) {
+  virtual size_t read(T* data, size_t const& len, bool& more) {
     KUL_DBG_FUNC_ENTER
 
     int16_t d = recv(ConnectSocket, data, len, 0);
 
     return d;
   }
-  virtual size_t write(const T* data, const size_t& len) override {
+  virtual size_t write(T const* data, size_t const& len) override {
     iResult = send(ConnectSocket, data, len, 0);
     if (iResult == SOCKET_ERROR) KEXCEPTION("Socket send failed with error: ") << WSAGetLastError();
     return iResult;
@@ -108,7 +108,7 @@ class Socket : public ASocket<T> {
   SOCKET socket() { return ConnectSocket; }
 
  protected:
-  static bool CONNECT(Socket& sck, const std::string& host, const int16_t& port) {
+  static bool CONNECT(Socket& sck, std::string const& host, int16_t const& port) {
     KUL_DBG_FUNC_ENTER
     int16_t e = 0;
 
@@ -173,18 +173,18 @@ class SocketServer : public ASocketServer<T> {
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr[_MKN_RAM_TCP_MAX_CLIENT_];
 
-  virtual bool handle(T* const in, const size_t& inLen, T* const out, size_t& outLen) {
+  virtual bool handle(T* const in, size_t const& inLen, T* const out, size_t& outLen) {
     return true;
   }
 
-  virtual int readFrom(const int& fd, T* in, int opts = 0) {
+  virtual int readFrom(int const& fd, T* in, int opts = 0) {
     return ::recv(m_fds[fd].fd, in, _MKN_RAM_TCP_READ_BUFFER_ - 1, opts);
   }
-  virtual int writeTo(const int& fd, const T* const out, size_t size) {
+  virtual int writeTo(int const& fd, T const* const out, size_t size) {
     return ::send(m_fds[fd].fd, out, size, 0);
   }
 
-  virtual bool receive(std::map<int, uint8_t>& fds, const int& fd) {
+  virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
     KUL_DBG_FUNC_ENTER
     T in[_MKN_RAM_TCP_READ_BUFFER_];
     ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
@@ -214,7 +214,7 @@ class SocketServer : public ASocketServer<T> {
 
   void closeFDsNoCompress(std::map<int, uint8_t>& fds, std::vector<int>& del) {
     KUL_DBG_FUNC_ENTER;
-    for (const auto& fd : del) {
+    for (auto const& fd : del) {
       ::closesocket(m_fds[fd].fd);
       m_fds[fd].fd = -1;
       fds[fd] = 0;
@@ -233,7 +233,7 @@ class SocketServer : public ASocketServer<T> {
     // if(ret == 0) return;
     int newlisock = -1;
     ;
-    for (const auto& pair : fds) {
+    for (auto const& pair : fds) {
       auto& i = pair.first;
       if (pair.second == 1) continue;
       if (m_fds[i].revents == 0) continue;
@@ -257,15 +257,15 @@ class SocketServer : public ASocketServer<T> {
       }
     }
     std::vector<int> del;
-    for (const auto& pair : fds)
+    for (auto const& pair : fds)
       if (pair.second == 1 && receive(fds, pair.first)) del.push_back(pair.first);
     if (del.size()) closeFDs(fds, del);
   }
 
-  virtual SOCKET accept(const int& fd) {
+  virtual SOCKET accept(int const& fd) {
     return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL, NULL);
   }
-  virtual void validAccept(std::map<int, uint8_t>& fds, const int& newlisock, const int& nfd) {
+  virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
     KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
@@ -284,7 +284,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
  public:
-  SocketServer(const uint16_t& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
+  SocketServer(uint16_t const& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
     // if(_bind) bind(__MKN_RAM_TCP_BIND_SOCKTOPTS__);
   }
   void freeaddrinfo() {
@@ -341,9 +341,9 @@ class SocketServer : public ASocketServer<T> {
     for (int i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
     try {
       while (s) loop(fds);
-    } catch (const mkn::ram::tcp::Exception& e1) {
+    } catch (mkn::ram::tcp::Exception const& e1) {
       KERR << e1.stack();
-    } catch (const std::exception& e1) {
+    } catch (std::exception const& e1) {
       KERR << e1.what();
     } catch (...) {
       KERR << "Loop Exception caught";

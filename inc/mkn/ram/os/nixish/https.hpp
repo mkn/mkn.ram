@@ -77,30 +77,30 @@ namespace https {
 
 class Server : public mkn::ram::http::Server {
  protected:
-  X509 *cc = {0};
-  SSL *ssl_clients[_MKN_RAM_TCP_MAX_CLIENT_] = {0};
-  SSL_CTX *ctx = {0};
+  X509* cc = {0};
+  SSL* ssl_clients[_MKN_RAM_TCP_MAX_CLIENT_] = {0};
+  SSL_CTX* ctx = {0};
   mkn::kul::File crt, key;
-  const std::string cs;
+  std::string const cs;
 
-  virtual void loop(std::map<int, uint8_t> &fds) KTHROW(mkn::ram::tcp::Exception) override;
+  virtual void loop(std::map<int, uint8_t>& fds) KTHROW(mkn::ram::tcp::Exception) override;
 
-  virtual bool receive(std::map<int, uint8_t> &fds, int const &fd) override;
+  virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
-                            int &e) override;
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
+                            int& e) override;
 
  public:
-  Server(const short &p, const mkn::kul::File &c, const mkn::kul::File &k,
-         std::string const &cs = "")
+  Server(short const& p, mkn::kul::File const& c, mkn::kul::File const& k,
+         std::string const& cs = "")
       : mkn::ram::http::Server(p), crt(c), key(k), cs(cs) {}
-  Server(const mkn::kul::File &c, const mkn::kul::File &k, std::string const &cs = "")
+  Server(mkn::kul::File const& c, mkn::kul::File const& k, std::string const& cs = "")
       : mkn::ram::https::Server(443, c, k, cs) {}
   virtual ~Server() {
     if (s) stop();
   }
-  void setChain(const mkn::kul::File &f);
-  Server &init();
+  void setChain(mkn::kul::File const& f);
+  Server& init();
   virtual void stop() override;
 };
 
@@ -111,7 +111,7 @@ class MultiServer : public mkn::ram::https::Server {
   mkn::kul::ChroncurrentThreadPool<> _acceptPool;
   mkn::kul::ChroncurrentThreadPool<> _workerPool;
 
-  void operateAccept(size_t const &threadID) {
+  void operateAccept(size_t const& threadID) {
     KUL_DBG_FUNC_ENTER
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
@@ -121,9 +121,9 @@ class MultiServer : public mkn::ram::https::Server {
         // mkn::kul::ScopeLock lock(m_mutex);
         std::lock_guard<std::mutex> lock(m_mutex);
         loop(fds);
-      } catch (const mkn::ram::tcp::Exception &e1) {
+      } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
-      } catch (const std::exception &e1) {
+      } catch (std::exception const& e1) {
         KERR << e1.what();
       } catch (...) {
         KERR << "Loop Exception caught";
@@ -132,8 +132,8 @@ class MultiServer : public mkn::ram::https::Server {
     KEXCEPTION("SHOULD NOT HAPPEN");
   }
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
-                            int &e) override {
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
+                            int& e) override {
     KUL_DBG_FUNC_ENTER
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
@@ -141,12 +141,12 @@ class MultiServer : public mkn::ram::https::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, int const &fd, char *in, int const &read,
-                     int &e) {
+  void operateBuffer(std::map<int, uint8_t>* fds, int const& fd, char* in, int const& read,
+                     int& e) {
     KUL_DBG_FUNC_ENTER
     mkn::ram::https::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
-      getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen);
+      getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);
       KOUT(DBG) << "DISCO "
                 << ", is : " << inet_ntoa(cli_addr[fd].sin_addr)
                 << ", port : " << ntohs(cli_addr[fd].sin_port);
@@ -155,11 +155,11 @@ class MultiServer : public mkn::ram::https::Server {
       closeFDs(*fds, del);
     }
   }
-  virtual void errorBuffer(const mkn::kul::Exception &e) { KERR << e.stack(); };
+  virtual void errorBuffer(mkn::kul::Exception const& e) { KERR << e.stack(); };
 
  public:
-  MultiServer(const short &p, const uint8_t &acceptThreads, const uint8_t &workerThreads,
-              const mkn::kul::File &c, const mkn::kul::File &k, std::string const &cs = "")
+  MultiServer(short const& p, uint8_t const& acceptThreads, uint8_t const& workerThreads,
+              mkn::kul::File const& c, mkn::kul::File const& k, std::string const& cs = "")
       : mkn::ram::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
@@ -169,8 +169,8 @@ class MultiServer : public mkn::ram::https::Server {
       KEXCEPTION("MultiServer cannot have less than one threads for accepting");
     if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
   }
-  MultiServer(const uint8_t &acceptThreads, const uint8_t &workerThreads, const mkn::kul::File &c,
-              const mkn::kul::File &k, std::string const &cs = "")
+  MultiServer(uint8_t const& acceptThreads, uint8_t const& workerThreads, mkn::kul::File const& c,
+              mkn::kul::File const& k, std::string const& cs = "")
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
@@ -193,7 +193,7 @@ class MultiServer : public mkn::ram::https::Server {
     _acceptPool.interrupt();
     _workerPool.interrupt();
   }
-  const std::exception_ptr &exception() { return _acceptPool.exception(); }
+  std::exception_ptr const& exception() { return _acceptPool.exception(); }
 };
 
 class A1_1Request;
@@ -203,7 +203,7 @@ class SSLReqHelper {
   friend class Requester;
 
  private:
-  SSL_CTX *ctx;
+  SSL_CTX* ctx;
   SSLReqHelper() {
     SSL_library_init();
     SSL_load_error_strings();
@@ -216,7 +216,7 @@ class SSLReqHelper {
     }
   }
   ~SSLReqHelper() { SSL_CTX_free(ctx); }
-  static SSLReqHelper &INSTANCE() {
+  static SSLReqHelper& INSTANCE() {
     static SSLReqHelper i;
     return i;
   }
@@ -224,20 +224,20 @@ class SSLReqHelper {
 
 class A1_1Request {
  protected:
-  SSL *ssl = {0};
+  SSL* ssl = {0};
   A1_1Request() : ssl(SSL_new(SSLReqHelper::INSTANCE().ctx)) {}
   ~A1_1Request() { SSL_free(ssl); }
 };
 
 class Requester {
  public:
-  static void send(std::string const &h, std::string const &req, uint16_t const &p,
-                   std::stringstream &ss, SSL *ssl);
+  static void send(std::string const& h, std::string const& req, uint16_t const& p,
+                   std::stringstream& ss, SSL* ssl);
 };
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request {
  public:
-  _1_1GetRequest(std::string const &host, std::string const &path = "", uint16_t const &port = 443)
+  _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1GetRequest(host, path, port) {}
   virtual ~_1_1GetRequest() {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
@@ -246,7 +246,7 @@ using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request {
  public:
-  _1_1PostRequest(std::string const &host, std::string const &path = "", uint16_t const &port = 443)
+  _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1PostRequest(host, path, port) {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
 };

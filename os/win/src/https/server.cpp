@@ -43,7 +43,7 @@ void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp:
   if (ret == 0) return;
   int newlisock = -1;
   ;
-  for (const auto& pair : fds) {
+  for (auto const& pair : fds) {
     auto& i = pair.first;
     if (pair.second == 1) continue;
     if (m_fds[i].revents == 0) continue;
@@ -89,13 +89,13 @@ void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp:
     }
   }
   std::vector<int> del;
-  for (const auto& pair : fds) {
+  for (auto const& pair : fds) {
     if (pair.second == 1 && receive(fds, pair.first)) del.push_back(pair.first);
   }
   if (del.size()) closeFDs(fds, del);
 }
 
-void mkn::ram::https::Server::setChain(const mkn::kul::File& f) {
+void mkn::ram::https::Server::setChain(mkn::kul::File const& f) {
   if (!f) KEXCEPTION("HTTPS Server chain file does not exist: " + f.full());
   if (SSL_CTX_use_certificate_chain_file(ctx, f.mini().c_str()) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
@@ -136,8 +136,8 @@ void mkn::ram::https::Server::stop() {
   mkn::ram::http::Server::stop();
 }
 
-void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
-                                           const int& read, int& e) {
+void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in,
+                                           int const& read, int& e) {
   in[read] = '\0';
   std::string res;
   try {
@@ -145,23 +145,23 @@ void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, const in
     std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
     std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
     bool f = 0;
-    for (const auto& ch : allowed) {
+    for (auto const& ch : allowed) {
       f = c.find(ch) != std::string::npos;
       if (f) break;
     }
     if (!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
     std::shared_ptr<mkn::ram::http::A1_1Request> req = handleRequest(fd, s, res);
-    const mkn::ram::http::_1_1Response& rs(respond(*req.get()));
+    mkn::ram::http::_1_1Response const& rs(respond(*req.get()));
     std::string ret(rs.toString());
     e = ::SSL_write(ssl_clients[m_fds[fd].fd], ret.c_str(), ret.length());
-  } catch (const mkn::ram::http::Exception& e1) {
+  } catch (mkn::ram::http::Exception const& e1) {
     KERR << e1.stack();
     e = -1;
   }
   fds[fd] = 1;
 }
 
-bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   KUL_DBG_FUNC_ENTER
   char* in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
