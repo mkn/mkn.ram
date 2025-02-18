@@ -1,10 +1,16 @@
 name: macos-latest
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+    - cron: "0 12 1 * *"
 
 jobs:
   build:
@@ -15,7 +21,8 @@ jobs:
     - name: "Build/Test"
       env:
         MKN_LIB_LINK_LIB: 1
-        SSL_DIR: /opt/homebrew/Cellar/openssl@3/3.3.1
       run: |
+        set -ex
+        export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
         curl -Lo mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++17 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
