@@ -75,25 +75,25 @@ class Server : public mkn::ram::http::Server {
   SSL* ssl_clients[_MKN_RAM_TCP_MAX_CLIENT_] = {0};
   SSL_CTX* ctx = {0};
   mkn::kul::File crt, key;
-  const std::string cs;
+  std::string const cs;
 
   virtual KUL_PUBLISH void loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) override;
 
-  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
+  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
-  virtual KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
-                                        const int& read, int& e);
+  virtual KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in,
+                                        int const& read, int& e);
 
  public:
-  Server(const short& p, const mkn::kul::File& c, const mkn::kul::File& k,
-         const std::string& cs = "")
+  Server(short const& p, mkn::kul::File const& c, mkn::kul::File const& k,
+         std::string const& cs = "")
       : mkn::ram::http::Server(p), crt(c), key(k), cs(cs) {}
-  Server(const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
+  Server(mkn::kul::File const& c, mkn::kul::File const& k, std::string const& cs = "")
       : mkn::ram::https::Server(443, c, k, cs) {}
   virtual ~Server() {
     if (s) stop();
   }
-  KUL_PUBLISH void setChain(const mkn::kul::File& f);
+  KUL_PUBLISH void setChain(mkn::kul::File const& f);
   KUL_PUBLISH Server& init();
   KUL_PUBLISH virtual void stop() override;
 };
@@ -105,7 +105,7 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
   ChroncurrentThreadPool<> _acceptPool;
   ChroncurrentThreadPool<> _workerPool;
 
-  void operateAccept(const size_t& threadID) {
+  void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
@@ -113,16 +113,16 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
         loop(fds);
-      } catch (const mkn::ram::tcp::Exception& e1) {
+      } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
-      } catch (const std::exception& e1) {
+      } catch (std::exception const& e1) {
         KERR << e1.what();
       } catch (...) {
         KERR << "Loop Exception caught";
       }
   }
 
-  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
                             int& e) override {
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
@@ -130,7 +130,7 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, char* in, const int& read,
+  void operateBuffer(std::map<int, uint8_t>* fds, int const& fd, char* in, int const& read,
                      int& e) {
     mkn::ram::https::Server::handleBuffer(*fds, fd, in, read, e);
     if (e < 0) {
@@ -138,11 +138,11 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
       closeFDs(*fds, del);
     }
   }
-  virtual void errorBuffer(const mkn::kul::Exception& e) { KERR << e.stack(); };
+  virtual void errorBuffer(mkn::kul::Exception const& e) { KERR << e.stack(); };
 
  public:
-  MultiServer(const short& p, const uint8_t& acceptThreads, const uint8_t& workerThreads,
-              const mkn::kul::File& c, const mkn::kul::File& k, const std::string& cs = "")
+  MultiServer(short const& p, uint8_t const& acceptThreads, uint8_t const& workerThreads,
+              mkn::kul::File const& c, mkn::kul::File const& k, std::string const& cs = "")
       : mkn::ram::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
@@ -152,8 +152,8 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
       KEXCEPTION("MultiServer cannot have less than one threads for accepting");
     if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
   }
-  MultiServer(const uint8_t& acceptThreads, const uint8_t& workerThreads, const mkn::kul::File& c,
-              const mkn::kul::File& k, const std::string& cs = "")
+  MultiServer(uint8_t const& acceptThreads, uint8_t const& workerThreads, mkn::kul::File const& c,
+              mkn::kul::File const& k, std::string const& cs = "")
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
@@ -176,7 +176,7 @@ class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
     _acceptPool.interrupt();
     _workerPool.interrupt();
   }
-  const std::exception_ptr& exception() { return _acceptPool.exception(); }
+  std::exception_ptr const& exception() { return _acceptPool.exception(); }
 };
 
 class A1_1Request;
@@ -214,13 +214,13 @@ class A1_1Request {
 
 class Requester {
  public:
-  static void send(const std::string& h, const std::string& req, const uint16_t& p,
+  static void send(std::string const& h, std::string const& req, uint16_t const& p,
                    std::stringstream& ss, SSL* ssl);
 };
 
 class _1_1GetRequest : public http::_1_1GetRequest, https::A1_1Request {
  public:
-  _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443)
+  _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1GetRequest(host, path, port) {}
   virtual ~_1_1GetRequest() {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
@@ -229,7 +229,7 @@ using Get = _1_1GetRequest;
 
 class _1_1PostRequest : public http::_1_1PostRequest, https::A1_1Request {
  public:
-  _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 443)
+  _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 443)
       : http::_1_1PostRequest(host, path, port) {}
   virtual void send() KTHROW(mkn::ram::http::Exception) override;
 };

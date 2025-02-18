@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
   using namespace mkn::ram::http;
   {
     TestHTTPSServer serv;
-    serv.init().withResponse([](const A1_1Request& r) {
+    serv.init().withResponse([](A1_1Request const& r) {
       KLOG(NON) << mkn::kul::os::EOL() << r.toString();
       return _1_1Response{}.withBody("HELLO WORLD");
     });
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     {
       HTTPS_Get get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
       KLOG(NON) << mkn::kul::os::EOL() << get.toString();
-      get.withResponse([](const mkn::ram::http::_1_1Response& r) {
+      get.withResponse([](mkn::ram::http::_1_1Response const& r) {
            KLOG(INF) << mkn::kul::os::EOL() << r.toString();
          })
           .send();

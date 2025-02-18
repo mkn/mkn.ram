@@ -52,7 +52,7 @@ void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
   m_workerPool.start();
 }
 
-bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   KUL_DBG_FUNC_ENTER
   uint8_t* in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
@@ -71,8 +71,8 @@ bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, const in
   return false;
 }
 
-void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int& fd,
-                                         const uint8_t* out, const size_t size) {
+void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, int const& fd,
+                                         uint8_t const* out, size_t const size) {
   KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
   receive(fds, fd);
@@ -81,18 +81,18 @@ void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, const int&
 }
 
 void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
-                                               const int& inLen, const int& fd)
+                                               int const& inLen, int const& fd)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
   if (inLen < 4) KEXCEPTION("FCGI cannot parse input too short");
 
-  const uint8_t& type = in[1];
+  uint8_t const& type = in[1];
   if (type == FCGI_BEGIN_REQUEST) {
     uint16_t size = (in[5] | in[4] << 8);
     auto& msg = createFCGI_Message(fd);
     msg.rid = (in[3] | in[2] << 8);
-    msg.finish([&](const FCGI_Message& msg) {
+    msg.finish([&](FCGI_Message const& msg) {
       uint8_t* out = getOrCreateBufferFor(fd);
       size_t size = FORM_RESPONSE(msg, out);
       write(fds, fd, out, size);
@@ -106,13 +106,13 @@ void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint
 }
 
 void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
-                                         const int& inLen, const int& fd, size_t pos)
+                                         int const& inLen, int const& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
   KUL_DBG_FUNC_ENTER
 
   if ((inLen - pos) < 4) KEXCEPTION("FCGI cannot parse input too short");
 
-  const uint8_t& type = in[pos + 1];
+  uint8_t const& type = in[pos + 1];
   if (type == FCGI_PARAMS) {
     uint16_t size = (in[pos + 5] | in[pos + 4] << 8);
     uint8_t pad = in[pos + 6];
@@ -136,7 +136,7 @@ void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* c
   }
 }
 
-size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out) {
+size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(FCGI_Message const& msg, uint8_t* out) {
   KUL_DBG_FUNC_ENTER
   bzero(out, _MKN_RAM_TCP_READ_BUFFER_);
 
@@ -145,9 +145,9 @@ size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(const FCGI_Message& msg, uint
   out[pos++] = 6;
   uint8_t rid[2];
   {
-    const void* vp = &msg.rid;
-    rid[0] = *static_cast<const uint8_t*>(vp);
-    rid[1] = *static_cast<const uint8_t*>(vp + sizeof(uint8_t));
+    void const* vp = &msg.rid;
+    rid[0] = *static_cast<uint8_t const*>(vp);
+    rid[1] = *static_cast<uint8_t const*>(vp + sizeof(uint8_t));
 
     out[pos++] = rid[1];
     out[pos++] = rid[0];

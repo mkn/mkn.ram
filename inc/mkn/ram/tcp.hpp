@@ -39,7 +39,7 @@ namespace tcp {
 
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
+  Exception(char const* f, uint16_t const& l, std::string const& s)
       : mkn::kul::Exception(f, l, s) {}
 };
 
@@ -47,10 +47,10 @@ template <class T = uint8_t>
 class ASocket {
  public:
   virtual ~ASocket() {}
-  virtual bool connect(const std::string& host, const int16_t& port) = 0;
+  virtual bool connect(std::string const& host, int16_t const& port) = 0;
   virtual bool close() = 0;
-  virtual size_t read(T* data, const size_t& len, bool& more) KTHROW(mkn::ram::tcp::Exception) = 0;
-  virtual size_t write(const T* data, const size_t& len) = 0;
+  virtual size_t read(T* data, size_t const& len, bool& more) KTHROW(mkn::ram::tcp::Exception) = 0;
+  virtual size_t write(T const* data, size_t const& len) = 0;
 
  protected:
   bool open = 0;
@@ -62,14 +62,14 @@ class ASocketServer {
   virtual ~ASocketServer() {}
   virtual void start() KTHROW(mkn::ram::tcp::Exception) = 0;
   uint64_t up() const { return s - mkn::kul::Now::MILLIS(); }
-  const uint16_t& port() const { return p; }
+  uint16_t const& port() const { return p; }
   bool started() const { return s; }
 
  protected:
-  ASocketServer(const uint16_t& p) : p(p) {}
+  ASocketServer(uint16_t const& p) : p(p) {}
 
-  virtual void onConnect(const char* /*ip*/, const uint16_t& /*port*/) {}
-  virtual void onDisconnect(const char* /*ip*/, const uint16_t& /*port*/) {}
+  virtual void onConnect(char const* /*ip*/, uint16_t const& /*port*/) {}
+  virtual void onDisconnect(char const* /*ip*/, uint16_t const& /*port*/) {}
 
  protected:
   uint16_t p;

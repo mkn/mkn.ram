@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 
 std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(
-    const int& fd, const std::string& b, std::string& path) {
+    int const& fd, std::string const& b, std::string& path) {
   KUL_DBG_FUNC_ENTER
   std::string a;
   std::shared_ptr<mkn::ram::http::A1_1Request> req;
@@ -79,7 +79,7 @@ std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequ
         mkn::kul::String::TRIM(v);
         if (*v.rbegin() == '\r') v.pop_back();
         if (bits[0] == "Cookie") {
-          for (const auto& coo : mkn::kul::String::SPLIT(v, ';')) {
+          for (auto const& coo : mkn::kul::String::SPLIT(v, ';')) {
             if (coo.find("=") == std::string::npos) {
               req->cookie(coo, "");
               KOUT(ERR) << "Cookie without equals sign, skipping";
@@ -103,8 +103,8 @@ std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequ
   return req;
 }
 
-void mkn::ram::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in,
-                                           const int& read, int& e) {
+void mkn::ram::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in,
+                                           int const& read, int& e) {
   KUL_DBG_FUNC_ENTER;
   in[read] = '\0';
   std::string res;
@@ -113,17 +113,17 @@ void mkn::ram::http::AServer::handleBuffer(std::map<int, uint8_t>& fds, const in
     std::string c(s.substr(0, (s.size() > 9) ? 10 : s.size()));
     std::vector<char> allowed = {'D', 'G', 'P', '/', 'H'};
     bool f = 0;
-    for (const auto& ch : allowed) {
+    for (auto const& ch : allowed) {
       f = c.find(ch) != std::string::npos;
       if (f) break;
     }
     if (!f) KEXCEPTION("Logic error encountered, probably https attempt on http port");
     std::shared_ptr<A1_1Request> req = handleRequest(fd, s, res);
-    const _1_1Response& rs(respond(*req.get()));
+    _1_1Response const& rs(respond(*req.get()));
     std::string ret(rs.toString());
     writeTo(fd, ret.c_str(), ret.length());
     e = 0;
-  } catch (const mkn::ram::http::Exception& e1) {
+  } catch (mkn::ram::http::Exception const& e1) {
     KLOG(ERR) << e1.stack();
     e = -1;
   }

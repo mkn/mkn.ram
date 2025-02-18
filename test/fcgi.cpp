@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "mkn/kul/signal.hpp"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   mkn::kul::Signal sig;
   try {
     mkn::ram::asio::fcgi::Server s(5863, 4, 8);
@@ -44,9 +44,9 @@ int main(int argc, char *argv[]) {
       exit(2);
     });
     s.join();
-  } catch (const mkn::kul::Exception &e) {
+  } catch (mkn::kul::Exception const& e) {
     KERR << e.stack();
-  } catch (const std::exception &e) {
+  } catch (std::exception const& e) {
     KERR << e.what();
   } catch (...) {
     KERR << "UNKNOWN EXCEPTION CAUGHT";

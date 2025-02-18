@@ -48,16 +48,16 @@ class Server : public mkn::ram::http::AServer {
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
-  virtual char *getOrCreateBufferFor(int const &fd) {
+  virtual char* getOrCreateBufferFor(int const& fd) {
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<char[]>(new char[fdSize])));
     return inBuffers[fd].get();
   }
 
-  virtual bool receive(std::map<int, uint8_t> &fds, int const &fd) override;
+  virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
  public:
-  Server(const short &p = 80) : AServer(p) {}
+  Server(short const& p = 80) : AServer(p) {}
   virtual ~Server() {}
 };
 
@@ -68,25 +68,25 @@ class MultiServer : public mkn::ram::http::Server {
   ConcurrentThreadPool<> _acceptPool;
   ConcurrentThreadPool<> _workerPool;
 
-  virtual void handleBuffer(std::map<int, uint8_t> &fds, int const &fd, char *in, int const &read,
-                            int &e) override {
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
+                            int& e) override {
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
         std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
     e = 1;
   }
 
-  void operateBuffer(std::map<int, uint8_t> *fds, int const &fd, char *in, int const &read,
-                     int &e) {
+  void operateBuffer(std::map<int, uint8_t>* fds, int const& fd, char* in, int const& read,
+                     int& e) {
     mkn::ram::http::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
       std::vector<int> del{fd};
       closeFDs(*fds, del);
     }
   }
-  virtual void errorBuffer(const mkn::kul::Exception &e) { KERR << e.stack(); };
+  virtual void errorBuffer(mkn::kul::Exception const& e) { KERR << e.stack(); };
 
-  void operateAccept(size_t const &threadID) {
+  void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
@@ -94,23 +94,23 @@ class MultiServer : public mkn::ram::http::Server {
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
         loop(fds);
-      } catch (const mkn::ram::tcp::Exception &e1) {
+      } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
-      } catch (const std::exception &e1) {
+      } catch (std::exception const& e1) {
         KERR << e1.what();
       } catch (...) {
         KERR << "Loop Exception caught";
       }
   }
 
-  MultiServer(const MultiServer &) = delete;
-  MultiServer(const MultiServer &&) = delete;
-  MultiServer &operator=(const MultiServer &) = delete;
-  MultiServer &operator=(const MultiServer &&) = delete;
+  MultiServer(MultiServer const&) = delete;
+  MultiServer(MultiServer const&&) = delete;
+  MultiServer& operator=(MultiServer const&) = delete;
+  MultiServer& operator=(MultiServer const&&) = delete;
 
  public:
-  MultiServer(const short &p = 80, const uint8_t &acceptThreads = 1,
-              const uint8_t &workerThreads = 1)
+  MultiServer(short const& p = 80, uint8_t const& acceptThreads = 1,
+              uint8_t const& workerThreads = 1)
       : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
   ~MultiServer() { KUL_DBG_FUNC_ENTER }
 
@@ -129,7 +129,7 @@ class MultiServer : public mkn::ram::http::Server {
     _acceptPool.interrupt();
     _workerPool.interrupt();
   }
-  const std::exception_ptr &exception() { return _acceptPool.exception(); }
+  std::exception_ptr const& exception() { return _acceptPool.exception(); }
 };
 }  // namespace http
 }  // namespace ram

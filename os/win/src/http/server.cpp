@@ -30,7 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
 
-bool mkn::ram::http::Server::receive(std::map<int, uint8_t>& fds, const int& fd) {
+bool mkn::ram::http::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   KUL_DBG_FUNC_ENTER;
   char* in = getOrCreateBufferFor(fd);
   ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);

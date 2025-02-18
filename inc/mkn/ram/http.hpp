@@ -47,7 +47,7 @@ typedef std::unordered_map<std::string, std::string> Headers;
 
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
+  Exception(char const* f, uint16_t const& l, std::string const& s)
       : mkn::kul::Exception(f, l, s) {}
 };
 
@@ -57,23 +57,23 @@ class Cookie {
   std::string d, p, v, x;
 
  public:
-  Cookie(const std::string& v) : v(v) {}
-  Cookie& domain(const std::string& d) {
+  Cookie(std::string const& v) : v(v) {}
+  Cookie& domain(std::string const& d) {
     this->d = d;
     return *this;
   }
-  const std::string& domain() const { return d; }
-  Cookie& path(const std::string& p) {
+  std::string const& domain() const { return d; }
+  Cookie& path(std::string const& p) {
     this->p = p;
     return *this;
   }
-  const std::string& expires() const { return x; }
-  Cookie& expires(const std::string& x) {
+  std::string const& expires() const { return x; }
+  Cookie& expires(std::string const& x) {
     this->x = x;
     return *this;
   }
-  const std::string& path() const { return p; }
-  const std::string& value() const { return v; }
+  std::string const& path() const { return p; }
+  std::string const& value() const { return v; }
   Cookie& httpOnly(bool h) {
     this->h = h;
     return *this;
@@ -99,11 +99,11 @@ class Message {
   std::string _b = "";
 
  public:
-  void header(const std::string& k, const std::string& v) { this->_hs[k] = v; }
-  const Headers& headers() const { return _hs; }
-  void body(const std::string& b) { this->_b = b; }
-  const std::string& body() const { return _b; }
-  bool header(const std::string& s) const { return _hs.count(s); }
+  void header(std::string const& k, std::string const& v) { this->_hs[k] = v; }
+  Headers const& headers() const { return _hs; }
+  void body(std::string const& b) { this->_b = b; }
+  std::string const& body() const { return _b; }
+  bool header(std::string const& s) const { return _hs.count(s); }
 };
 
 class KUL_PUBLISH _1_1Response : public Message {
@@ -115,27 +115,27 @@ class KUL_PUBLISH _1_1Response : public Message {
 
  public:
   _1_1Response() {}
-  _1_1Response(const std::string& b) { body(b); }
+  _1_1Response(std::string const& b) { body(b); }
   virtual ~_1_1Response() {}
-  void cookie(const std::string& k, const Cookie& c) { cs.insert(k, c); }
-  const mkn::kul::hash::map::S2T<Cookie>& cookies() const { return cs; }
-  const std::string& reason() const { return r; }
-  void reason(const std::string& r) { this->r = r; }
-  const uint16_t& status() const { return _s; }
-  void status(const uint16_t& s) { this->_s = s; }
+  void cookie(std::string const& k, Cookie const& c) { cs.insert(k, c); }
+  mkn::kul::hash::map::S2T<Cookie> const& cookies() const { return cs; }
+  std::string const& reason() const { return r; }
+  void reason(std::string const& r) { this->r = r; }
+  uint16_t const& status() const { return _s; }
+  void status(uint16_t const& s) { this->_s = s; }
   virtual std::string version() const { return "HTTP/1.1"; }
   virtual std::string toString() const;
-  friend std::ostream& operator<<(std::ostream&, const _1_1Response&);
+  friend std::ostream& operator<<(std::ostream&, _1_1Response const&);
 
-  _1_1Response& withHeaders(const Headers& heads) {
-    for (const auto& p : heads) header(p.first, p.second);
+  _1_1Response& withHeaders(Headers const& heads) {
+    for (auto const& p : heads) header(p.first, p.second);
     return *this;
   }
-  _1_1Response& withCookies(const Cookies& cooks) {
-    for (const auto& p : cooks) cookie(p.first, p.second);
+  _1_1Response& withCookies(Cookies const& cooks) {
+    for (auto const& p : cooks) cookie(p.first, p.second);
     return *this;
   }
-  _1_1Response& withBody(const std::string& b) {
+  _1_1Response& withBody(std::string const& b) {
     body(b);
     return *this;
   }
@@ -150,7 +150,7 @@ class KUL_PUBLISH _1_1Response : public Message {
   static _1_1Response FROM_STRING(std::string&);
 };
 using Response = _1_1Response;
-inline std::ostream& operator<<(std::ostream& s, const _1_1Response& r) {
+inline std::ostream& operator<<(std::ostream& s, _1_1Response const& r) {
   return s << r.toString();
 }
 
@@ -159,9 +159,9 @@ class KUL_PUBLISH A1_1Request : public Message {
   uint16_t _port;
   std::string _ip, _host, _path;
   mkn::kul::hash::map::S2S cs, atts;
-  std::function<void(const _1_1Response&)> m_func;
+  std::function<void(_1_1Response const&)> m_func;
 
-  virtual void handleResponse(const _1_1Response& s) {
+  virtual void handleResponse(_1_1Response const& s) {
     if (m_func)
       m_func(s);
     else
@@ -169,38 +169,38 @@ class KUL_PUBLISH A1_1Request : public Message {
   }
 
  public:
-  A1_1Request(const std::string& host, const std::string& path, const uint16_t& port,
-              const std::string& ip)
+  A1_1Request(std::string const& host, std::string const& path, uint16_t const& port,
+              std::string const& ip)
       : _port(port), _ip(ip), _host(host), _path(path) {}
   virtual ~A1_1Request() {}
   virtual std::string method() const = 0;
   virtual std::string toString() const = 0;
-  void cookie(const std::string& k, const std::string& v) { this->cs.insert(k, v); }
-  const mkn::kul::hash::map::S2S& cookies() const { return cs; }
-  A1_1Request& attribute(const std::string& k, const std::string& v) {
+  void cookie(std::string const& k, std::string const& v) { this->cs.insert(k, v); }
+  mkn::kul::hash::map::S2S const& cookies() const { return cs; }
+  A1_1Request& attribute(std::string const& k, std::string const& v) {
     atts[k] = v;
     return *this;
   }
-  const mkn::kul::hash::map::S2S& attributes() const { return atts; }
+  mkn::kul::hash::map::S2S const& attributes() const { return atts; }
   virtual void send() KTHROW(mkn::ram::http::Exception);
-  const std::string& host() const { return _host; }
-  const std::string& path() const { return _path; }
-  const std::string& ip() const { return _ip; }
-  const uint16_t& port() const { return _port; }
+  std::string const& host() const { return _host; }
+  std::string const& path() const { return _path; }
+  std::string const& ip() const { return _ip; }
+  uint16_t const& port() const { return _port; }
   virtual std::string version() const { return "HTTP/1.1"; }
-  A1_1Request& withResponse(const std::function<void(const Response&)>& func) {
+  A1_1Request& withResponse(std::function<void(Response const&)> const& func) {
     m_func = func;
     return *this;
   }
-  A1_1Request& withHeaders(const Headers& heads) {
-    for (const auto& p : heads) header(p.first, p.second);
+  A1_1Request& withHeaders(Headers const& heads) {
+    for (auto const& p : heads) header(p.first, p.second);
     return *this;
   }
-  A1_1Request& withCookies(const Headers& cooks) {
-    for (const auto& p : cooks) cookie(p.first, p.second);
+  A1_1Request& withCookies(Headers const& cooks) {
+    for (auto const& p : cooks) cookie(p.first, p.second);
     return *this;
   }
-  A1_1Request& withBody(const std::string& b) {
+  A1_1Request& withBody(std::string const& b) {
     body(b);
     return *this;
   }
@@ -208,8 +208,8 @@ class KUL_PUBLISH A1_1Request : public Message {
 
 class KUL_PUBLISH _1_1GetRequest : public A1_1Request {
  public:
-  _1_1GetRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80,
-                 const std::string& ip = "")
+  _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 80,
+                 std::string const& ip = "")
       : A1_1Request(host, path, port, ip) {}
   virtual ~_1_1GetRequest() {}
   virtual std::string method() const override { return "GET"; }
@@ -219,8 +219,8 @@ using Get = _1_1GetRequest;
 
 class KUL_PUBLISH _1_1PostRequest : public A1_1Request {
  public:
-  _1_1PostRequest(const std::string& host, const std::string& path = "", const uint16_t& port = 80,
-                  const std::string& ip = "")
+  _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 80,
+                  std::string const& ip = "")
       : A1_1Request(host, path, port, ip) {}
   virtual std::string method() const override { return "POST"; }
   virtual std::string toString() const override;
@@ -229,14 +229,14 @@ using Post = _1_1PostRequest;
 
 class KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
  protected:
-  std::function<_1_1Response(const A1_1Request&)> m_func;
+  std::function<_1_1Response(A1_1Request const&)> m_func;
 
   void asAttributes(std::string a, mkn::kul::hash::map::S2S& atts) {
     if (a.size() > 0) {
       if (a[0] == '?') a = a.substr(1);
       std::vector<std::string> bits;
       mkn::kul::String::SPLIT(a, '&', bits);
-      for (const std::string& p : bits) {
+      for (std::string const& p : bits) {
         if (p.find("=") != std::string::npos) {
           std::vector<std::string> bits = mkn::kul::String::SPLIT(p, '=');
           atts[bits[0]] = bits[1];
@@ -246,22 +246,22 @@ class KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
     }
   }
 
-  virtual std::shared_ptr<A1_1Request> handleRequest(const int& fd, const std::string& b,
+  virtual std::shared_ptr<A1_1Request> handleRequest(int const& fd, std::string const& b,
                                                      std::string& path);
 
-  virtual void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, char* in, const int& read,
+  virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
                             int& e);
 
  public:
-  AServer(const uint16_t& p) : mkn::ram::tcp::SocketServer<char>(p) {}
+  AServer(uint16_t const& p) : mkn::ram::tcp::SocketServer<char>(p) {}
   virtual ~AServer() {}
 
-  AServer& withResponse(const std::function<_1_1Response(const A1_1Request&)>& func) {
+  AServer& withResponse(std::function<_1_1Response(A1_1Request const&)> const& func) {
     m_func = func;
     return *this;
   }
 
-  virtual _1_1Response respond(const A1_1Request& req) {
+  virtual _1_1Response respond(A1_1Request const& req) {
     if (m_func) return m_func(req);
     KEXCEPTION("mkn::ram::http::AServer::respond - no response defined");
   };

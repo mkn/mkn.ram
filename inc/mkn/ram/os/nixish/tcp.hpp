@@ -67,7 +67,7 @@ class Socket : public ASocket<T> {
   virtual ~Socket() {
     if (this->open) close();
   }
-  virtual bool connect(std::string const &host, int16_t const &port) override {
+  virtual bool connect(std::string const& host, int16_t const& port) override {
     KUL_DBG_FUNC_ENTER
     if (!SOCKET(sck) || !CONNECT(sck, host, port)) return false;
     this->open = true;
@@ -82,11 +82,11 @@ class Socket : public ASocket<T> {
     }
     return o1;
   }
-  virtual size_t read(T *data, size_t const &len) {
+  virtual size_t read(T* data, size_t const& len) {
     bool more = false;
     return read(data, len, more);
   }
-  virtual size_t read(T *data, size_t const &len, bool &more)
+  virtual size_t read(T* data, size_t const& len, bool& more)
       KTHROW(mkn::ram::tcp::Exception) override {
     KUL_DBG_FUNC_ENTER
     struct timeval tv;
@@ -98,8 +98,8 @@ class Socket : public ASocket<T> {
     tv.tv_sec = 1;
     tv.tv_usec = 500;
     ret = select(sck + 1, &fds, NULL, NULL, &tv);
-    std::function<bool(int64_t &, bool)> check_error;
-    check_error = [&](int64_t &ret, bool peek = false) -> bool {
+    std::function<bool(int64_t&, bool)> check_error;
+    check_error = [&](int64_t& ret, bool peek = false) -> bool {
       ret = 0;
       int error = 0;  // or WSAGetLastError()
       if (peek) {
@@ -151,18 +151,18 @@ class Socket : public ASocket<T> {
     }
     return ret;
   }
-  virtual size_t write(const T *data, size_t const &len) override {
+  virtual size_t write(T const* data, size_t const& len) override {
     return ::send(sck, data, len, 0);
   }
 
-  static bool SOCKET(int &sck, int16_t const &domain = AF_INET, int16_t const &type = SOCK_STREAM,
-                     int16_t const &protocol = IPPROTO_TCP) {
+  static bool SOCKET(int& sck, int16_t const& domain = AF_INET, int16_t const& type = SOCK_STREAM,
+                     int16_t const& protocol = IPPROTO_TCP) {
     KUL_DBG_FUNC_ENTER
     sck = socket(domain, type, protocol);
     if (sck < 0) KLOG(ERR) << "SOCKET ERROR CODE: " << sck;
     return sck >= 0;
   }
-  static bool CONNECT(int const &sck, std::string const &host, int16_t const &port) {
+  static bool CONNECT(int const& sck, std::string const& host, int16_t const& port) {
     KUL_DBG_FUNC_ENTER
     struct sockaddr_in servAddr;
     memset(&servAddr, 0, sizeof(servAddr));
@@ -172,26 +172,26 @@ class Socket : public ASocket<T> {
         !kul::byte::isBigEndian() ? htons(port) : mkn::kul::byte::LittleEndian::UINT32(port);
     if (host == "localhost" || host == "127.0.0.1") {
       servAddr.sin_addr.s_addr = INADDR_ANY;
-      e = ::connect(sck, (struct sockaddr *)&servAddr, sizeof(servAddr));
+      e = ::connect(sck, (struct sockaddr*)&servAddr, sizeof(servAddr));
       if (e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
     } else if (inet_pton(AF_INET, &host[0], &(servAddr.sin_addr))) {
-      e = ::connect(sck, (struct sockaddr *)&servAddr, sizeof(servAddr));
+      e = ::connect(sck, (struct sockaddr*)&servAddr, sizeof(servAddr));
       if (e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
     } else {
       std::string ip;
       struct addrinfo hints, *servinfo, *next;
-      struct sockaddr_in *in;
+      struct sockaddr_in* in;
       memset(&hints, 0, sizeof(hints));
       hints.ai_family = AF_UNSPEC;  // use AF_INET6 to force IPv6
       hints.ai_socktype = SOCK_STREAM;
       if ((e = getaddrinfo(host.c_str(), 0, &hints, &servinfo)) != 0)
         KEXCEPTION("getaddrinfo failed for host: " + host);
       for (next = servinfo; next != NULL; next = next->ai_next) {
-        in = (struct sockaddr_in *)next->ai_addr;
+        in = (struct sockaddr_in*)next->ai_addr;
         ip = inet_ntoa(in->sin_addr);
         servAddr.sin_addr.s_addr = inet_addr(&ip[0]);
         if (ip == "0.0.0.0") continue;
-        if ((e = ::connect(sck, (struct sockaddr *)&servAddr, sizeof(servAddr))) == 0) break;
+        if ((e = ::connect(sck, (struct sockaddr*)&servAddr, sizeof(servAddr))) == 0) break;
       }
       freeaddrinfo(servinfo);
       if (e < 0) KLOG(ERR) << "SOCKET CONNECT ERROR CODE: " << e << " errno: " << errno;
@@ -210,7 +210,7 @@ class SocketServer : public ASocketServer<T> {
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr[_MKN_RAM_TCP_MAX_CLIENT_];
 
-  virtual bool handle(T *const in, size_t const &inLen, T *const out, size_t &outLen) {
+  virtual bool handle(T* const in, size_t const& inLen, T* const out, size_t& outLen) {
     // default overridable function
     (void)in;
     (void)inLen;
@@ -219,7 +219,7 @@ class SocketServer : public ASocketServer<T> {
     return true;
   }
 
-  virtual int readFrom(int const &fd, T *in, int opts = 0) {
+  virtual int readFrom(int const& fd, T* in, int opts = 0) {
     size_t size = 0;
     int64_t val = 0;
     while (1) {
@@ -230,10 +230,10 @@ class SocketServer : public ASocketServer<T> {
     }
     return size;
   }
-  virtual int writeTo(int const &fd, const T *const out, size_t size) {
+  virtual int writeTo(int const& fd, T const* const out, size_t size) {
     return ::send(m_fds[fd].fd, out, size, 0);
   }
-  virtual bool receive(std::map<int, uint8_t> &fds, int const &fd) {
+  virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
     (void)fds;
     KUL_DBG_FUNC_ENTER
     T in[_MKN_RAM_TCP_READ_BUFFER_];
@@ -243,7 +243,7 @@ class SocketServer : public ASocketServer<T> {
       KEXCEPTION("Socket Server error on recv - fd(" + std::to_string(fd) +
                  ") : " + std::to_string(errno) + " - " + std::string(strerror(errno)));
     if (read == 0) {
-      getpeername(m_fds[fd].fd, (struct sockaddr *)&cli_addr[fd], (socklen_t *)&clilen);
+      getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr[fd], (socklen_t*)&clilen);
       KOUT(DBG) << "Host disconnected , ip: " << inet_ntoa(serv_addr.sin_addr) << ", port "
                 << ntohs(serv_addr.sin_port);
       this->onDisconnect(inet_ntoa(cli_addr[fd].sin_addr), ntohs(cli_addr[fd].sin_port));
@@ -257,7 +257,7 @@ class SocketServer : public ASocketServer<T> {
         size_t outLen;
         cl = handle(in, read, out, outLen);
         e = writeTo(fd, out, outLen);
-      } catch (const mkn::ram::tcp::Exception &e1) {
+      } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
         e = -1;
       }
@@ -266,19 +266,19 @@ class SocketServer : public ASocketServer<T> {
     }
     return false;
   }
-  void closeFDsNoCompress(std::map<int, uint8_t> &fds, std::vector<int> &del) {
+  void closeFDsNoCompress(std::map<int, uint8_t>& fds, std::vector<int>& del) {
     KUL_DBG_FUNC_ENTER;
-    for (const auto &fd : del) {
+    for (auto const& fd : del) {
       ::close(m_fds[fd].fd);
       m_fds[fd].fd = -1;
       fds[fd] = 0;
       nfds--;
     }
   }
-  virtual void closeFDs(std::map<int, uint8_t> &fds, std::vector<int> &del) {
+  virtual void closeFDs(std::map<int, uint8_t>& fds, std::vector<int>& del) {
     closeFDsNoCompress(fds, del);
   }
-  virtual void loop(std::map<int, uint8_t> &fds) KTHROW(mkn::ram::tcp::Exception) {
+  virtual void loop(std::map<int, uint8_t>& fds) KTHROW(mkn::ram::tcp::Exception) {
     // KUL_DBG_FUNC_ENTER
     auto ret = poll();
     if (!s) return;
@@ -287,8 +287,8 @@ class SocketServer : public ASocketServer<T> {
                  std::string(strerror(errno)));
     // if(ret == 0) return;
     int newlisock = -1;
-    for (const auto &pair : fds) {
-      auto &i = pair.first;
+    for (auto const& pair : fds) {
+      auto& i = pair.first;
       if (pair.second == 1) continue;
       if (m_fds[i].revents == 0) continue;
       if (m_fds[i].revents != POLLIN)
@@ -311,7 +311,7 @@ class SocketServer : public ASocketServer<T> {
       }
     }
     std::vector<int> del;
-    for (const auto &pair : fds)
+    for (auto const& pair : fds)
       if (pair.second == 1 && receive(fds, pair.first)) del.push_back(pair.first);
     if (del.size()) closeFDs(fds, del);
   }
@@ -328,10 +328,10 @@ class SocketServer : public ASocketServer<T> {
     }
     return p;
   }
-  virtual int accept(int const &fd) {
-    return ::accept(lisock, (struct sockaddr *)&cli_addr[fd], &clilen);
+  virtual int accept(int const& fd) {
+    return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
   }
-  virtual void validAccept(std::map<int, uint8_t> &fds, int const &newlisock, int const &nfd) {
+  virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
     KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
@@ -344,7 +344,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
  public:
-  SocketServer(uint16_t const &p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
+  SocketServer(uint16_t const& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
     if (_bind) bind(__MKN_RAM_TCP_BIND_SOCKTOPTS__);
     memset(m_fds, 0, sizeof(m_fds));
   }
@@ -354,7 +354,7 @@ class SocketServer : public ASocketServer<T> {
   virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {
     lisock = socket(AF_INET, SOCK_STREAM, 0);
     int iso = 1;
-    int rc = setsockopt(lisock, SOL_SOCKET, sockOpt, (char *)&iso, sizeof(iso));
+    int rc = setsockopt(lisock, SOL_SOCKET, sockOpt, (char*)&iso, sizeof(iso));
     if (rc < 0) {
       KERR << std::to_string(errno) << " - " << std::string(strerror(errno));
       KEXCEPTION("Socket Server error on setsockopt");
@@ -364,17 +364,17 @@ class SocketServer : public ASocketServer<T> {
     if (-1 == (iso = fcntl(lisock, F_GETFL, 0))) iso = 0;
     rc = fcntl(lisock, F_SETFL, iso | O_NONBLOCK);
 #else
-    rc = ioctl(lisock, FIONBIO, (char *)&iso);
+    rc = ioctl(lisock, FIONBIO, (char*)&iso);
 #endif
     if (rc < 0) KEXCEPTION("Socket Server error on ioctl");
-    bzero((char *)&serv_addr, sizeof(serv_addr));
+    bzero((char*)&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = !kul::byte::isBigEndian()
                              ? htons(this->port())
                              : mkn::kul::byte::LittleEndian::UINT32(this->port());
     int16_t e = 0;
-    if ((e = ::bind(lisock, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) < 0) {
+    if ((e = ::bind(lisock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
       KERR << std::to_string(errno) << " - " << std::string(strerror(errno));
       KEXCEPTION("Socket Server error on binding, errno: " + std::to_string(errno));
     }
@@ -393,9 +393,9 @@ class SocketServer : public ASocketServer<T> {
     for (size_t i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
     try {
       while (s) loop(fds);
-    } catch (const mkn::ram::tcp::Exception &e1) {
+    } catch (mkn::ram::tcp::Exception const& e1) {
       KERR << e1.stack();
-    } catch (const std::exception &e1) {
+    } catch (std::exception const& e1) {
       KERR << e1.what();
     } catch (...) {
       KERR << "Loop Exception caught";

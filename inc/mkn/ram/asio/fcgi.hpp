@@ -44,7 +44,7 @@ namespace fcgi {
 
 class Exception : public mkn::kul::Exception {
  public:
-  Exception(const char* f, const uint16_t& l, const std::string& s)
+  Exception(char const* f, uint16_t const& l, std::string const& s)
       : mkn::kul::Exception(f, l, s) {}
 };
 
@@ -55,14 +55,14 @@ class FCGI_Message {
  private:
   bool d = 1;
   uint16_t rid = 0;
-  std::function<void(const FCGI_Message& msg)> m_finish;
+  std::function<void(FCGI_Message const& msg)> m_finish;
 
  private:
-  FCGI_Message(const FCGI_Message& msg) = delete;
-  FCGI_Message& operator=(const FCGI_Message& msg) = delete;
+  FCGI_Message(FCGI_Message const& msg) = delete;
+  FCGI_Message& operator=(FCGI_Message const& msg) = delete;
 
   void finish() { m_finish(*this); }
-  void finish(const std::function<void(const FCGI_Message& msg)>& fin) { m_finish = fin; }
+  void finish(std::function<void(FCGI_Message const& msg)> const& fin) { m_finish = fin; }
 
  protected:
   virtual std::string response() const { return "FCGI-ed"; }
@@ -89,25 +89,25 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
   std::unordered_map<int, std::unique_ptr<uint8_t[]>> inBuffers;
 
  protected:
-  uint8_t* getOrCreateBufferFor(const int& fd) {
+  uint8_t* getOrCreateBufferFor(int const& fd) {
     mkn::kul::ScopeLock lock(m_butex);
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
     return inBuffers[fd].get();
   }
 
-  FCGI_Message& createFCGI_Message(const int& fd) {
+  FCGI_Message& createFCGI_Message(int const& fd) {
     mkn::kul::ScopeLock lock(m_mapex);
     msgs[fd] = std::make_unique<FCGI_Message>();
     return *msgs[fd];
   }
 
-  int accept(const uint16_t& fd) override {
+  int accept(uint16_t const& fd) override {
     mkn::kul::ScopeLock lock(m_actex);
     return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
   }
 
-  void cycle(const uint16_t& size, std::map<int, uint8_t>* fds, const int& fd) {
+  void cycle(uint16_t const& size, std::map<int, uint8_t>* fds, int const& fd) {
     auto& msg(*msgs[fd]);
     work(msg);
     if (msg.done()) {
@@ -117,23 +117,23 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
     }
   }
 
-  void write(std::map<int, uint8_t>& fds, const int& fd, const uint8_t* out, const size_t size);
+  void write(std::map<int, uint8_t>& fds, int const& fd, uint8_t const* out, size_t const size);
 
-  bool receive(std::map<int, uint8_t>& fds, const int& fd) override;
+  bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
-  void PARAMS(uint8_t* const in, const int& inLen, FCGI_Message& msg) {}
+  void PARAMS(uint8_t* const in, int const& inLen, FCGI_Message& msg) {}
 
-  void PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen, const int& fd)
+  void PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in, int const& inLen, int const& fd)
       KTHROW(kul::fcgi::Exception);
 
-  void PARSE(std::map<int, uint8_t>& fds, uint8_t* const in, const int& inLen, const int& fd,
+  void PARSE(std::map<int, uint8_t>& fds, uint8_t* const in, int const& inLen, int const& fd,
              size_t pos) KTHROW(kul::fcgi::Exception);
 
-  size_t FORM_RESPONSE(const FCGI_Message& msg, uint8_t* out);
+  size_t FORM_RESPONSE(FCGI_Message const& msg, uint8_t* out);
 
   virtual void work(FCGI_Message& msg) {}
 
-  void operateAccept(const size_t& threadID) {
+  void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += m_acceptThreads)
@@ -141,21 +141,21 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
         loop(fds);
-      } catch (const mkn::ram::tcp::Exception& e1) {
+      } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
-      } catch (const std::exception& e1) {
+      } catch (std::exception const& e1) {
         KERR << e1.what();
       } catch (...) {
         KERR << "Loop Exception caught";
       }
   }
-  void handleBuffer(std::map<int, uint8_t>& fds, const int& fd, uint8_t* in, const int& read,
+  void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, uint8_t* in, int const& read,
                     int& e) {
     m_workerPool.async(std::bind(&Server::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
                        std::bind(&Server::errorBuffer, std::ref(*this), std::placeholders::_1));
   }
 
-  void operateBuffer(std::map<int, uint8_t>* fds, const int& fd, uint8_t* in, const int& read,
+  void operateBuffer(std::map<int, uint8_t>* fds, int const& fd, uint8_t* in, int const& read,
                      int& e) {
     PARSE_FIRST(*fds, in, read, fd);
     if (e < 0) {
@@ -163,10 +163,10 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
       closeFDs(*fds, del);
     }
   }
-  void errorBuffer(const mkn::kul::Exception& e) { KERR << e.stack(); };
+  void errorBuffer(mkn::kul::Exception const& e) { KERR << e.stack(); };
 
  public:
-  Server(const uint16_t& port, const uint8_t& acceptThreads = 1, const uint8_t& workerThreads = 1)
+  Server(uint16_t const& port, uint8_t const& acceptThreads = 1, uint8_t const& workerThreads = 1)
       : mkn::ram::tcp::SocketServer<uint8_t>(port),
         m_acceptThreads(acceptThreads),
         m_workerThreads(workerThreads),

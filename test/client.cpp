@@ -52,7 +52,7 @@ class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
  public:
   HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::https::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const mkn::kul::hash::map::S2S& h, std::string const& b) override {
+  void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
     KLOG(INF) << "HTTPS GET RESPONSE:\n" << b;
   }
 };
@@ -60,9 +60,9 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
  public:
   HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::https::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const mkn::kul::hash::map::S2S& h, std::string const& b) override {
+  void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
     KUL_DBG_FUNC_ENTER
-    for (const auto& p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
+    for (auto const& p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
@@ -72,7 +72,7 @@ class Get : public mkn::ram::http::_1_1GetRequest {
  public:
   Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::http::_1_1GetRequest(host, path, port) {}
-  void handleResponse(const mkn::kul::hash::map::S2S& h, std::string const& b) override {
+  void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
     KLOG(INF) << b;
     // if(b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
     // KEXCEPTION("Body failed :" + b + ":");
@@ -82,7 +82,7 @@ class Post : public mkn::ram::http::_1_1PostRequest {
  public:
   Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::http::_1_1PostRequest(host, path, port) {}
-  void handleResponse(const mkn::kul::hash::map::S2S& h, std::string const& b) override {
+  void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
     if (b.substr(0, b.size() - 2) != "MULTI HTTP PROVIDED BY KUL")
       KEXCEPTION("Body failed :" + b + ":");
   }
@@ -133,10 +133,10 @@ int main(int argc, char* argv[]) {
     //             _MKN_RAM_HTTP_TEST_PORT_).send();
     // #endif//_MKN_RAM_INCLUDE_HTTPS_
 
-  } catch (const mkn::kul::Exception& e) {
+  } catch (mkn::kul::Exception const& e) {
     KERR << e.stack();
     return 1;
-  } catch (const std::exception& e) {
+  } catch (std::exception const& e) {
     KERR << e.what();
     return 2;
   } catch (...) {
