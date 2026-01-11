@@ -106,7 +106,7 @@ class Message {
   bool header(std::string const& s) const { return _hs.count(s); }
 };
 
-class KUL_PUBLISH _1_1Response : public Message {
+class MKN_KUL_PUBLISH _1_1Response : public Message {
  protected:
   uint16_t _s = 200;
   std::string r = "OK";
@@ -154,7 +154,7 @@ inline std::ostream& operator<<(std::ostream& s, _1_1Response const& r) {
   return s << r.toString();
 }
 
-class KUL_PUBLISH A1_1Request : public Message {
+class MKN_KUL_PUBLISH A1_1Request : public Message {
  protected:
   uint16_t _port;
   std::string _ip, _host, _path;
@@ -206,7 +206,7 @@ class KUL_PUBLISH A1_1Request : public Message {
   }
 };
 
-class KUL_PUBLISH _1_1GetRequest : public A1_1Request {
+class MKN_KUL_PUBLISH _1_1GetRequest : public A1_1Request {
  public:
   _1_1GetRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 80,
                  std::string const& ip = "")
@@ -217,7 +217,7 @@ class KUL_PUBLISH _1_1GetRequest : public A1_1Request {
 };
 using Get = _1_1GetRequest;
 
-class KUL_PUBLISH _1_1PostRequest : public A1_1Request {
+class MKN_KUL_PUBLISH _1_1PostRequest : public A1_1Request {
  public:
   _1_1PostRequest(std::string const& host, std::string const& path = "", uint16_t const& port = 80,
                   std::string const& ip = "")
@@ -227,7 +227,7 @@ class KUL_PUBLISH _1_1PostRequest : public A1_1Request {
 };
 using Post = _1_1PostRequest;
 
-class KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
+class MKN_KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
  protected:
   std::function<_1_1Response(A1_1Request const&)> m_func;
 

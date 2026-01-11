@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 
 void mkn::ram::http::A1_1Request::send() KTHROW(mkn::ram::http::Exception) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   {
     mkn::ram::tcp::Socket<char> sock;
@@ -79,11 +79,11 @@ class RequestHeaders {
 };
 
 std::string mkn::ram::http::_1_1GetRequest::toString() const {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   ss << method() << " /" << _path;
   if (atts.size() > 0) ss << "?";
-  for (std::pair<std::string, std::string> const& p : atts) ss << p.first << "=" << p.second << "&";
+  for (std::pair<std::string, std::string> const p : atts) ss << p.first << "=" << p.second << "&";
   if (atts.size() > 0) ss.seekp(-1, ss.cur);
   ss << " " << version();
   ss << "\r\nHost: " << _host;
@@ -99,7 +99,7 @@ std::string mkn::ram::http::_1_1GetRequest::toString() const {
 }
 
 std::string mkn::ram::http::_1_1PostRequest::toString() const {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   std::stringstream ss;
   ss << method() << " /" << _path << " " << version();
   ss << "\r\nHost: " << _host;

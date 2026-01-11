@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 
 void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   nfds = lisock + 1;
 
   _started = mkn::kul::Now::MILLIS();
@@ -53,7 +53,7 @@ void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
 }
 
 bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   uint8_t* in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
   int e = 0, read = readFrom(fd, in, MSG_DONTWAIT);
@@ -73,7 +73,7 @@ bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, int cons
 
 void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, int const& fd,
                                          uint8_t const* out, size_t const size) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   writeTo(fd, out, size);
   receive(fds, fd);
   std::vector<int> del{fd};
@@ -83,7 +83,7 @@ void mkn::ram::asio::fcgi::Server::write(std::map<int, uint8_t>& fds, int const&
 void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint8_t* const in,
                                                int const& inLen, int const& fd)
     KTHROW(kul::fcgi::Exception) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
 
   if (inLen < 4) KEXCEPTION("FCGI cannot parse input too short");
 
@@ -108,7 +108,7 @@ void mkn::ram::asio::fcgi::Server::PARSE_FIRST(std::map<int, uint8_t>& fds, uint
 void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* const in,
                                          int const& inLen, int const& fd, size_t pos)
     KTHROW(kul::fcgi::Exception) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
 
   if ((inLen - pos) < 4) KEXCEPTION("FCGI cannot parse input too short");
 
@@ -137,7 +137,7 @@ void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* c
 }
 
 size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(FCGI_Message const& msg, uint8_t* out) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   bzero(out, _MKN_RAM_TCP_READ_BUFFER_);
 
   size_t pos = 0;

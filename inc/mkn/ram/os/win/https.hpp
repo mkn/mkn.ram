@@ -77,13 +77,13 @@ class Server : public mkn::ram::http::Server {
   mkn::kul::File crt, key;
   std::string const cs;
 
-  virtual KUL_PUBLISH void loop(std::map<int, uint8_t>& fds)
+  virtual MKN_KUL_PUBLISH void loop(std::map<int, uint8_t>& fds)
       KTHROW(mkn::ram::tcp::Exception) override;
 
-  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
+  virtual MKN_KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
-  virtual KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in,
-                                        int const& read, int& e);
+  virtual MKN_KUL_PUBLISH void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in,
+                                            int const& read, int& e);
 
  public:
   Server(short const& p, mkn::kul::File const& c, mkn::kul::File const& k,
@@ -94,12 +94,12 @@ class Server : public mkn::ram::http::Server {
   virtual ~Server() {
     if (s) stop();
   }
-  KUL_PUBLISH void setChain(mkn::kul::File const& f);
-  KUL_PUBLISH Server& init();
-  KUL_PUBLISH virtual void stop() override;
+  MKN_KUL_PUBLISH void setChain(mkn::kul::File const& f);
+  MKN_KUL_PUBLISH Server& init();
+  MKN_KUL_PUBLISH virtual void stop() override;
 };
 
-class KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
+class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
   mkn::kul::Mutex m_mutex;

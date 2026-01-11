@@ -60,7 +60,7 @@ class TestHTTPServer : public mkn::ram::http::Server {
 
  public:
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     mkn::ram::http::_1_1Response r;
     r.body("HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
@@ -76,7 +76,7 @@ class TestMultiHTTPServer : public mkn::ram::http::MultiServer {
 
  public:
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     mkn::ram::http::_1_1Response r;
     r.body("MULTI HTTP PROVIDED BY KUL");
     addResponseHeaders(r);
@@ -95,7 +95,7 @@ class TestHTTPSServer : public mkn::ram::https::Server {
 
  public:
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     mkn::ram::http::_1_1Response r;
     r.body("HTTPS PROVIDED BY KUL: " + req.method());
     addResponseHeaders(r);
@@ -113,7 +113,7 @@ class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
 
  public:
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     mkn::ram::http::_1_1Response r;
     r.body("MULTI HTTPS PROVIDED BY KUL");
     addResponseHeaders(r);
@@ -139,7 +139,7 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
   HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::https::_1_1PostRequest(host, path, port) {}
   void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     for (auto const& p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
@@ -152,7 +152,7 @@ class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
 
  public:
   bool handle(char* in, char* out) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     mkn::ram::http::_1_1Response getResponse;
     addResponseHeaders(getResponse);
     getResponse.body("magicmansion");
@@ -177,7 +177,7 @@ class Post : public mkn::ram::http::_1_1PostRequest {
   Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::http::_1_1PostRequest(host, path, port) {}
   void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     for (auto const& p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "POST RESPONSE:\n" << b;
   }

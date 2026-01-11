@@ -22,5 +22,5 @@ jobs:
       run: |
         set -ex
         export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
-        curl -Lo mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
+        curl -fL --retry 3 --retry-delay 2 -o mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++17 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"

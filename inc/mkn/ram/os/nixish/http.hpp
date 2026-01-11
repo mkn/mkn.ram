@@ -111,7 +111,7 @@ class MultiServer : public mkn::ram::http::Server {
   MultiServer(short const& p = 80, uint8_t const& acceptThreads = 1,
               uint8_t const& workerThreads = 1)
       : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
-  ~MultiServer() { KUL_DBG_FUNC_ENTER }
+  ~MultiServer() { MKN_KUL_DBG_FUNC_ENTER }
 
   virtual void start() KTHROW(mkn::ram::tcp::Exception) override;
 

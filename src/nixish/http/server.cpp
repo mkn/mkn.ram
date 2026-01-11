@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 
 bool mkn::ram::http::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER;
+  MKN_KUL_DBG_FUNC_ENTER;
   char* in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
   int e = 0, read = readFrom(fd, in);

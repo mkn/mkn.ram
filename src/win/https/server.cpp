@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/https.hpp"
 
 void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
 
   auto ret = poll(1000);
 
@@ -102,7 +102,7 @@ void mkn::ram::https::Server::setChain(mkn::kul::File const& f) {
 }
 
 mkn::ram::https::Server& mkn::ram::https::Server::init() {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   if (!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
   if (!key) KEXCEPTION("HTTPS Server key file does not exist: " + key.full());
   SSL_library_init();
@@ -121,7 +121,7 @@ mkn::ram::https::Server& mkn::ram::https::Server::init() {
 }
 
 void mkn::ram::https::Server::stop() {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   s = 0;
   ERR_free_strings();
   EVP_cleanup();
@@ -162,7 +162,7 @@ void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, int cons
 }
 
 bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
-  KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER
   char* in = getOrCreateBufferFor(fd);
   bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
   int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, _MKN_RAM_TCP_READ_BUFFER_ - 1);

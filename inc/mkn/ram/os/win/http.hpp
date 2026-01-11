@@ -75,14 +75,14 @@ class Server : public mkn::ram::http::AServer {
     return inBuffers[fd].get();
   }
 
-  virtual KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
+  virtual MKN_KUL_PUBLISH bool receive(std::map<int, uint8_t>& fds, int const& fd) override;
 
  public:
   Server(short const& p = 80) : AServer(p) {}
   virtual ~Server() {}
 };
 
-class KUL_PUBLISH MultiServer : public mkn::ram::http::Server {
+class MKN_KUL_PUBLISH MultiServer : public mkn::ram::http::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
   mkn::kul::Mutex m_mutex;

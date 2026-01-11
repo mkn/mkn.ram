@@ -71,13 +71,13 @@ class Socket : public ASocket<T> {
     if (this->open) close();
   }
   virtual bool connect(std::string const& host, int16_t const& port) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     if (!CONNECT(*this, host, port)) return false;
     this->open = true;
     return true;
   }
   virtual bool close() override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     bool o1 = this->open;
     if (this->open) {
       this->open = 0;
@@ -95,7 +95,7 @@ class Socket : public ASocket<T> {
     return read(data, len, more);
   }
   virtual size_t read(T* data, size_t const& len, bool& more) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
 
     int16_t d = recv(ConnectSocket, data, len, 0);
 
@@ -111,7 +111,7 @@ class Socket : public ASocket<T> {
 
  protected:
   static bool CONNECT(Socket& sck, std::string const& host, int16_t const& port) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     int16_t e = 0;
 
     // Initialize Winsock
@@ -187,7 +187,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     T in[_MKN_RAM_TCP_READ_BUFFER_];
     ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
 
@@ -215,7 +215,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
   void closeFDsNoCompress(std::map<int, uint8_t>& fds, std::vector<int>& del) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     for (auto const& fd : del) {
       ::closesocket(m_fds[fd].fd);
       m_fds[fd].fd = -1;
@@ -268,7 +268,7 @@ class SocketServer : public ASocketServer<T> {
     return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL, NULL);
   }
   virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
               << ", port : " << ntohs(cli_addr[nfd].sin_port);
@@ -302,7 +302,7 @@ class SocketServer : public ASocketServer<T> {
   }
   virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {}
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     _started = mkn::kul::Now::MILLIS();
 
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -352,7 +352,7 @@ class SocketServer : public ASocketServer<T> {
     }
   }
   virtual void stop() {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER
     s = 0;
     ::closesocket(lisock);
     lisock = 0;
