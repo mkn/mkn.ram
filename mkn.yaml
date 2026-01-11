@@ -6,12 +6,12 @@ parent: lib
 
 profile:
 - name: base
-  inc: ./inc
-  src: ./src
+  inc: inc
+  src: src/any
   if_src:
-    bsd: ./os/nixish/src
-    nix: ./os/nixish/src
-    win: ./os/win/src
+    bsd: src/nixish
+    nix: src/nixish
+    win: src/win
 
 - name: lib
   parent: base
@@ -40,27 +40,27 @@ profile:
 
 - name: usage
   parent: https
-  main: test/usage.cpp
+  main: tst/usage.cpp
   # arg: -D_MKN_RAM_INCLUDE_HTTPS_
   # if_link:
   #   win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
 - name: test_fcgi
-  main: test/fcgi.cpp
+  main: tst/fcgi.cpp
   self: fcgi
 
 - name: test
   parent: https
   mode: none
-  main: test/test.cpp
+  main: tst/test.cpp
 
 - name: test.client
   parent: lib
-  main: test/client.cpp
+  main: tst/client.cpp
 
 - name: test.server
   parent: lib
-  main: test/server.cpp
+  main: tst/server.cpp
 
 - name: format
   mod:

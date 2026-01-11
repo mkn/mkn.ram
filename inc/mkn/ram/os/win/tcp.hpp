@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2024, Philip Deegan.
+Copyright (c) 2026, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+
+#ifndef __MKN_RAM_TCP_BIND_SOCKTOPTS__
+#define __MKN_RAM_TCP_BIND_SOCKTOPTS__ SO_REUSEADDR
+#endif  //__MKN_RAM_TCP_BIND_SOCKTOPTS__
 
 namespace mkn {
 namespace ram {
@@ -310,7 +314,7 @@ class SocketServer : public ASocketServer<T> {
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    iResult = getaddrinfo(NULL, std::to_string(port()).c_str(), &hints, &result);
+    iResult = getaddrinfo(NULL, std::to_string(this->port()).c_str(), &hints, &result);
     if (iResult != 0) {
       WSACleanup();
       KEXCEPTION("getaddrinfo failed with error: ") << iResult;
