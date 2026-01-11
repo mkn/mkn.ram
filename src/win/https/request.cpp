@@ -33,7 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void mkn::ram::https::Requester::send(std::string const& h, std::string const& req,
                                       uint16_t const& p, std::stringstream& ss, SSL* ssl) {
-  MKN_KUL_DBG_FUNC_ENTER {
+  MKN_KUL_DBG_FUNC_ENTER;
+  {
     mkn::ram::tcp::Socket<char> sock;
     if (!sock.connect(h, p)) KEXCEPTION("TCP FAILED TO CONNECT!");
     SOCKET sck = sock.socket();
@@ -60,7 +61,7 @@ void mkn::ram::https::Requester::send(std::string const& h, std::string const& r
 }
 
 void mkn::ram::https::_1_1GetRequest::send() KTHROW(mkn::ram::http::Exception) {
-  MKN_KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER;
   try {
     std::stringstream ss;
     Requester::send(_host, toString(), _port, ss, ssl);
@@ -75,7 +76,7 @@ void mkn::ram::https::_1_1GetRequest::send() KTHROW(mkn::ram::http::Exception) {
 }
 
 void mkn::ram::https::_1_1PostRequest::send() KTHROW(mkn::ram::http::Exception) {
-  MKN_KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER;
   try {
     std::stringstream ss;
     Requester::send(_host, toString(), _port, ss, ssl);

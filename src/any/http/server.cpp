@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(
     int const& fd, std::string const& b, std::string& path) {
-  MKN_KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER;
   std::string a;
   std::shared_ptr<mkn::ram::http::A1_1Request> req;
   {

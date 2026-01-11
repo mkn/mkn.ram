@@ -71,13 +71,13 @@ class Socket : public ASocket<T> {
     if (this->open) close();
   }
   virtual bool connect(std::string const& host, int16_t const& port) override {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     if (!CONNECT(*this, host, port)) return false;
     this->open = true;
     return true;
   }
   virtual bool close() override {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     bool o1 = this->open;
     if (this->open) {
       this->open = 0;
@@ -95,7 +95,7 @@ class Socket : public ASocket<T> {
     return read(data, len, more);
   }
   virtual size_t read(T* data, size_t const& len, bool& more) {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
 
     int16_t d = recv(ConnectSocket, data, len, 0);
 
@@ -111,7 +111,7 @@ class Socket : public ASocket<T> {
 
  protected:
   static bool CONNECT(Socket& sck, std::string const& host, int16_t const& port) {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     int16_t e = 0;
 
     // Initialize Winsock
@@ -187,7 +187,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     T in[_MKN_RAM_TCP_READ_BUFFER_];
     ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
 
@@ -302,7 +302,7 @@ class SocketServer : public ASocketServer<T> {
   }
   virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {}
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     _started = mkn::kul::Now::MILLIS();
 
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -352,7 +352,7 @@ class SocketServer : public ASocketServer<T> {
     }
   }
   virtual void stop() {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     s = 0;
     ::closesocket(lisock);
     lisock = 0;

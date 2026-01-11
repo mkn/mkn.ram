@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/https.hpp"
 
 void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
-  MKN_KUL_DBG_FUNC_ENTER
+  MKN_KUL_DBG_FUNC_ENTER;
   _started = mkn::kul::Now::MILLIS();
   listen(lisock, 256);
   clilen = sizeof(cli_addr);

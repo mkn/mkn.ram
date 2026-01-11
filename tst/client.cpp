@@ -61,7 +61,7 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
   HTTPS_Post(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
       : mkn::ram::https::_1_1PostRequest(host, path, port) {}
   void handleResponse(mkn::kul::hash::map::S2S const& h, std::string const& b) override {
-    MKN_KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     for (auto const& p : h) KOUT(NON) << "HEADER: " << p.first << " : " << p.second;
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
