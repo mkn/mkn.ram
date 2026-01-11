@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2024, Philip Deegan.
+Copyright (c) 2026, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -112,7 +112,7 @@ class MultiServer : public mkn::ram::https::Server {
   mkn::kul::ChroncurrentThreadPool<> _workerPool;
 
   void operateAccept(size_t const& threadID) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
     for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
@@ -134,7 +134,7 @@ class MultiServer : public mkn::ram::https::Server {
 
   virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
                             int& e) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     _workerPool.async(
         std::bind(&MultiServer::operateBuffer, std::ref(*this), &fds, fd, in, read, e),
         std::bind(&MultiServer::errorBuffer, std::ref(*this), std::placeholders::_1));
@@ -143,7 +143,7 @@ class MultiServer : public mkn::ram::https::Server {
 
   void operateBuffer(std::map<int, uint8_t>* fds, int const& fd, char* in, int const& read,
                      int& e) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     mkn::ram::https::Server::handleBuffer(*fds, fd, in, read, e);
     if (e <= 0) {
       getpeername(m_fds[fd].fd, (struct sockaddr*)&cli_addr, (socklen_t*)&clilen);

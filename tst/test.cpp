@@ -28,15 +28,46 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTTP_DEF_HPP_
-#define _MKN_RAM_HTTP_DEF_HPP_
+// #define _MKN_RAM_INCLUDE_HTTPS_
+#define __MKN_RAM_NOMAIN__
+#include "usage.cpp"
+class TestHTTPSServer : public mkn::ram::https::Server {
+ private:
+  void operator()() { start(); }
 
-#ifndef _MKN_RAM_HTTP_SESSION_TTL_
-#define _MKN_RAM_HTTP_SESSION_TTL_ 600  // seconds
-#endif                                  /* _MKN_RAM_HTTP_SESSION_TTL_ */
-
-#ifndef _MKN_RAM_HTTP_SESSION_CHECK_
-#define _MKN_RAM_HTTP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
-#endif                                      /* _MKN_RAM_HTTP_SESSION_CHECK_ */
-
-#endif /* _MKN_RAM_HTTP_DEF_HPP_ */
+ public:
+  TestHTTPSServer()
+      : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
+                                mkn::kul::File("res/test/server.key")) {}
+  friend class mkn::kul::Thread;
+};
+class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
+ public:
+  HTTPS_Get(std::string const& host, std::string const& path = "", uint16_t const& port = 80)
+      : mkn::ram::https::_1_1GetRequest(host, path, port) {}
+};
+int main(int argc, char* argv[]) {
+  using namespace mkn::ram::http;
+  {
+    TestHTTPSServer serv;
+    serv.init().withResponse([](A1_1Request const& r) {
+      KLOG(NON) << mkn::kul::os::EOL() << r.toString();
+      return _1_1Response{}.withBody("HELLO WORLD");
+    });
+    mkn::kul::Thread t(std::ref(serv));
+    t.run();
+    mkn::kul::this_thread::sleep(333);
+    if (t.exception()) std::rethrow_exception(t.exception());
+    {
+      HTTPS_Get get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+      KLOG(NON) << mkn::kul::os::EOL() << get.toString();
+      get.withResponse([](mkn::ram::http::_1_1Response const& r) {
+           KLOG(INF) << mkn::kul::os::EOL() << r.toString();
+         })
+          .send();
+    }
+    serv.stop();
+    t.join();
+  }
+  return 0;
+}

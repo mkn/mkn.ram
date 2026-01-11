@@ -28,15 +28,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTTP_DEF_HPP_
-#define _MKN_RAM_HTTP_DEF_HPP_
+#include "mkn/ram/http.hpp"
 
-#ifndef _MKN_RAM_HTTP_SESSION_TTL_
-#define _MKN_RAM_HTTP_SESSION_TTL_ 600  // seconds
-#endif                                  /* _MKN_RAM_HTTP_SESSION_TTL_ */
+void mkn::ram::http::MultiServer::start() KTHROW(kul::tcp::Exception) {
+  MKN_KUL_DBG_FUNC_ENTER;
+  _started = mkn::kul::Now::MILLIS();
+  listen(lisock, 256);
+  clilen = sizeof(cli_addr[0]);
+  s = true;
+  m_fds[0].fd = lisock;
+  m_fds[0].events = POLLIN;  //|POLLPRI;
+  nfds = lisock + 1;
 
-#ifndef _MKN_RAM_HTTP_SESSION_CHECK_
-#define _MKN_RAM_HTTP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
-#endif                                      /* _MKN_RAM_HTTP_SESSION_CHECK_ */
-
-#endif /* _MKN_RAM_HTTP_DEF_HPP_ */
+  for (size_t i = 0; i < _acceptThreads; i++)
+    _acceptPool.async(std::bind(&MultiServer::operateAccept, std::ref(*this), i));
+  _acceptPool.start();
+  _workerPool.start();
+}

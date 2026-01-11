@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2024, Philip Deegan.
+Copyright (c) 2026, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
 
+#ifndef __MKN_RAM_TCP_BIND_SOCKTOPTS__
+#define __MKN_RAM_TCP_BIND_SOCKTOPTS__ SO_REUSEADDR
+#endif  //__MKN_RAM_TCP_BIND_SOCKTOPTS__
+
 namespace mkn {
 namespace ram {
 namespace tcp {
@@ -67,13 +71,13 @@ class Socket : public ASocket<T> {
     if (this->open) close();
   }
   virtual bool connect(std::string const& host, int16_t const& port) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     if (!CONNECT(*this, host, port)) return false;
     this->open = true;
     return true;
   }
   virtual bool close() override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     bool o1 = this->open;
     if (this->open) {
       this->open = 0;
@@ -91,7 +95,7 @@ class Socket : public ASocket<T> {
     return read(data, len, more);
   }
   virtual size_t read(T* data, size_t const& len, bool& more) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
 
     int16_t d = recv(ConnectSocket, data, len, 0);
 
@@ -107,7 +111,7 @@ class Socket : public ASocket<T> {
 
  protected:
   static bool CONNECT(Socket& sck, std::string const& host, int16_t const& port) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     int16_t e = 0;
 
     // Initialize Winsock
@@ -183,7 +187,7 @@ class SocketServer : public ASocketServer<T> {
   }
 
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     T in[_MKN_RAM_TCP_READ_BUFFER_];
     ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
 
@@ -211,12 +215,12 @@ class SocketServer : public ASocketServer<T> {
   }
 
   void closeFDsNoCompress(std::map<int, uint8_t>& fds, std::vector<int>& del) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     for (auto const& fd : del) {
       ::closesocket(m_fds[fd].fd);
       m_fds[fd].fd = -1;
       fds[fd] = 0;
-      nfds--;
+      --nfds;
     }
   }
   virtual void closeFDs(std::map<int, uint8_t>& fds, std::vector<int>& del) {
@@ -228,9 +232,9 @@ class SocketServer : public ASocketServer<T> {
     if (ret < 0)
       KEXCEPTION("Socket Server error on select: " + std::to_string(errno) + " - " +
                  std::string(strerror(errno)));
-    // if(ret == 0) return;
+
     int newlisock = -1;
-    ;
+
     for (auto const& pair : fds) {
       auto& i = pair.first;
       if (pair.second == 1) continue;
@@ -264,7 +268,7 @@ class SocketServer : public ASocketServer<T> {
     return WSAAccept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen, NULL, NULL);
   }
   virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
               << ", port : " << ntohs(cli_addr[nfd].sin_port);
@@ -298,7 +302,7 @@ class SocketServer : public ASocketServer<T> {
   }
   virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {}
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     _started = mkn::kul::Now::MILLIS();
 
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -310,7 +314,7 @@ class SocketServer : public ASocketServer<T> {
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    iResult = getaddrinfo(NULL, std::to_string(port()).c_str(), &hints, &result);
+    iResult = getaddrinfo(NULL, std::to_string(this->port()).c_str(), &hints, &result);
     if (iResult != 0) {
       WSACleanup();
       KEXCEPTION("getaddrinfo failed with error: ") << iResult;
@@ -318,7 +322,8 @@ class SocketServer : public ASocketServer<T> {
 
     lisock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     int iso = 1;
-    int rc = setsockopt(lisock, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
+    int rc =
+        setsockopt(lisock, SOL_SOCKET, __MKN_RAM_TCP_BIND_SOCKTOPTS__, (char*)&iso, sizeof(iso));
     if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ") << WSAGetLastError();
 
     {
@@ -348,7 +353,7 @@ class SocketServer : public ASocketServer<T> {
     }
   }
   virtual void stop() {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     s = 0;
     ::closesocket(lisock);
     lisock = 0;

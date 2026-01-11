@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2024, Philip Deegan.
+Copyright (c) 2026, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -68,13 +68,13 @@ class Socket : public ASocket<T> {
     if (this->open) close();
   }
   virtual bool connect(std::string const& host, int16_t const& port) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     if (!SOCKET(sck) || !CONNECT(sck, host, port)) return false;
     this->open = true;
     return true;
   }
   virtual bool close() override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     bool o1 = this->open;
     if (this->open) {
       ::close(sck);
@@ -88,7 +88,7 @@ class Socket : public ASocket<T> {
   }
   virtual size_t read(T* data, size_t const& len, bool& more)
       KTHROW(mkn::ram::tcp::Exception) override {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     struct timeval tv;
     fd_set fds;
     int64_t ret = 0, iof = -1;
@@ -157,13 +157,13 @@ class Socket : public ASocket<T> {
 
   static bool SOCKET(int& sck, int16_t const& domain = AF_INET, int16_t const& type = SOCK_STREAM,
                      int16_t const& protocol = IPPROTO_TCP) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     sck = socket(domain, type, protocol);
     if (sck < 0) KLOG(ERR) << "SOCKET ERROR CODE: " << sck;
     return sck >= 0;
   }
   static bool CONNECT(int const& sck, std::string const& host, int16_t const& port) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     struct sockaddr_in servAddr;
     memset(&servAddr, 0, sizeof(servAddr));
     servAddr.sin_family = AF_INET;
@@ -235,7 +235,7 @@ class SocketServer : public ASocketServer<T> {
   }
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
     (void)fds;
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     T in[_MKN_RAM_TCP_READ_BUFFER_];
     bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
     int16_t e = 0, read = readFrom(fd, in);
@@ -267,7 +267,7 @@ class SocketServer : public ASocketServer<T> {
     return false;
   }
   void closeFDsNoCompress(std::map<int, uint8_t>& fds, std::vector<int>& del) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     for (auto const& fd : del) {
       ::close(m_fds[fd].fd);
       m_fds[fd].fd = -1;
@@ -279,7 +279,7 @@ class SocketServer : public ASocketServer<T> {
     closeFDsNoCompress(fds, del);
   }
   virtual void loop(std::map<int, uint8_t>& fds) KTHROW(mkn::ram::tcp::Exception) {
-    // KUL_DBG_FUNC_ENTER
+    // MKN_KUL_DBG_FUNC_ENTER;
     auto ret = poll();
     if (!s) return;
     if (ret < 0)
@@ -332,7 +332,7 @@ class SocketServer : public ASocketServer<T> {
     return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
   }
   virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
-    KUL_DBG_FUNC_ENTER;
+    MKN_KUL_DBG_FUNC_ENTER;
     KOUT(DBG) << "New connection , socket fd is " << newlisock
               << ", is : " << inet_ntoa(cli_addr[nfd].sin_addr)
               << ", port : " << ntohs(cli_addr[nfd].sin_port);
@@ -380,7 +380,7 @@ class SocketServer : public ASocketServer<T> {
     }
   }
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     _started = mkn::kul::Now::MILLIS();
     auto ret = listen(lisock, 256);
     if (ret < 0) KEXCEPTION("Socket Server error on listen");
@@ -402,7 +402,7 @@ class SocketServer : public ASocketServer<T> {
     }
   }
   virtual void stop() {
-    KUL_DBG_FUNC_ENTER
+    MKN_KUL_DBG_FUNC_ENTER;
     s = 0;
     ::close(lisock);
     for (int i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++)

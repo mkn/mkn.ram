@@ -1,5 +1,5 @@
 /**
-Copyright (c) 2024, Philip Deegan.
+Copyright (c) 2026, Philip Deegan.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -111,7 +111,12 @@ class MultiServer : public mkn::ram::http::Server {
   MultiServer(short const& p = 80, uint8_t const& acceptThreads = 1,
               uint8_t const& workerThreads = 1)
       : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
-  ~MultiServer() { KUL_DBG_FUNC_ENTER }
+
+  ~MultiServer() {
+    MKN_KUL_DBG_FUNC_ENTER;
+    _acceptPool.stop();
+    _workerPool.stop();
+  }
 
   virtual void start() KTHROW(mkn::ram::tcp::Exception) override;
 
