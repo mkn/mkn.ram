@@ -220,7 +220,7 @@ class SocketServer : public ASocketServer<T> {
       ::closesocket(m_fds[fd].fd);
       m_fds[fd].fd = -1;
       fds[fd] = 0;
-      nfds--;
+      --nfds;
     }
   }
   virtual void closeFDs(std::map<int, uint8_t>& fds, std::vector<int>& del) {
@@ -232,9 +232,9 @@ class SocketServer : public ASocketServer<T> {
     if (ret < 0)
       KEXCEPTION("Socket Server error on select: " + std::to_string(errno) + " - " +
                  std::string(strerror(errno)));
-    // if(ret == 0) return;
+
     int newlisock = -1;
-    ;
+
     for (auto const& pair : fds) {
       auto& i = pair.first;
       if (pair.second == 1) continue;
@@ -322,7 +322,8 @@ class SocketServer : public ASocketServer<T> {
 
     lisock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     int iso = 1;
-    int rc = setsockopt(lisock, SOL_SOCKET, SO_REUSEADDR, (char*)&iso, sizeof(iso));
+    int rc =
+        setsockopt(lisock, SOL_SOCKET, __MKN_RAM_TCP_BIND_SOCKTOPTS__, (char*)&iso, sizeof(iso));
     if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ") << WSAGetLastError();
 
     {
