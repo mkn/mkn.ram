@@ -1,4 +1,4 @@
-name: windows-latest
+name: build
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,7 +11,32 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: "Build/Test"
+      run: |
+        curl -fL --retry 3 --retry-delay 2 -o mkn https://github.com/mkn/mkn/releases/download/latest/mkn_nix
+        chmod +x mkn
+        KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -l -pthread
+
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: "Build/Test"
+      env:
+        MKN_LIB_LINK_LIB: 1
+      run: |
+        set -ex
+        export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
+        curl -fL --retry 3 --retry-delay 2 -o mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
+        KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
+
+  windows:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -34,4 +59,4 @@ jobs:
         bash -c "set -ex; python3 -m pip install wheel -U && python3 -m pip install conan -U && python3 -m conans.conan profile detect"
         bash -c "mkdir -p /c/Users/runneradmin/.conan && cp conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
         bash -c "curl -Lo mkn.exe https://github.com/mkn/mkn/releases/download/latest/mkn.exe"
-        bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++17"'
+        bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++20"'

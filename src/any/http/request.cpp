@@ -83,7 +83,7 @@ std::string mkn::ram::http::_1_1GetRequest::toString() const {
   std::stringstream ss;
   ss << method() << " /" << _path;
   if (atts.size() > 0) ss << "?";
-  for (std::pair<std::string, std::string> const& p : atts) ss << p.first << "=" << p.second << "&";
+  for (auto const& p : atts) ss << p.first << "=" << p.second << "&";
   if (atts.size() > 0) ss.seekp(-1, ss.cur);
   ss << " " << version();
   ss << "\r\nHost: " << _host;
