@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <mutex>
 
+#include "mkn/kul/os.hpp"
 #include "mkn/ram/http.hpp"
 
 #define MKN_RAM_HTTPS_METHOD_APPENDER2(x, y) x##y
