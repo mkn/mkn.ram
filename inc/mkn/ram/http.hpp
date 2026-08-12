@@ -36,8 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _MKN_RAM_HTTP_HPP_
 
 #include "mkn/kul/map.hpp"
-#include "mkn/kul/string.hpp"
 #include "mkn/ram/tcp.hpp"
+#include "mkn/kul/string.hpp"
+
+#include <functional>
 
 namespace mkn {
 namespace ram {
