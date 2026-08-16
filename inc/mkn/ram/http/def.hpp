@@ -28,15 +28,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTTP_DEF_HPP_
-#define _MKN_RAM_HTTP_DEF_HPP_
+#ifndef MKN_RAM_HTTP_DEF_HPP
+#define MKN_RAM_HTTP_DEF_HPP
 
-#ifndef _MKN_RAM_HTTP_SESSION_TTL_
-#define _MKN_RAM_HTTP_SESSION_TTL_ 600  // seconds
-#endif                                  /* _MKN_RAM_HTTP_SESSION_TTL_ */
+#ifndef MKN_RAM_HTTP_SESSION_TTL
+#define MKN_RAM_HTTP_SESSION_TTL 600  // seconds
+#endif                                  /* MKN_RAM_HTTP_SESSION_TTL */
 
-#ifndef _MKN_RAM_HTTP_SESSION_CHECK_
-#define _MKN_RAM_HTTP_SESSION_CHECK_ 10000  // milliseconds to sleep between checks
-#endif                                      /* _MKN_RAM_HTTP_SESSION_CHECK_ */
+#ifndef MKN_RAM_HTTP_SESSION_CHECK
+#define MKN_RAM_HTTP_SESSION_CHECK 10000  // milliseconds to sleep between checks
+#endif                                      /* MKN_RAM_HTTP_SESSION_CHECK */
 
-#endif /* _MKN_RAM_HTTP_DEF_HPP_ */
+#endif /* MKN_RAM_HTTP_DEF_HPP */

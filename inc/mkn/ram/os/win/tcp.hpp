@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_OS_WIN_TCP_HPP_
-#define _MKN_RAM_OS_WIN_TCP_HPP_
+#ifndef MKN_RAM_OS_WIN_TCP_HPP
+#define MKN_RAM_OS_WIN_TCP_HPP
 
 #include "mkn/ram/tcp/def.hpp"
 
@@ -49,9 +49,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
 
-#ifndef __MKN_RAM_TCP_BIND_SOCKTOPTS__
-#define __MKN_RAM_TCP_BIND_SOCKTOPTS__ SO_REUSEADDR
-#endif  //__MKN_RAM_TCP_BIND_SOCKTOPTS__
+#ifndef MKN_RAM_TCP_BIND_SOCKTOPTS
+#define MKN_RAM_TCP_BIND_SOCKTOPTS SO_REUSEADDR
+#endif  //MKN_RAM_TCP_BIND_SOCKTOPTS
 
 namespace mkn {
 namespace ram {
@@ -103,7 +103,7 @@ class Socket : public ASocket<T> {
   }
   virtual size_t write(T const* data, size_t const& len) override {
     iResult = send(ConnectSocket, data, len, 0);
-    if (iResult == SOCKET_ERROR) KEXCEPTION("Socket send failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("Socket send failed with error: ", WSAGetLastError());
     return iResult;
   }
 
@@ -117,7 +117,7 @@ class Socket : public ASocket<T> {
     // Initialize Winsock
     int iResult = WSAStartup(MAKEWORD(2, 2), &sck.wsaData);
     if (iResult != 0) {
-      KEXCEPTION("WSAStartup failed with error: ") << iResult;
+      KEXCEPTION("WSAStartup failed with error: ", iResult);
       return 1;
     }
 
@@ -128,14 +128,14 @@ class Socket : public ASocket<T> {
 
     // Resolve the server address and port
     iResult = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &sck.hints, &sck.result);
-    if (iResult != 0) KEXCEPTION("getaddrinfo failed with error: ") << iResult;
+    if (iResult != 0) KEXCEPTION("getaddrinfo failed with error: ", iResult);
 
     // Attempt to connect to an address until one succeeds
     for (sck.ptr = sck.result; sck.ptr != NULL; sck.ptr = sck.ptr->ai_next) {
       // Create a SOCKET for connecting to server
       sck.ConnectSocket = ::socket(sck.ptr->ai_family, sck.ptr->ai_socktype, sck.ptr->ai_protocol);
       if (sck.ConnectSocket == INVALID_SOCKET)
-        KEXCEPTION("socket failed with error: ") << WSAGetLastError();
+        KEXCEPTION("socket failed with error: ", WSAGetLastError());
 
       // Connect to server.
       iResult = ::connect(sck.ConnectSocket, sck.ptr->ai_addr, (int)sck.ptr->ai_addrlen);
@@ -164,7 +164,7 @@ class SocketServer : public ASocketServer<T> {
   int64_t _started;
 
   WSADATA wsaData;
-  WSAPOLLFD m_fds[_MKN_RAM_TCP_MAX_CLIENT_];
+  WSAPOLLFD m_fds[MKN_RAM_TCP_MAX_CLIENT];
 
   SOCKET lisock = INVALID_SOCKET;
   SOCKET ClientSocket = INVALID_SOCKET;
@@ -173,14 +173,14 @@ class SocketServer : public ASocketServer<T> {
   struct addrinfo hints;
 
   socklen_t clilen;
-  struct sockaddr_in serv_addr, cli_addr[_MKN_RAM_TCP_MAX_CLIENT_];
+  struct sockaddr_in serv_addr, cli_addr[MKN_RAM_TCP_MAX_CLIENT];
 
   virtual bool handle(T* const in, size_t const& inLen, T* const out, size_t& outLen) {
     return true;
   }
 
   virtual int readFrom(int const& fd, T* in, int opts = 0) {
-    return ::recv(m_fds[fd].fd, in, _MKN_RAM_TCP_READ_BUFFER_ - 1, opts);
+    return ::recv(m_fds[fd].fd, in, MKN_RAM_TCP_READ_BUFFER - 1, opts);
   }
   virtual int writeTo(int const& fd, T const* const out, size_t size) {
     return ::send(m_fds[fd].fd, out, size, 0);
@@ -188,26 +188,26 @@ class SocketServer : public ASocketServer<T> {
 
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
     MKN_KUL_DBG_FUNC_ENTER;
-    T in[_MKN_RAM_TCP_READ_BUFFER_];
-    ZeroMemory(in, _MKN_RAM_TCP_READ_BUFFER_);
+    T in[MKN_RAM_TCP_READ_BUFFER];
+    ZeroMemory(in, MKN_RAM_TCP_READ_BUFFER);
 
     bool cl;
     do {
       cl = 0;
-      iResult = recv(ClientSocket, in, _MKN_RAM_TCP_READ_BUFFER_ - 1, 0);
+      iResult = recv(ClientSocket, in, MKN_RAM_TCP_READ_BUFFER - 1, 0);
       if (iResult > 0) {
-        T out[_MKN_RAM_TCP_READ_BUFFER_];
-        ZeroMemory(out, _MKN_RAM_TCP_READ_BUFFER_);
+        T out[MKN_RAM_TCP_READ_BUFFER];
+        ZeroMemory(out, MKN_RAM_TCP_READ_BUFFER);
         size_t outLen;
         cl = handle(in, iResult, out, outLen);
         auto sent = writeTo(ClientSocket, out, strlen(out));
         if (sent == SOCKET_ERROR)
-          KEXCEPTION("SocketServer send failed with error: ") << WSAGetLastError();
+          KEXCEPTION("SocketServer send failed with error: ", WSAGetLastError());
         if (cl) break;
       } else if (iResult == 0) {
         // printf("Connection closing...\n");
       } else
-        KEXCEPTION("SocketServer recv failed with error: ") << WSAGetLastError();
+        KEXCEPTION("SocketServer recv failed with error: ", WSAGetLastError());
 
     } while (iResult > 0);
 
@@ -287,7 +287,7 @@ class SocketServer : public ASocketServer<T> {
 
  public:
   SocketServer(uint16_t const& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
-    // if(_bind) bind(__MKN_RAM_TCP_BIND_SOCKTOPTS__);
+    // if(_bind) bind(MKN_RAM_TCP_BIND_SOCKTOPTS);
   }
   void freeaddrinfo() {
     if (!result) return;
@@ -300,13 +300,13 @@ class SocketServer : public ASocketServer<T> {
     if (ClientSocket) closesocket(ClientSocket);
     WSACleanup();
   }
-  virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {}
+  virtual void bind(int sockOpt = MKN_RAM_TCP_BIND_SOCKTOPTS) KTHROW(kul::Exception) {}
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
     MKN_KUL_DBG_FUNC_ENTER;
     _started = mkn::kul::Now::MILLIS();
 
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (iResult != 0) KEXCEPTION("WSAStartup failed with error: ") << iResult;
+    if (iResult != 0) KEXCEPTION("WSAStartup failed with error: ", iResult);
 
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -317,14 +317,14 @@ class SocketServer : public ASocketServer<T> {
     iResult = getaddrinfo(NULL, std::to_string(this->port()).c_str(), &hints, &result);
     if (iResult != 0) {
       WSACleanup();
-      KEXCEPTION("getaddrinfo failed with error: ") << iResult;
+      KEXCEPTION("getaddrinfo failed with error: ", iResult);
     }
 
     lisock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     int iso = 1;
     int rc =
-        setsockopt(lisock, SOL_SOCKET, __MKN_RAM_TCP_BIND_SOCKTOPTS__, (char*)&iso, sizeof(iso));
-    if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ") << WSAGetLastError();
+        setsockopt(lisock, SOL_SOCKET, MKN_RAM_TCP_BIND_SOCKTOPTS, (char*)&iso, sizeof(iso));
+    if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ", WSAGetLastError());
 
     {
       unsigned long mode = 1;
@@ -332,16 +332,16 @@ class SocketServer : public ASocketServer<T> {
     }
     // Setup the TCP listening socket
     iResult = ::bind(lisock, result->ai_addr, (int)result->ai_addrlen);
-    if (iResult == SOCKET_ERROR) KEXCEPTION("bind failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("bind failed with error: ", WSAGetLastError());
 
     freeaddrinfo();
 
     iResult = listen(lisock, SOMAXCONN);
-    if (iResult == SOCKET_ERROR) KEXCEPTION("listen failed with error: ") << WSAGetLastError();
+    if (iResult == SOCKET_ERROR) KEXCEPTION("listen failed with error: ", WSAGetLastError());
 
     s = true;
     std::map<int, uint8_t> fds;
-    for (int i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
+    for (int i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) fds.insert(std::make_pair(i, 0));
     try {
       while (s) loop(fds);
     } catch (mkn::ram::tcp::Exception const& e1) {
@@ -366,4 +366,4 @@ class SocketServer : public ASocketServer<T> {
 }  // namespace ram
 }  // namespace mkn
 
-#endif  //_MKN_RAM_OS_WIN_TCP_HPP_
+#endif  //MKN_RAM_OS_WIN_TCP_HPP

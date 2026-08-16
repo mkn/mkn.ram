@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
 
 void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
@@ -47,4 +47,4 @@ void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   _workerPool.start();
 }
 
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS

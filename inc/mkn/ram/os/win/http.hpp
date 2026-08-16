@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // MAY REQUIRE: runas admin - netsh http add urlacl url=http://localhost:666/
 // user=EVERYONE listen=yes delegate=no
 //
-#ifndef _MKN_RAM_OS_WIN_HTTP_HPP_
-#define _MKN_RAM_OS_WIN_HTTP_HPP_
+#ifndef MKN_RAM_OS_WIN_HTTP_HPP
+#define MKN_RAM_OS_WIN_HTTP_HPP
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -65,7 +65,7 @@ namespace http {
 
 class Server : public mkn::ram::http::AServer {
  private:
-  int fdSize = _MKN_RAM_TCP_READ_BUFFER_;
+  int fdSize = MKN_RAM_TCP_READ_BUFFER;
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
@@ -110,7 +110,7 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::http::Server {
   void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
-    for (int i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
+    for (int i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
@@ -151,4 +151,4 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::http::Server {
 }  // namespace ram
 }  // namespace mkn
 
-#endif /* _MKN_RAM_OS_WIN_HTTP_HPP_ */
+#endif /* MKN_RAM_OS_WIN_HTTP_HPP */

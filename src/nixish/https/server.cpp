@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
 
 void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
@@ -110,7 +110,7 @@ mkn::ram::https::Server& mkn::ram::https::Server::init() {
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
-  ctx = SSL_CTX_new(_MKN_RAM_HTTPS_SERVER_METHOD_());
+  ctx = SSL_CTX_new(MKN_RAM_HTTPS_SERVER_METHOD());
   if (!ctx) KEXCEPTION("HTTPS Server SSL_CTX failed SSL_CTX_new");
   if (SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
     KEXCEPTION("HTTPS Server SSL_CTX_use_certificate_file failed");
@@ -127,7 +127,7 @@ void mkn::ram::https::Server::stop() {
   s = 0;
   ERR_free_strings();
   EVP_cleanup();
-  for (size_t i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) {
+  for (size_t i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) {
     auto ssl = ssl_clients[i];
     if (ssl) {
       SSL_shutdown(ssl);
@@ -168,8 +168,8 @@ void mkn::ram::https::Server::handleBuffer(std::map<int, uint8_t>& fds, int cons
 bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   MKN_KUL_DBG_FUNC_ENTER;
   char* in = getOrCreateBufferFor(fd);
-  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
-  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, _MKN_RAM_TCP_READ_BUFFER_ - 1);
+  bzero(in, MKN_RAM_TCP_READ_BUFFER);
+  int e = 0, read = ::SSL_read(ssl_clients[m_fds[fd].fd], in, MKN_RAM_TCP_READ_BUFFER - 1);
   if (read < 0) {
     if (fds[fd] == 5) {
       e = -1;
@@ -197,4 +197,4 @@ bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, int const& fd
   return true;
 }
 
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS

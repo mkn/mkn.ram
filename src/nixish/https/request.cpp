@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
 
 void mkn::ram::https::Requester::send(std::string const& h, std::string const& req,
@@ -42,11 +42,11 @@ void mkn::ram::https::Requester::send(std::string const& h, std::string const& r
   SSL_set_fd(ssl, sck);
   if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
   SSL_write(ssl, req.c_str(), req.size());
-  char buffer[_MKN_RAM_TCP_REQUEST_BUFFER_];
+  char buffer[MKN_RAM_TCP_REQUEST_BUFFER];
   int64_t d = 0, i = 0;
   do {
-    bzero(buffer, _MKN_RAM_TCP_REQUEST_BUFFER_);
-    d = SSL_read(ssl, buffer, _MKN_RAM_TCP_REQUEST_BUFFER_ - 1);
+    bzero(buffer, MKN_RAM_TCP_REQUEST_BUFFER);
+    d = SSL_read(ssl, buffer, MKN_RAM_TCP_REQUEST_BUFFER - 1);
     if (d == 0) break;
     if (d < 0) {
       short se = 0;
@@ -89,4 +89,4 @@ void mkn::ram::https::_1_1PostRequest::send() KTHROW(mkn::ram::http::Exception) 
   }
 }
 
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS

@@ -38,13 +38,13 @@ void mkn::ram::http::A1_1Request::send() KTHROW(mkn::ram::http::Exception) {
     if (!sock.connect(_host, _port)) KEXCEPTION("TCP FAILED TO CONNECT!");
     std::string const& req(toString());
     sock.write(req.c_str(), req.size());
-    std::unique_ptr<char[]> buf(new char[_MKN_RAM_TCP_REQUEST_BUFFER_]);
+    std::unique_ptr<char[]> buf(new char[MKN_RAM_TCP_REQUEST_BUFFER]);
     int64_t i, d = 0;
     bool more = false;
     do {
-      bzero(buf.get(), _MKN_RAM_TCP_REQUEST_BUFFER_);
+      bzero(buf.get(), MKN_RAM_TCP_REQUEST_BUFFER);
       more = false;
-      d = sock.read(buf.get(), _MKN_RAM_TCP_REQUEST_BUFFER_ - 1, more);
+      d = sock.read(buf.get(), MKN_RAM_TCP_REQUEST_BUFFER - 1, more);
       if (d == -1) return;
       for (i = 0; i < d; i++) ss << buf[i];
     } while (more);

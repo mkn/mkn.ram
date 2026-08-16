@@ -12,21 +12,21 @@ License: BSD
 
 Switches - OSX is considered BSD for swiches unless otherwise noted
  
-Key             __MKN_RAM_TCP_BIND_SOCKTOPTS__
+Key             MKN_RAM_TCP_BIND_SOCKTOPTS
 Type            text
 Default         SO_REUSEADDR
 OS              nix/bsd
 Description
     Socket options to use on bind
 
-Key             _MKN_RAM_HTTPS_CLIENT_METHOD_
+Key             MKN_RAM_HTTPS_CLIENT_METHOD
 Type            text
 Default         TLS_client_method
 OS              nix/bsd
 Description
     Method to tell SSL server what method is wanted
 
-Key             _MKN_RAM_HTTPS_SERVER_METHOD_
+Key             MKN_RAM_HTTPS_SERVER_METHOD
 Type            text
 Default         TLS_server_method
 OS              nix/bsd
@@ -34,12 +34,12 @@ Description
     Method to tell SSL client is in use
 
 
-Key             _MKN_RAM_HTTPS_METHOD_
+Key             MKN_RAM_HTTPS_METHOD
 Type            text
 Default         TLS
 OS              nix/bsd
 Description
-    Convenience macro, if _MKN_RAM_HTTPS_CLIENT_METHOD_ and _MKN_RAM_HTTPS_SERVER_METHOD_ are not defined, it is used as the prefix for both i.e.:
-    -D_MKN_RAM_HTTPS_METHOD_=TLS
-    -D_MKN_RAM_HTTPS_METHOD_=TLSv1_2
+    Convenience macro, if MKN_RAM_HTTPS_CLIENT_METHOD and MKN_RAM_HTTPS_SERVER_METHOD are not defined, it is used as the prefix for both i.e.:
+    -DMKN_RAM_HTTPS_METHOD=TLS
+    -DMKN_RAM_HTTPS_METHOD=TLSv1_2
 

@@ -34,9 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 #include "mkn/ram/tcp.hpp"
 
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 #include "mkn/ram/html4.hpp"
 
@@ -44,9 +44,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define bzero ZeroMemory
 #endif
 
-#ifndef _MKN_RAM_HTTP_TEST_PORT_
-#define _MKN_RAM_HTTP_TEST_PORT_ 8888
-#endif /*_MKN_RAM_HTTP_TEST_PORT_*/
+#ifndef MKN_RAM_HTTP_TEST_PORT
+#define MKN_RAM_HTTP_TEST_PORT 8888
+#endif /*MKN_RAM_HTTP_TEST_PORT*/
 
 namespace mkn {
 namespace ram {
@@ -56,11 +56,11 @@ class TestHTTPServer : public mkn::ram::http::Server {
   void operator()() { start(); }
 
  public:
-  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const&) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
-  TestHTTPServer() : mkn::ram::http::Server(_MKN_RAM_HTTP_TEST_PORT_) {}
+  TestHTTPServer() : mkn::ram::http::Server(MKN_RAM_HTTP_TEST_PORT) {}
   friend class mkn::kul::Thread;
 };
 
@@ -69,15 +69,15 @@ class TestMultiHTTPServer : public mkn::ram::http::MultiServer {
   void operator()() { start(); }
 
  public:
-  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
+  mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const&) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("MULTI HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
-  TestMultiHTTPServer() : mkn::ram::http::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, 3) {}
+  TestMultiHTTPServer() : mkn::ram::http::MultiServer(MKN_RAM_HTTP_TEST_PORT, 3) {}
   friend class mkn::kul::Thread;
 };
 
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 class TestHTTPSServer : public mkn::ram::https::Server {
  private:
   void operator()() { start(); }
@@ -88,7 +88,7 @@ class TestHTTPSServer : public mkn::ram::https::Server {
     return r.withBody("HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
   }
   TestHTTPSServer()
-      : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
+      : mkn::ram::https::Server(MKN_RAM_HTTP_TEST_PORT, mkn::kul::File("res/test/server.crt"),
                                 mkn::kul::File("res/test/server.key")) {}
   friend class mkn::kul::Thread;
 };
@@ -103,7 +103,7 @@ class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
     return r.withBody("MULTI HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
   }
   TestMultiHTTPSServer(uint8_t const& acceptThreads = 1, uint8_t const& workerThreads = 1)
-      : mkn::ram::https::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, acceptThreads, workerThreads,
+      : mkn::ram::https::MultiServer(MKN_RAM_HTTP_TEST_PORT, acceptThreads, workerThreads,
                                      mkn::kul::File("res/test/server.crt"),
                                      mkn::kul::File("res/test/server.key")) {}
   friend class mkn::kul::Thread;
@@ -126,20 +126,20 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
     KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
   }
 };
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
  private:
   void operator()() { start(); }
 
  public:
-  bool handle(char* const in, size_t const& inLen, char* const out, size_t& outLen) override {
+  bool handle(char* const, size_t const&, char* const out, size_t& outLen) override {
     std::string rep("TCP PROVIDED BY KUL");
     std::strcpy(out, rep.c_str());
     outLen = rep.size();
     return true;
   }
-  TestSocketServer() : mkn::ram::tcp::SocketServer<char>(_MKN_RAM_HTTP_TEST_PORT_) {}
+  TestSocketServer() : mkn::ram::tcp::SocketServer<char>(MKN_RAM_HTTP_TEST_PORT) {}
   friend class mkn::kul::Thread;
 };
 
@@ -164,7 +164,7 @@ class Post : public mkn::ram::http::_1_1PostRequest {
 class Test {
  public:
   Test() {
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
     KOUT(NON) << "Single HTTPS SERVER";
     {
       TestHTTPSServer serv;
@@ -174,13 +174,13 @@ class Test {
       mkn::kul::this_thread::sleep(333);
       if (t.exception()) std::rethrow_exception(t.exception());
       {
-        HTTPS_Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
+        HTTPS_Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
         if (t.exception()) std::rethrow_exception(t.exception());
-        HTTPS_Post p("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+        HTTPS_Post p("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT);
         p.body("tsop");
         p.send();
         if (t.exception()) std::rethrow_exception(t.exception());
-        HTTPS_Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
+        HTTPS_Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
         if (t.exception()) std::rethrow_exception(t.exception());
       }
       mkn::kul::this_thread::sleep(100);
@@ -198,7 +198,7 @@ class Test {
 
       std::atomic<uint16_t> index(0);
       auto getter = [&]() {
-        HTTPS_Get("localhost", "index.html_" + std::to_string(index++), _MKN_RAM_HTTP_TEST_PORT_)
+        HTTPS_Get("localhost", "index.html_" + std::to_string(index++), MKN_RAM_HTTP_TEST_PORT)
             .send();
       };
       auto except = [&t](mkn::kul::Exception const& e) {
@@ -216,7 +216,7 @@ class Test {
       t.join();
     }
 
-#endif  // _MKN_RAM_HTTPS_
+#endif  // MKN_RAM_INCLUDE_HTTPS
 
     KOUT(NON) << "Single HTTP SERVER";
     {
@@ -226,10 +226,10 @@ class Test {
       mkn::kul::this_thread::sleep(333);
       if (t.exception()) std::rethrow_exception(t.exception());
       {
-        Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
-        Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
+        Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
+        Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
         if (t.exception()) std::rethrow_exception(t.exception());
-        Post p("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+        Post p("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT);
         p.body("tsop");
         p.send();
         if (t.exception()) std::rethrow_exception(t.exception());
@@ -255,9 +255,9 @@ class Test {
       sock.write(s1.c_str(), s1.size());
       sock.write(s2.c_str(), s2.size());
       KOUT(NON) << "Reading from TCP socket";
-      char buf[_MKN_RAM_TCP_REQUEST_BUFFER_];
-      bzero(buf, _MKN_RAM_TCP_REQUEST_BUFFER_);
-      sock.read(buf, _MKN_RAM_TCP_REQUEST_BUFFER_);
+      char buf[MKN_RAM_TCP_REQUEST_BUFFER];
+      bzero(buf, MKN_RAM_TCP_REQUEST_BUFFER);
+      sock.read(buf, MKN_RAM_TCP_REQUEST_BUFFER);
       sock.close();
     }
     KOUT(NON) << "TCP Socket SERVER";
@@ -271,15 +271,15 @@ class Test {
 
       for (size_t i = 0; i < 5; i++) {
         mkn::ram::tcp::Socket<char> sock;
-        if (!sock.connect("localhost", _MKN_RAM_HTTP_TEST_PORT_))
+        if (!sock.connect("localhost", MKN_RAM_HTTP_TEST_PORT))
           KEXCEPT(mkn::ram::tcp::Exception, "TCP FAILED TO CONNECT!");
 
         char const* c = "socketserver";
         sock.write(c, strlen(c));
 
-        char buf[_MKN_RAM_TCP_REQUEST_BUFFER_];
-        bzero(buf, _MKN_RAM_TCP_REQUEST_BUFFER_);
-        sock.read(buf, _MKN_RAM_TCP_REQUEST_BUFFER_);
+        char buf[MKN_RAM_TCP_REQUEST_BUFFER];
+        bzero(buf, MKN_RAM_TCP_REQUEST_BUFFER);
+        sock.read(buf, MKN_RAM_TCP_REQUEST_BUFFER);
 
         sock.close();
       }
@@ -294,7 +294,7 @@ class Test {
     //         t.run();
     //         mkn::kul::this_thread::sleep(333);
     //         for(size_t i = 0; i < 10; i++){
-    //             Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
+    //             Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
     //             if(t.exception()) std::rethrow_exception(t.exception());
     //         }
     //         mkn::kul::this_thread::sleep(100);
@@ -308,7 +308,7 @@ class Test {
 }  // namespace ram
 }  // namespace mkn
 
-#ifndef __MKN_RAM_NOMAIN__
+#ifndef MKN_RAM_NOMAIN
 int main(int argc, char* argv[]) {
   mkn::kul::Signal s;
   try {
@@ -326,4 +326,4 @@ int main(int argc, char* argv[]) {
   }
   return 0;
 }
-#endif  //__MKN_RAM_NOMAIN__
+#endif  //MKN_RAM_NOMAIN

@@ -21,7 +21,7 @@ profile:
 
 - name: https
   parent: lib
-  arg: -D_MKN_RAM_INCLUDE_HTTPS_
+  arg: -DMKN_RAM_INCLUDE_HTTPS
   if_mod:
     win:
     - name: conan.install
@@ -36,12 +36,12 @@ profile:
 
 - name: fcgi
   parent: lib
-  arg: -D_KUL_INCLUDE_FCGI_
+  arg: -DKUL_INCLUDE_FCGI
 
 - name: usage
   parent: https
   main: tst/usage.cpp
-  # arg: -D_MKN_RAM_INCLUDE_HTTPS_
+  # arg: -DMKN_RAM_INCLUDE_HTTPS
   # if_link:
   #   win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
@@ -69,4 +69,4 @@ profile:
       style: file
       types: cpp cxx cc h hpp
       paths: .
-      args:  -D_MKN_RAM_INCLUDE_HTTPS_
+      args:  -DMKN_RAM_INCLUDE_HTTPS

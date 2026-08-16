@@ -10,6 +10,10 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  CURL_GET: curl -fL --retry 3 --retry-delay 2
+  PATH_GET: https://github.com/mkn/mkn/releases/download/latest
+
 jobs:
   ubuntu:
     runs-on: ubuntu-latest
@@ -18,7 +22,7 @@ jobs:
 
     - name: "Build/Test"
       run: |
-        curl -fL --retry 3 --retry-delay 2 -o mkn https://github.com/mkn/mkn/releases/download/latest/mkn_nix
+        $CURL_GET -o mkn ${PATH_GET}/mkn_nix
         chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -l -pthread
 
@@ -33,7 +37,7 @@ jobs:
       run: |
         set -ex
         export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
-        curl -fL --retry 3 --retry-delay 2 -o mkn https://github.com/mkn/mkn/releases/download/latest/mkn_arm_osx && chmod +x mkn
+        $CURL_GET -o mkn ${PATH_GET}/mkn_arm_osx && chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
 
   windows:
@@ -58,5 +62,5 @@ jobs:
         bash -c "rm /bin/link"
         bash -c "set -ex; python3 -m pip install wheel -U && python3 -m pip install conan -U && python3 -m conans.conan profile detect"
         bash -c "mkdir -p /c/Users/runneradmin/.conan && cp conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
-        bash -c "curl -Lo mkn.exe https://github.com/mkn/mkn/releases/download/latest/mkn.exe"
+        bash -c '$CURL_GET -o mkn.exe ${PATH_GET}/mkn.exe'
         bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++20"'

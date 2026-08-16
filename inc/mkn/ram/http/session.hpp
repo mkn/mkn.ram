@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTTP_SESSION_HPP_
-#define _MKN_RAM_HTTP_SESSION_HPP_
+#ifndef MKN_RAM_HTTP_SESSION_HPP
+#define MKN_RAM_HTTP_SESSION_HPP
 
 #include "mkn/kul/threads.hpp"
 #include "mkn/kul/time.hpp"
@@ -53,7 +53,7 @@ class Session {
   void refresh() {
     if (c != MAX) this->c = std::time(0);
   }
-  bool const expired() const { return c < (std::time(0) - _MKN_RAM_HTTP_SESSION_TTL_); }
+  bool const expired() const { return c < (std::time(0) - MKN_RAM_HTTP_SESSION_TTL); }
   void invalidate() { c = MAX; }
   template <class S>
   friend class SessionServer;
@@ -67,7 +67,7 @@ class SessionServer {
   mkn::kul::hash::map::S2T<std::shared_ptr<S>> sss;
   virtual void operator()() {
     while (true) {
-      mkn::kul::this_thread::sleep(_MKN_RAM_HTTP_SESSION_CHECK_);
+      mkn::kul::this_thread::sleep(MKN_RAM_HTTP_SESSION_CHECK);
       {
         auto copy = sss;
         std::vector<std::string> erase;
@@ -120,4 +120,4 @@ class SessionServer {
 }  // namespace http
 }  // namespace ram
 }  // namespace mkn
-#endif /* _MKN_RAM_HTTP_SESSION_HPP_ */
+#endif /* MKN_RAM_HTTP_SESSION_HPP */

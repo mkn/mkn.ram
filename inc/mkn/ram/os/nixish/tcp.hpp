@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_OS_NIXISH_TCP_HPP_
-#define _MKN_RAM_OS_NIXISH_TCP_HPP_
+#ifndef MKN_RAM_OS_NIXISH_TCP_HPP
+#define MKN_RAM_OS_NIXISH_TCP_HPP
 
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -50,9 +50,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/kul/time.hpp"
 #include "mkn/ram/tcp/def.hpp"
 
-#ifndef __MKN_RAM_TCP_BIND_SOCKTOPTS__
-#define __MKN_RAM_TCP_BIND_SOCKTOPTS__ SO_REUSEADDR
-#endif  //__MKN_RAM_TCP_BIND_SOCKTOPTS__
+#ifndef MKN_RAM_TCP_BIND_SOCKTOPTS
+#define MKN_RAM_TCP_BIND_SOCKTOPTS SO_REUSEADDR
+#endif  //MKN_RAM_TCP_BIND_SOCKTOPTS
 
 namespace mkn {
 namespace ram {
@@ -206,9 +206,9 @@ class SocketServer : public ASocketServer<T> {
   bool s = 0;
   int lisock = 0, nfds = 12;
   int64_t _started;
-  struct pollfd m_fds[_MKN_RAM_TCP_MAX_CLIENT_];
+  struct pollfd m_fds[MKN_RAM_TCP_MAX_CLIENT];
   socklen_t clilen;
-  struct sockaddr_in serv_addr, cli_addr[_MKN_RAM_TCP_MAX_CLIENT_];
+  struct sockaddr_in serv_addr, cli_addr[MKN_RAM_TCP_MAX_CLIENT];
 
   virtual bool handle(T* const in, size_t const& inLen, T* const out, size_t& outLen) {
     // default overridable function
@@ -223,10 +223,10 @@ class SocketServer : public ASocketServer<T> {
     size_t size = 0;
     int64_t val = 0;
     while (1) {
-      val = ::recv(m_fds[fd].fd, in + size, _MKN_RAM_TCP_READ_BUFFER_ - (size + 1),
+      val = ::recv(m_fds[fd].fd, in + size, MKN_RAM_TCP_READ_BUFFER - (size + 1),
                    MSG_PEEK | MSG_DONTWAIT);
       if (val < 0) break;
-      size += ::recv(m_fds[fd].fd, in + size, _MKN_RAM_TCP_READ_BUFFER_ - (size + 1), opts);
+      size += ::recv(m_fds[fd].fd, in + size, MKN_RAM_TCP_READ_BUFFER - (size + 1), opts);
     }
     return size;
   }
@@ -236,8 +236,8 @@ class SocketServer : public ASocketServer<T> {
   virtual bool receive(std::map<int, uint8_t>& fds, int const& fd) {
     (void)fds;
     MKN_KUL_DBG_FUNC_ENTER;
-    T in[_MKN_RAM_TCP_READ_BUFFER_];
-    bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
+    T in[MKN_RAM_TCP_READ_BUFFER];
+    bzero(in, MKN_RAM_TCP_READ_BUFFER);
     int16_t e = 0, read = readFrom(fd, in);
     if (read < 0 && errno != EWOULDBLOCK)
       KEXCEPTION("Socket Server error on recv - fd(" + std::to_string(fd) +
@@ -252,8 +252,8 @@ class SocketServer : public ASocketServer<T> {
       bool cl = 1;
       in[read] = '\0';
       try {
-        T out[_MKN_RAM_TCP_READ_BUFFER_];
-        bzero(out, _MKN_RAM_TCP_READ_BUFFER_);
+        T out[MKN_RAM_TCP_READ_BUFFER];
+        bzero(out, MKN_RAM_TCP_READ_BUFFER);
         size_t outLen;
         cl = handle(in, read, out, outLen);
         e = writeTo(fd, out, outLen);
@@ -345,13 +345,13 @@ class SocketServer : public ASocketServer<T> {
 
  public:
   SocketServer(uint16_t const& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
-    if (_bind) bind(__MKN_RAM_TCP_BIND_SOCKTOPTS__);
+    if (_bind) bind(MKN_RAM_TCP_BIND_SOCKTOPTS);
     memset(m_fds, 0, sizeof(m_fds));
   }
   ~SocketServer() {
-    for (int i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) ::close(m_fds[i].fd);
+    for (int i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) ::close(m_fds[i].fd);
   }
-  virtual void bind(int sockOpt = __MKN_RAM_TCP_BIND_SOCKTOPTS__) KTHROW(kul::Exception) {
+  virtual void bind(int sockOpt = MKN_RAM_TCP_BIND_SOCKTOPTS) KTHROW(kul::Exception) {
     lisock = socket(AF_INET, SOCK_STREAM, 0);
     int iso = 1;
     int rc = setsockopt(lisock, SOL_SOCKET, sockOpt, (char*)&iso, sizeof(iso));
@@ -390,7 +390,7 @@ class SocketServer : public ASocketServer<T> {
     m_fds[0].events = POLLIN;  //|POLLPRI;
     nfds = lisock + 1;
     std::map<int, uint8_t> fds;
-    for (size_t i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++) fds.insert(std::make_pair(i, 0));
+    for (size_t i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) fds.insert(std::make_pair(i, 0));
     try {
       while (s) loop(fds);
     } catch (mkn::ram::tcp::Exception const& e1) {
@@ -405,7 +405,7 @@ class SocketServer : public ASocketServer<T> {
     MKN_KUL_DBG_FUNC_ENTER;
     s = 0;
     ::close(lisock);
-    for (int i = 0; i < _MKN_RAM_TCP_MAX_CLIENT_; i++)
+    for (int i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++)
       if (i != lisock) shutdown(i, SHUT_RDWR);
   }
 };
@@ -414,4 +414,4 @@ class SocketServer : public ASocketServer<T> {
 }  // namespace ram
 }  // namespace mkn
 
-#endif  //_MKN_RAM_OS_NIXISH_TCP_HPP_
+#endif  //MKN_RAM_OS_NIXISH_TCP_HPP

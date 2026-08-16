@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTTPS_HPP_
-#define _MKN_RAM_HTTPS_HPP_
+#ifndef MKN_RAM_HTTPS_HPP
+#define MKN_RAM_HTTPS_HPP
 
 #include "mkn/kul/except.hpp"
 
@@ -51,4 +51,4 @@ class Exception : public mkn::kul::Exception {
 #include "mkn/ram/os/nixish/https.hpp"
 #endif
 
-#endif  //_MKN_RAM_INCLUDE_HTTPS_HPP_
+#endif  //MKN_RAM_HTTPS_HPP

@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // MAY REQUIRE: runas admin - netsh http add urlacl url=http://localhost:666/
 // user=EVERYONE listen=yes delegate=no
 //
-#ifndef _MKN_RAM_HTTP_HPP_
-#define _MKN_RAM_HTTP_HPP_
+#ifndef MKN_RAM_HTTP_HPP
+#define MKN_RAM_HTTP_HPP
 
 #include "mkn/kul/map.hpp"
 #include "mkn/kul/string.hpp"
@@ -277,4 +277,4 @@ class MKN_KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
 #include "mkn/ram/os/nixish/http.hpp"
 #endif
 
-#endif /* _MKN_RAM_HTTP_HPP_ */
+#endif /* MKN_RAM_HTTP_HPP */
