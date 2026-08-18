@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: "Build/Test"
       run: |
         $CURL_GET -o mkn ${PATH_GET}/mkn_nix
@@ -30,10 +29,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v4
-
     - name: "Build/Test"
-      env:
-        MKN_LIB_LINK_LIB: 1
       run: |
         set -ex
         export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
@@ -44,23 +40,19 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
-
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: amd64
-
     - uses: actions/setup-python@v4
       with:
         python-version: '3.12.5'
-
     - name: "Build/Test"
       shell: cmd
       env:
         MKN_CL_PREFERRED: 1
-        MKN_LIB_LINK_LIB: 1
       run: | # /bin/link interferes with cl/link.exe
         bash -c "rm /bin/link"
         bash -c "set -ex; python3 -m pip install wheel -U && python3 -m pip install conan -U && python3 -m conans.conan profile detect"
-        bash -c "mkdir -p /c/Users/runneradmin/.conan && cp conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
+        bash -c "mkdir -p /c/Users/runneradmin/.conan && cp res/test/conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
         bash -c '$CURL_GET -o mkn.exe ${PATH_GET}/mkn.exe'
         bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++20"'
