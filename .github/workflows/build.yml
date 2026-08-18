@@ -55,4 +55,5 @@ jobs:
         bash -c "set -ex; python3 -m pip install wheel -U && python3 -m pip install conan -U && python3 -m conans.conan profile detect"
         bash -c "mkdir -p /c/Users/runneradmin/.conan && cp res/test/conan_remotes.json /c/Users/runneradmin/.conan/remotes.json"
         bash -c '$CURL_GET -o mkn.exe ${PATH_GET}/mkn.exe'
-        bash -c 'KLOG=3 ./mkn clean build -dtOp test -a "-EHsc -std:c++20"'
+        bash -c './mkn -v'
+        bash -c 'KLOG=3 ./mkn clean build -dKtOp test -a "-EHsc -std:c++20"'

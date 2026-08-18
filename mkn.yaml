@@ -51,7 +51,6 @@ profile:
 
 - name: test
   parent: https
-  mode: none
   main: tst/test.cpp
 
 - name: test.client

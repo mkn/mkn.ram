@@ -31,14 +31,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_WIN_HTTPS_HPP
 #define MKN_RAM_OS_WIN_HTTPS_HPP
 
+
+#include "mkn/kul/os.hpp"
+#include "mkn/ram/http.hpp"
+
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
-
-#include "mkn/ram/http.hpp"
 
 #define MKN_RAM_HTTPS_METHOD_APPENDER2(x, y) x##y
 #define MKN_RAM_HTTPS_METHOD_APPENDER(x, y) MKN_RAM_HTTPS_METHOD_APPENDER2(x, y)
