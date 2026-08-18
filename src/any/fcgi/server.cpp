@@ -28,7 +28,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifdef _KUL_INCLUDE_FCGI_
+#ifdef KUL_INCLUDE_FCGI
 
 #include "mkn/kul/asio/fcgi.hpp"
 #include "mkn/ram/http.hpp"
@@ -55,7 +55,7 @@ void mkn::ram::asio::fcgi::Server::start() KTHROW(Exception) {
 bool mkn::ram::asio::fcgi::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   MKN_KUL_DBG_FUNC_ENTER;
   uint8_t* in = getOrCreateBufferFor(fd);
-  bzero(in, _MKN_RAM_TCP_READ_BUFFER_);
+  bzero(in, MKN_RAM_TCP_READ_BUFFER);
   int e = 0, read = readFrom(fd, in, MSG_DONTWAIT);
   if (read < 0)
     e = -1;
@@ -138,7 +138,7 @@ void mkn::ram::asio::fcgi::Server::PARSE(std::map<int, uint8_t>& fds, uint8_t* c
 
 size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(FCGI_Message const& msg, uint8_t* out) {
   MKN_KUL_DBG_FUNC_ENTER;
-  bzero(out, _MKN_RAM_TCP_READ_BUFFER_);
+  bzero(out, MKN_RAM_TCP_READ_BUFFER);
 
   size_t pos = 0;
   out[pos++] = 1;
@@ -206,4 +206,4 @@ size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(FCGI_Message const& msg, uint
   return size + pad + 40;
 }
 
-#endif  //_KUL_INCLUDE_FCGI_
+#endif  //KUL_INCLUDE_FCGI

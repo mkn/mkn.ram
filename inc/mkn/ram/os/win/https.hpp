@@ -28,8 +28,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_OS_WIN_HTTPS_HPP_
-#define _MKN_RAM_OS_WIN_HTTPS_HPP_
+#ifndef MKN_RAM_OS_WIN_HTTPS_HPP
+#define MKN_RAM_OS_WIN_HTTPS_HPP
+
+
+#include "mkn/kul/os.hpp"
+#include "mkn/ram/http.hpp"
 
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -38,30 +42,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
-#include "mkn/ram/http.hpp"
-
 #define MKN_RAM_HTTPS_METHOD_APPENDER2(x, y) x##y
 #define MKN_RAM_HTTPS_METHOD_APPENDER(x, y) MKN_RAM_HTTPS_METHOD_APPENDER2(x, y)
 
-#if !defined(_MKN_RAM_HTTPS_CLIENT_METHOD_) && !defined(_MKN_RAM_HTTPS_SERVER_METHOD_)
+#if !defined(MKN_RAM_HTTPS_CLIENT_METHOD) && !defined(MKN_RAM_HTTPS_SERVER_METHOD)
 
-#ifndef _MKN_RAM_HTTPS_METHOD_
-#define _MKN_RAM_HTTPS_METHOD_ TLS
-#endif /* _MKN_RAM_HTTPS_METHOD_ */
+#ifndef MKN_RAM_HTTPS_METHOD
+#define MKN_RAM_HTTPS_METHOD TLS
+#endif /* MKN_RAM_HTTPS_METHOD */
 
-#define _MKN_RAM_HTTPS_CLIENT_METHOD_ \
-  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _client_method)
-#define _MKN_RAM_HTTPS_SERVER_METHOD_ \
-  MKN_RAM_HTTPS_METHOD_APPENDER(_MKN_RAM_HTTPS_METHOD_, _server_method)
+#define MKN_RAM_HTTPS_CLIENT_METHOD \
+  MKN_RAM_HTTPS_METHOD_APPENDER(MKN_RAM_HTTPS_METHOD, _client_method)
+#define MKN_RAM_HTTPS_SERVER_METHOD \
+  MKN_RAM_HTTPS_METHOD_APPENDER(MKN_RAM_HTTPS_METHOD, _server_method)
 
 #else
 
-#ifndef _MKN_RAM_HTTPS_CLIENT_METHOD_
-#define _MKN_RAM_HTTPS_CLIENT_METHOD_ TLS_client_method
-#endif /* _MKN_RAM_HTTPS_CLIENT_METHOD_ */
-#ifndef _MKN_RAM_HTTPS_SERVER_METHOD_
-#define _MKN_RAM_HTTPS_SERVER_METHOD_ TLS_server_method
-#endif /* _MKN_RAM_HTTPS_SERVER_METHOD_ */
+#ifndef MKN_RAM_HTTPS_CLIENT_METHOD
+#define MKN_RAM_HTTPS_CLIENT_METHOD TLS_client_method
+#endif /* MKN_RAM_HTTPS_CLIENT_METHOD */
+#ifndef MKN_RAM_HTTPS_SERVER_METHOD
+#define MKN_RAM_HTTPS_SERVER_METHOD TLS_server_method
+#endif /* MKN_RAM_HTTPS_SERVER_METHOD */
 
 #endif /* defined xyz */
 
@@ -72,7 +74,7 @@ namespace https {
 class Server : public mkn::ram::http::Server {
  protected:
   X509* cc = {0};
-  SSL* ssl_clients[_MKN_RAM_TCP_MAX_CLIENT_] = {0};
+  SSL* ssl_clients[MKN_RAM_TCP_MAX_CLIENT] = {0};
   SSL_CTX* ctx = {0};
   mkn::kul::File crt, key;
   std::string const cs;
@@ -109,7 +111,7 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
   void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
-    for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
+    for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
@@ -192,7 +194,7 @@ class SSLReqHelper {
     SSL_library_init();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-    ctx = SSL_CTX_new(_MKN_RAM_HTTPS_CLIENT_METHOD_());
+    ctx = SSL_CTX_new(MKN_RAM_HTTPS_CLIENT_METHOD());
     if (ctx == NULL) {
       ERR_print_errors_fp(stderr);
       abort();
@@ -238,4 +240,4 @@ using Post = _1_1PostRequest;
 }  // namespace https
 }  // namespace ram
 }  // namespace mkn
-#endif  //_MKN_RAM_INCLUDE_HTTPS_HPP_
+#endif  //MKN_RAM_OS_WIN_HTTPS_HPP

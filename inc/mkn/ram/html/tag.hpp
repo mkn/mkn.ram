@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTML_TAG_HPP_
-#define _MKN_RAM_HTML_TAG_HPP_
+#ifndef MKN_RAM_HTML_TAG_HPP
+#define MKN_RAM_HTML_TAG_HPP
 
 #include "mkn/kul/except.hpp"
 #include "mkn/kul/log.hpp"
@@ -77,12 +77,13 @@ class Tag {
   Tag() {}
   Tag(std::string const& v) : v(v) {}
 
-  virtual std::string const* render(uint16_t tab = _MKN_RAM_HTML_FORMATED_) {
+  virtual std::string const* render(uint16_t tab = MKN_RAM_HTML_FORMATED) {
+    (void)tab;
     std::stringstream ss;
-#ifdef _MKN_RAM_HTML_FORMAT_
+#ifdef MKN_RAM_HTML_FORMAT
     ss << "\n";
     for (int i = 0; i < tab; i++) ss << "\t";
-#endif /* _MKN_RAM_HTML_FORMAT_ */
+#endif /* MKN_RAM_HTML_FORMAT */
     ss << "<" << tag();
     for (auto const& p : atts) {
       ss << " " << p.first;
@@ -97,18 +98,18 @@ class Tag {
     if (tags.size())
       for (auto const& t : tags)
         ss << *t->render(
-#ifdef _MKN_RAM_HTML_FORMAT_
+#ifdef MKN_RAM_HTML_FORMAT
             tab
-#endif /* _MKN_RAM_HTML_FORMAT_ */
+#endif /* MKN_RAM_HTML_FORMAT */
         );
-#ifdef _MKN_RAM_HTML_FORMAT_
+#ifdef MKN_RAM_HTML_FORMAT
     if (tags.size()) ss << "\n";
     if (tags.size())
       for (int i = 0; i < tab - 1; i++) ss << "\t";
-#endif /* _MKN_RAM_HTML_FORMAT_ */
+#endif /* MKN_RAM_HTML_FORMAT */
     if (tags.size() || v.size()) ss << "</" << tag() << ">";
-    // #ifdef _MKN_RAM_HTML_FORMAT_
-    // #endif /* _MKN_RAM_HTML_FORMAT_ */
+    // #ifdef MKN_RAM_HTML_FORMAT
+    // #endif /* MKN_RAM_HTML_FORMAT */
     str = std::make_unique<std::string>(ss.str());
     return str.get();
   }
@@ -287,7 +288,7 @@ class Table : public Tag {
     cols.push_back(tc);
     return *tc.get();
   }
-  virtual std::string const* render(uint16_t tab = _MKN_RAM_HTML_FORMATED_) {
+  virtual std::string const* render(uint16_t tab = MKN_RAM_HTML_FORMATED) {
     if (sh) {
       std::shared_ptr<TableRow> row = std::make_shared<TableRow>();
       for (auto& h : cols) row->add(h);
@@ -309,12 +310,13 @@ class Table : public Tag {
 class Text : public Tag {
  public:
   Text(std::string const& n) : Tag(n) {}
-  virtual std::string const* render(uint16_t tab = _MKN_RAM_HTML_FORMATED_) {
+  virtual std::string const* render(uint16_t tab = MKN_RAM_HTML_FORMATED) {
+    (void)tab;
     std::stringstream ss;
-#ifdef _MKN_RAM_HTML_FORMAT_
+#ifdef MKN_RAM_HTML_FORMAT
     ss << "\n";
     for (uint16_t i = 0; i < tab; i++) ss << "\t";
-#endif /* _MKN_RAM_HTML_FORMAT_ */
+#endif /* MKN_RAM_HTML_FORMAT */
     ss << v;
     str = std::make_unique<std::string>(ss.str());
     return str.get();
@@ -324,7 +326,7 @@ namespace esc {
 class Text : public mkn::ram::html4::Text {
  public:
   Text(std::string const& n) : mkn::ram::html4::Text(n) { mkn::ram::HTML::ESC(v); }
-  virtual std::string const* render(uint16_t tab = _MKN_RAM_HTML_FORMATED_) {
+  virtual std::string const* render(uint16_t tab = MKN_RAM_HTML_FORMATED) {
     return mkn::ram::html4::Text::render(tab);
   }
 };
@@ -346,4 +348,4 @@ inline mkn::ram::html4::Tag& mkn::ram::html4::Tag::text(std::string const& t) {
   tags.push_back(std::make_shared<Text>(t));
   return *this;
 }
-#endif /* _MKN_RAM_HTML_TAG_HPP_ */
+#endif /* MKN_RAM_HTML_TAG_HPP */

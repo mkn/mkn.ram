@@ -34,16 +34,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/http.hpp"
 #include "mkn/ram/tcp.hpp"
 
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 #include "mkn/ram/html4.hpp"
 
-#ifndef _MKN_RAM_HTTP_TEST_PORT_
-#define _MKN_RAM_HTTP_TEST_PORT_ 8888
-#endif /*_MKN_RAM_HTTP_TEST_PORT_*/
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifndef MKN_RAM_HTTP_TEST_PORT
+#define MKN_RAM_HTTP_TEST_PORT 8888
+#endif /*MKN_RAM_HTTP_TEST_PORT*/
+#ifdef MKN_RAM_INCLUDE_HTTPS
 
 namespace mkn {
 namespace ram {
@@ -66,7 +66,7 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 class Get : public mkn::ram::http::_1_1GetRequest {
  public:
@@ -93,45 +93,45 @@ class Post : public mkn::ram::http::_1_1PostRequest {
 int main(int argc, char* argv[]) {
   mkn::kul::Signal s;
   try {
-    mkn::kul::ram::Get g("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_);
+    mkn::kul::ram::Get g("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT);
     mkn::kul::ChroncurrentThreadPool<> requests(10, 0);
 
     for (size_t i = 0; i < 5000; i++) requests.async([&]() { g.send(); });
     requests.start().finish();
 
-    // mkn::kul::ram::Get("localhost", "index.html", _MKN_RAM_HTTP_TEST_PORT_).send();
+    // mkn::kul::ram::Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
     // for(size_t i = 0; i < 100; i++)
     //     mkn::kul::ram::Post("localhost", "index.html",
-    //     _MKN_RAM_HTTP_TEST_PORT_).send();
+    //     MKN_RAM_HTTP_TEST_PORT).send();
 
     // mkn::kul::this_thread::sleep(500);
 
     // for(size_t i = 0; i < 1000; i++)
     //     mkn::kul::ram::Get("localhost", "index.html",
-    //     _MKN_RAM_HTTP_TEST_PORT_).send();
+    //     MKN_RAM_HTTP_TEST_PORT).send();
     // for(size_t i = 0; i < 1000; i++)
     //     mkn::kul::ram::Post("localhost", "index.html",
-    //     _MKN_RAM_HTTP_TEST_PORT_).send();
+    //     MKN_RAM_HTTP_TEST_PORT).send();
 
     // mkn::kul::this_thread::sleep(500);
 
-    // #ifdef  _MKN_RAM_INCLUDE_HTTPS_
+    // #ifdef  MKN_RAM_INCLUDE_HTTPS
     //         for(size_t i = 0; i < 100; i++)
     //             mkn::kul::ram::HTTPS_Get("localhost", "index.html",
-    //             _MKN_RAM_HTTP_TEST_PORT_).send();
+    //             MKN_RAM_HTTP_TEST_PORT).send();
     //         for(size_t i = 0; i < 100; i++)
     //             mkn::kul::ram::HTTPS_Post("localhost", "index.html",
-    //             _MKN_RAM_HTTP_TEST_PORT_).send();
+    //             MKN_RAM_HTTP_TEST_PORT).send();
 
     //         mkn::kul::this_thread::sleep(500);
 
     //         for(size_t i = 0; i < 1000; i++)
     //             mkn::kul::ram::HTTPS_Get("localhost", "index.html",
-    //             _MKN_RAM_HTTP_TEST_PORT_).send();
+    //             MKN_RAM_HTTP_TEST_PORT).send();
     //         for(size_t i = 0; i < 1000; i++)
     //             mkn::kul::ram::HTTPS_Post("localhost", "index.html",
-    //             _MKN_RAM_HTTP_TEST_PORT_).send();
-    // #endif//_MKN_RAM_INCLUDE_HTTPS_
+    //             MKN_RAM_HTTP_TEST_PORT).send();
+    // #endif//MKN_RAM_INCLUDE_HTTPS
 
   } catch (mkn::kul::Exception const& e) {
     KERR << e.stack();

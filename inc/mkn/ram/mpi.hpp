@@ -29,8 +29,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_MPI_HPP_
-#define _MKN_RAM_MPI_HPP_
+#ifndef MKN_RAM_MPI_HPP
+#define MKN_RAM_MPI_HPP
 
 #include "mkn/kul/dbg.hpp"
 #include "mpi.h"
@@ -175,4 +175,4 @@ std::vector<Data> collect(Data const& data, int mpi_size) {
 }  // namespace mpi
 }  // namespace mkn
 
-#endif  //_MKN_RAM_MPI_HPP_
+#endif  //MKN_RAM_MPI_HPP

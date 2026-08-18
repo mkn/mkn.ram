@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_HTML_PAGE_HPP_
-#define _MKN_RAM_HTML_PAGE_HPP_
+#ifndef MKN_RAM_HTML_PAGE_HPP
+#define MKN_RAM_HTML_PAGE_HPP
 
 #include "mkn/ram/html/tag.hpp"
 
@@ -81,8 +81,8 @@ class Page {
   }
   virtual std::string const* render() {
     std::stringstream ss;
-#if defined(_MKN_RAM_HTML_DOC_TYPE_)
-    ss << _MKN_RAM_HTML_DOC_TYPE_ << "\n";
+#if defined(MKN_RAM_HTML_DOC_TYPE)
+    ss << MKN_RAM_HTML_DOC_TYPE << "\n";
 #endif
     ss << "<html>";
     ss << *h->render();
@@ -97,4 +97,4 @@ class Page {
 }  // namespace ram
 }  // namespace mkn
 
-#endif /* _MKN_RAM_HTML_PAGE_HPP_ */
+#endif /* MKN_RAM_HTML_PAGE_HPP */

@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_OS_NIXISH_HTTP_HPP_
-#define _MKN_RAM_OS_NIXISH_HTTP_HPP_
+#ifndef MKN_RAM_OS_NIXISH_HTTP_HPP
+#define MKN_RAM_OS_NIXISH_HTTP_HPP
 
 #include <unordered_map>
 
@@ -43,7 +43,7 @@ namespace http {
 
 class Server : public mkn::ram::http::AServer {
  private:
-  int fdSize = _MKN_RAM_TCP_READ_BUFFER_;
+  int fdSize = MKN_RAM_TCP_READ_BUFFER;
   std::unordered_map<int, std::unique_ptr<char[]>> inBuffers;
 
  protected:
@@ -88,7 +88,7 @@ class MultiServer : public mkn::ram::http::Server {
   void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
-    for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += _acceptThreads)
+    for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
@@ -139,4 +139,4 @@ class MultiServer : public mkn::ram::http::Server {
 }  // namespace ram
 }  // namespace mkn
 
-#endif /* _MKN_RAM_OS_NIXISH_HTTP_HPP_ */
+#endif /* MKN_RAM_OS_NIXISH_HTTP_HPP */

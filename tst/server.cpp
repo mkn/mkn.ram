@@ -33,16 +33,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/kul/tcp.hpp"
 #include "mkn/ram/http.hpp"
 
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 #include "mkn/kul/html4.hpp"
 #include "mkn/kul/signal.hpp"
 
-#ifndef _MKN_RAM_HTTP_TEST_PORT_
-#define _MKN_RAM_HTTP_TEST_PORT_ 8888
-#endif /*_MKN_RAM_HTTP_TEST_PORT_*/
+#ifndef MKN_RAM_HTTP_TEST_PORT
+#define MKN_RAM_HTTP_TEST_PORT 8888
+#endif /*MKN_RAM_HTTP_TEST_PORT*/
 
 namespace mkn {
 namespace ram {
@@ -66,7 +66,7 @@ class TestHTTPServer : public mkn::ram::http::Server {
     addResponseHeaders(r);
     return r;
   }
-  TestHTTPServer() : mkn::ram::http::Server(_MKN_RAM_HTTP_TEST_PORT_) {}
+  TestHTTPServer() : mkn::ram::http::Server(MKN_RAM_HTTP_TEST_PORT) {}
   friend class mkn::kul::Thread;
 };
 
@@ -83,12 +83,12 @@ class TestMultiHTTPServer : public mkn::ram::http::MultiServer {
     return r;
   }
   TestMultiHTTPServer(uint16_t const& threads)
-      : mkn::ram::http::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, threads) {}
-  TestMultiHTTPServer() : mkn::ram::http::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, 2, 4) {}
+      : mkn::ram::http::MultiServer(MKN_RAM_HTTP_TEST_PORT, threads) {}
+  TestMultiHTTPServer() : mkn::ram::http::MultiServer(MKN_RAM_HTTP_TEST_PORT, 2, 4) {}
   friend class mkn::kul::Thread;
 };
 
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 class TestHTTPSServer : public mkn::ram::https::Server {
  private:
   void operator()() { start(); }
@@ -102,7 +102,7 @@ class TestHTTPSServer : public mkn::ram::https::Server {
     return r;
   }
   TestHTTPSServer()
-      : mkn::ram::https::Server(_MKN_RAM_HTTP_TEST_PORT_, mkn::kul::File("res/test/server.crt"),
+      : mkn::ram::https::Server(MKN_RAM_HTTP_TEST_PORT, mkn::kul::File("res/test/server.crt"),
                                 mkn::kul::File("res/test/server.key")) {}
   friend class mkn::kul::Thread;
 };
@@ -120,7 +120,7 @@ class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
     return r;
   }
   TestMultiHTTPSServer()
-      : mkn::ram::https::MultiServer(_MKN_RAM_HTTP_TEST_PORT_, 3,
+      : mkn::ram::https::MultiServer(MKN_RAM_HTTP_TEST_PORT, 3,
                                      mkn::kul::File("res/test/server.crt"),
                                      mkn::kul::File("res/test/server.key")) {}
   friend class mkn::kul::Thread;
@@ -144,7 +144,7 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
     KOUT(NON) << "HTTPS POST RESPONSE:\n" << b;
   }
 };
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
 class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
  private:
@@ -160,7 +160,7 @@ class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
     std::strcpy(out, getResponseStr.c_str());
     return true;  // if true, close connection
   }
-  TestSocketServer() : mkn::ram::tcp::SocketServer<char>(_MKN_RAM_HTTP_TEST_PORT_) {}
+  TestSocketServer() : mkn::ram::tcp::SocketServer<char>(MKN_RAM_HTTP_TEST_PORT) {}
   friend class mkn::kul::Thread;
 };
 
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
       serv.stop();
       mkn::kul::this_thread::sleep(100);
     }
-#ifdef _MKN_RAM_INCLUDE_HTTPS_
+#ifdef MKN_RAM_INCLUDE_HTTPS
 // KOUT(NON) << "Single HTTPS SERVER";
 // {
 //     mkn::kul::ram::TestHTTPSServer serv;
@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
 //     mkn::kul::this_thread::sleep(100);
 //     t.join();
 // }
-#endif  //_MKN_RAM_INCLUDE_HTTPS_
+#endif  //MKN_RAM_INCLUDE_HTTPS
 
   } catch (const mkn::kul::Exception& e) {
     KERR << e.stack();

@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_ASIO_FCGI_HPP_
-#define _MKN_RAM_ASIO_FCGI_HPP_
+#ifndef MKN_RAM_ASIO_FCGI_HPP
+#define MKN_RAM_ASIO_FCGI_HPP
 
 #include <cstring>
 
@@ -78,7 +78,7 @@ class FCGI_Message {
 
 class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
  protected:
-  int fdSize = _MKN_RAM_TCP_READ_BUFFER_;
+  int fdSize = MKN_RAM_TCP_READ_BUFFER;
   uint8_t m_acceptThreads, m_workerThreads;
 
   mkn::kul::Mutex m_actex, m_mutex, m_butex, m_mapex;
@@ -136,7 +136,7 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
   void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
     fds.insert(std::make_pair(0, 0));
-    for (size_t i = threadID; i < _MKN_RAM_TCP_MAX_CLIENT_; i += m_acceptThreads)
+    for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += m_acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
         mkn::kul::ScopeLock lock(m_mutex);
@@ -205,4 +205,4 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
 }  // namespace ram
 }  // namespace mkn
 
-#endif /* _MKN_RAM_ASIO_FCGI_HPP_ */
+#endif /* MKN_RAM_ASIO_FCGI_HPP */

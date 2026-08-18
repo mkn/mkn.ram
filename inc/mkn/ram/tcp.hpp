@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef _MKN_RAM_TCP_HPP_
-#define _MKN_RAM_TCP_HPP_
+#ifndef MKN_RAM_TCP_HPP
+#define MKN_RAM_TCP_HPP
 
 #include "mkn/kul/dbg.hpp"
 
@@ -86,4 +86,4 @@ class ASocketServer {
 #include "mkn/ram/os/nixish/tcp.hpp"
 #endif
 
-#endif  //_MKN_RAM_TCP_HPP_
+#endif  //MKN_RAM_TCP_HPP
