@@ -81,29 +81,29 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
   int fdSize = MKN_RAM_TCP_READ_BUFFER;
   uint8_t m_acceptThreads, m_workerThreads;
 
-  mkn::kul::Mutex m_actex, m_mutex, m_butex, m_mapex;
-  mkn::kul::ChroncurrentThreadPool<> m_acceptPool;
-  mkn::kul::ChroncurrentThreadPool<> m_workerPool;
+  std::mutex m_actex, m_mutex, m_butex, m_mapex;
+  mkn::kul::ThreadPool<> m_acceptPool;
+  mkn::kul::ThreadPool<> m_workerPool;
 
   std::unordered_map<uint64_t, std::unique_ptr<FCGI_Message>> msgs;
   std::unordered_map<int, std::unique_ptr<uint8_t[]>> inBuffers;
 
  protected:
   uint8_t* getOrCreateBufferFor(int const& fd) {
-    mkn::kul::ScopeLock lock(m_butex);
+    std::lock_guard<std::mutex> lock(m_butex);
     if (!inBuffers.count(fd))
       inBuffers.insert(std::make_pair(fd, std::unique_ptr<uint8_t[]>(new uint8_t[fdSize])));
     return inBuffers[fd].get();
   }
 
   FCGI_Message& createFCGI_Message(int const& fd) {
-    mkn::kul::ScopeLock lock(m_mapex);
+    std::lock_guard<std::mutex> lock(m_mapex);
     msgs[fd] = std::make_unique<FCGI_Message>();
     return *msgs[fd];
   }
 
   int accept(uint16_t const& fd) override {
-    mkn::kul::ScopeLock lock(m_actex);
+    std::lock_guard<std::mutex> lock(m_actex);
     return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
   }
 
@@ -139,7 +139,7 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
     for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += m_acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
-        mkn::kul::ScopeLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         loop(fds);
       } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
@@ -170,16 +170,15 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
       : mkn::ram::tcp::SocketServer<uint8_t>(port),
         m_acceptThreads(acceptThreads),
         m_workerThreads(workerThreads),
-        m_acceptPool(acceptThreads),
-        m_workerPool(workerThreads) {
+        m_acceptPool(acceptThreads, false),
+        m_workerPool(workerThreads, false) {
     if (acceptThreads < 1)
       KEXCEPTION("FCGI Server cannot have less than one threads for accepting");
     if (workerThreads < 1) KEXCEPTION("FCGI Server cannot have less than one threads for working");
   }
 
   virtual ~Server() {
-    m_acceptPool.stop();
-    m_workerPool.stop();
+    if (s) stop();
   }
 
   void start() KTHROW(mkn::ram::tcp::Exception) override;
@@ -193,10 +192,6 @@ class Server : public mkn::ram::tcp::SocketServer<uint8_t> {
     mkn::ram::tcp::SocketServer<uint8_t>::stop();
     m_acceptPool.stop();
     m_workerPool.stop();
-  }
-  void interrupt() {
-    m_acceptPool.interrupt();
-    m_workerPool.interrupt();
   }
 };
 

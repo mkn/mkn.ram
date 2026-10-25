@@ -104,9 +104,9 @@ class Server : public mkn::ram::http::Server {
 class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
-  mkn::kul::Mutex m_mutex;
-  mkn::kul::ChroncurrentThreadPool<> _acceptPool;
-  mkn::kul::ChroncurrentThreadPool<> _workerPool;
+  std::mutex m_mutex;
+  mkn::kul::ThreadPool<> _acceptPool;
+  mkn::kul::ThreadPool<> _workerPool;
 
   void operateAccept(size_t const& threadID) {
     std::map<int, uint8_t> fds;
@@ -114,7 +114,7 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
     for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
-        mkn::kul::ScopeLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         loop(fds);
       } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
@@ -149,8 +149,8 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
       : mkn::ram::https::Server(p, c, k, cs),
         _acceptThreads(acceptThreads),
         _workerThreads(workerThreads),
-        _acceptPool(acceptThreads),
-        _workerPool(workerThreads) {
+        _acceptPool(acceptThreads, false),
+        _workerPool(workerThreads, false) {
     if (acceptThreads < 1)
       KEXCEPTION("MultiServer cannot have less than one threads for accepting");
     if (workerThreads < 1) KEXCEPTION("MultiServer cannot have less than one threads for working");
@@ -160,8 +160,7 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
       : MultiServer(443, acceptThreads, workerThreads, c, k, cs) {}
 
   virtual ~MultiServer() {
-    _acceptPool.stop();
-    _workerPool.stop();
+    if (s) stop();
   }
 
   virtual void start() KTHROW(mkn::ram::tcp::Exception) override;
@@ -175,11 +174,7 @@ class MKN_KUL_PUBLISH MultiServer : public mkn::ram::https::Server {
     _acceptPool.stop();
     _workerPool.stop();
   }
-  virtual void interrupt() {
-    _acceptPool.interrupt();
-    _workerPool.interrupt();
-  }
-  std::exception_ptr const& exception() { return _acceptPool.exception(); }
+  std::exception_ptr exception() const { return _acceptPool.exception(); }
 };
 
 class A1_1Request;

@@ -63,9 +63,9 @@ class Server : public mkn::ram::http::AServer {
 class MultiServer : public mkn::ram::http::Server {
  protected:
   uint8_t _acceptThreads, _workerThreads;
-  mkn::kul::Mutex m_mutex;
-  mkn::kul::ConcurrentThreadPool<> _acceptPool;
-  mkn::kul::ConcurrentThreadPool<> _workerPool;
+  std::mutex m_mutex;
+  mkn::kul::ThreadPool<> _acceptPool;
+  mkn::kul::ThreadPool<> _workerPool;
 
   virtual void handleBuffer(std::map<int, uint8_t>& fds, int const& fd, char* in, int const& read,
                             int& e) override {
@@ -91,7 +91,7 @@ class MultiServer : public mkn::ram::http::Server {
     for (size_t i = threadID; i < MKN_RAM_TCP_MAX_CLIENT; i += _acceptThreads)
       fds.insert(std::make_pair(i, 0));
     while (s) try {
-        mkn::kul::ScopeLock lock(m_mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
         loop(fds);
       } catch (mkn::ram::tcp::Exception const& e1) {
         KERR << e1.stack();
@@ -110,12 +110,15 @@ class MultiServer : public mkn::ram::http::Server {
  public:
   MultiServer(short const& p = 80, uint8_t const& acceptThreads = 1,
               uint8_t const& workerThreads = 1)
-      : Server(p), _acceptThreads(acceptThreads), _workerThreads(workerThreads) {}
+      : Server(p),
+        _acceptThreads(acceptThreads),
+        _workerThreads(workerThreads),
+        _acceptPool(acceptThreads, false),
+        _workerPool(workerThreads, false) {}
 
   ~MultiServer() {
     MKN_KUL_DBG_FUNC_ENTER;
-    _acceptPool.stop();
-    _workerPool.stop();
+    if (s) stop();
   }
 
   virtual void start() KTHROW(mkn::ram::tcp::Exception) override;
@@ -129,11 +132,7 @@ class MultiServer : public mkn::ram::http::Server {
     _acceptPool.stop();
     _workerPool.stop();
   }
-  virtual void interrupt() {
-    _acceptPool.interrupt();
-    _workerPool.interrupt();
-  }
-  auto& exception() const { return _acceptPool.exception(); }
+  std::exception_ptr exception() const { return _acceptPool.exception(); }
 };
 }  // namespace http
 }  // namespace ram

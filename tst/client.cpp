@@ -94,10 +94,10 @@ int main(int argc, char* argv[]) {
   mkn::kul::Signal s;
   try {
     mkn::kul::ram::Get g("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT);
-    mkn::kul::ChroncurrentThreadPool<> requests(10, 0);
+    mkn::kul::ThreadPool<> requests(10, false);
 
     for (size_t i = 0; i < 5000; i++) requests.async([&]() { g.send(); });
-    requests.start().finish();
+    requests.start().finish().join();
 
     // mkn::kul::ram::Get("localhost", "index.html", MKN_RAM_HTTP_TEST_PORT).send();
     // for(size_t i = 0; i < 100; i++)

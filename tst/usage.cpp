@@ -52,37 +52,29 @@ namespace mkn {
 namespace ram {
 
 class TestHTTPServer : public mkn::ram::http::Server {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const&) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
   TestHTTPServer() : mkn::ram::http::Server(MKN_RAM_HTTP_TEST_PORT) {}
-  friend class mkn::kul::Thread;
 };
 
 class TestMultiHTTPServer : public mkn::ram::http::MultiServer {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const&) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("MULTI HTTP PROVIDED BY KUL").withDefaultHeaders();
   }
   TestMultiHTTPServer() : mkn::ram::http::MultiServer(MKN_RAM_HTTP_TEST_PORT, 3) {}
-  friend class mkn::kul::Thread;
 };
 
 #ifdef MKN_RAM_INCLUDE_HTTPS
 class TestHTTPSServer : public mkn::ram::https::Server {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
@@ -90,14 +82,11 @@ class TestHTTPSServer : public mkn::ram::https::Server {
   TestHTTPSServer()
       : mkn::ram::https::Server(MKN_RAM_HTTP_TEST_PORT, mkn::kul::File("res/test/server.crt"),
                                 mkn::kul::File("res/test/server.key")) {}
-  friend class mkn::kul::Thread;
 };
 
 class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   mkn::ram::http::_1_1Response respond(mkn::ram::http::A1_1Request const& req) {
     mkn::ram::http::_1_1Response r;
     return r.withBody("MULTI HTTPS PROVIDED BY KUL: " + req.method()).withDefaultHeaders();
@@ -106,7 +95,6 @@ class TestMultiHTTPSServer : public mkn::ram::https::MultiServer {
       : mkn::ram::https::MultiServer(MKN_RAM_HTTP_TEST_PORT, acceptThreads, workerThreads,
                                      mkn::kul::File("res/test/server.crt"),
                                      mkn::kul::File("res/test/server.key")) {}
-  friend class mkn::kul::Thread;
 };
 
 class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
@@ -129,10 +117,8 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
 #endif  //MKN_RAM_INCLUDE_HTTPS
 
 class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   bool handle(char* const, size_t const&, char* const out, size_t& outLen) override {
     std::string rep("TCP PROVIDED BY KUL");
     std::strcpy(out, rep.c_str());
@@ -140,7 +126,6 @@ class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
     return true;
   }
   TestSocketServer() : mkn::ram::tcp::SocketServer<char>(MKN_RAM_HTTP_TEST_PORT) {}
-  friend class mkn::kul::Thread;
 };
 
 class Get : public mkn::ram::http::_1_1GetRequest {
@@ -169,8 +154,8 @@ class Test {
     {
       TestHTTPSServer serv;
       serv.init();
-      mkn::kul::Thread t(std::ref(serv));
-      t.run();
+      mkn::kul::ThreadPool<> t;
+      t.async([&serv]() { serv(); });
       mkn::kul::this_thread::sleep(333);
       if (t.exception()) std::rethrow_exception(t.exception());
       {
@@ -185,15 +170,15 @@ class Test {
       }
       mkn::kul::this_thread::sleep(100);
       serv.stop();
-      t.join();
+      t.finish().join();
       mkn::kul::this_thread::sleep(100);
     }
     KOUT(NON) << "Multi HTTPS SERVER";
     {
       TestMultiHTTPSServer serv(1, 5);
       serv.init();
-      mkn::kul::Thread t(std::ref(serv));
-      t.run();
+      mkn::kul::ThreadPool<> t;
+      t.async([&serv]() { serv(); });
       mkn::kul::this_thread::sleep(333);
 
       std::atomic<uint16_t> index(0);
@@ -205,15 +190,15 @@ class Test {
         KLOG(ERR) << e.stack();
         if (t.exception()) std::rethrow_exception(t.exception());
       };
-      mkn::kul::ChroncurrentThreadPool<> ctp(3, 1);
+      mkn::kul::ThreadPool<> ctp(3);
       for (size_t i = 0; i < 999; i++) ctp.async(getter, except);
-      ctp.finish(1000000000);
+      ctp.finish().join();
 
       mkn::kul::this_thread::sleep(100);
       serv.stop();
       mkn::kul::this_thread::sleep(100);
       serv.join();
-      t.join();
+      t.finish().join();
     }
 
 #endif  // MKN_RAM_INCLUDE_HTTPS
@@ -221,8 +206,8 @@ class Test {
     KOUT(NON) << "Single HTTP SERVER";
     {
       TestHTTPServer serv;
-      mkn::kul::Thread t(std::ref(serv));
-      t.run();
+      mkn::kul::ThreadPool<> t;
+      t.async([&serv]() { serv(); });
       mkn::kul::this_thread::sleep(333);
       if (t.exception()) std::rethrow_exception(t.exception());
       {
@@ -237,7 +222,7 @@ class Test {
       mkn::kul::this_thread::sleep(100);
       serv.stop();
       mkn::kul::this_thread::sleep(100);
-      t.join();
+      t.finish().join();
     }
     KLOG(INF) << "Test socket connection";
     {
@@ -264,8 +249,8 @@ class Test {
     mkn::kul::this_thread::sleep(500);
     {
       TestSocketServer serv;
-      mkn::kul::Thread t(std::ref(serv));
-      t.run();
+      mkn::kul::ThreadPool<> t;
+      t.async([&serv]() { serv(); });
       mkn::kul::this_thread::sleep(333);
       if (t.exception()) std::rethrow_exception(t.exception());
 
@@ -285,7 +270,7 @@ class Test {
       }
 
       serv.stop();
-      t.join();
+      t.finish().join();
     }
     //     mkn::kul::this_thread::sleep(100);
     //     {

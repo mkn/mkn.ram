@@ -62,37 +62,37 @@ class Session {
 template <class S = Session>
 class SessionServer {
  protected:
-  mkn::kul::Mutex mutex;
-  mkn::kul::Thread th1;
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool run = true;
   mkn::kul::hash::map::S2T<std::shared_ptr<S>> sss;
+  std::thread th1;
   virtual void operator()() {
-    while (true) {
-      mkn::kul::this_thread::sleep(MKN_RAM_HTTP_SESSION_CHECK);
-      {
-        auto copy = sss;
-        std::vector<std::string> erase;
-        for (auto const& p : copy)
-          if (p.second->expired()) erase.push_back(p.first);
-        mkn::kul::ScopeLock lock(mutex);
-        for (std::string const& e : erase) sss.erase(e);
-      }
+    std::unique_lock<std::mutex> lock(mutex);
+    while (!cv.wait_for(lock, std::chrono::milliseconds(MKN_RAM_HTTP_SESSION_CHECK),
+                        [this]() { return !run; })) {
+      std::vector<std::string> erase;
+      for (auto const& p : sss)
+        if (p.second->expired()) erase.push_back(p.first);
+      for (std::string const& e : erase) sss.erase(e);
     }
   }
 
  public:
-  SessionServer() : th1(std::ref(*this)) {
+  SessionServer() {
     sss.setDeletedKey("DELETED");
-    th1.run();
+    th1 = std::thread([this]() { (*this)(); });
   }
+  virtual ~SessionServer() { shutdown(); }
   S* get(std::string const& id) {
     S* s = 0;
-    mkn::kul::ScopeLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     if (sss.count(id)) s = (*sss.find(id)).second.get();
     if (s && !s->expired()) s->c -= 5;
     return s;
   }
   bool has(std::string const& id) {
-    mkn::kul::ScopeLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     if (sss.count(id)) {
       S& s = *(*sss.find(id)).second.get();
       if (!s.expired()) s.c -= 5;
@@ -100,22 +100,25 @@ class SessionServer {
     return sss.count(id);
   }
   S& add(std::string const& id, std::shared_ptr<S> const& s) {
-    mkn::kul::ScopeLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     sss.insert(id, s);
     return *s.get();
   }
   S& add(std::string const& id) { return add(id, std::make_shared<S>()); }
   void refresh(std::string const& id) {
     S* s = 0;
-    mkn::kul::ScopeLock lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex);
     if (sss.count(id)) s = (*sss.find(id)).second.get();
     if (s && !s->expired()) (*sss.find(id)).second->refresh();
   }
   void shutdown() {
-    mkn::kul::ScopeLock lock(mutex);
-    th1.interrupt();
+    {
+      std::lock_guard<std::mutex> lock(mutex);
+      run = false;
+    }
+    cv.notify_all();
+    if (th1.joinable()) th1.join();
   }
-  friend class mkn::kul::Thread;
 };
 }  // namespace http
 }  // namespace ram

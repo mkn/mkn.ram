@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
 
     sig.intr([&](int16_t) {
       KERR << "Interrupted";
-      s.interrupt();
+      s.stop();
       s.join();
       exit(2);
     });
