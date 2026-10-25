@@ -32,14 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MKN_RAM_NOMAIN
 #include "usage.cpp"
 class TestHTTPSServer : public mkn::ram::https::Server {
- private:
-  void operator()() { start(); }
-
  public:
+  void operator()() { start(); }
   TestHTTPSServer()
       : mkn::ram::https::Server(MKN_RAM_HTTP_TEST_PORT, mkn::kul::File("res/test/server.crt"),
                                 mkn::kul::File("res/test/server.key")) {}
-  friend class mkn::kul::Thread;
 };
 class HTTPS_Get : public mkn::ram::https::_1_1GetRequest {
  public:
@@ -54,8 +51,8 @@ int main(int, char*[]) {
       KLOG(NON) << mkn::kul::os::EOL() << r.toString();
       return _1_1Response{}.withBody("HELLO WORLD");
     });
-    mkn::kul::Thread t(std::ref(serv));
-    t.run();
+    mkn::kul::ThreadPool<> t;
+    t.async([&serv]() { serv(); });
     mkn::kul::this_thread::sleep(333);
     if (t.exception()) std::rethrow_exception(t.exception());
     {
@@ -67,7 +64,7 @@ int main(int, char*[]) {
           .send();
     }
     serv.stop();
-    t.join();
+    t.finish().join();
   }
   return 0;
 }
