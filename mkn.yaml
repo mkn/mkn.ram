@@ -38,6 +38,14 @@ profile:
   parent: lib
   arg: -DKUL_INCLUDE_FCGI
 
+- name: http2
+  parent: https
+  arg: -D_MKN_RAM_INCLUDE_HTTP2_
+
+- name: test.http2
+  parent: http2
+  main: tst/http2.cpp
+
 - name: usage
   parent: https
   main: tst/usage.cpp
