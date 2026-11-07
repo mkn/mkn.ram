@@ -31,7 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_HTML4_HPP
 #define MKN_RAM_HTML4_HPP
 
-#include "mkn/ram/html/page.hpp"
+#include "mkn/ram/html/page.hpp"  // IWYU pragma: export
+#include "mkn/kul/except.hpp"
+
+#include <stdint.h>
+#include <string>
 
 namespace mkn {
 namespace ram {

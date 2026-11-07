@@ -31,6 +31,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_WIN_HTTPS_HPP
 #define MKN_RAM_OS_WIN_HTTPS_HPP
 
+// IWYU pragma: private, include "mkn/ram/https.hpp"
+
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+
 
 #include "mkn/kul/os.hpp"
 #include "mkn/ram/http.hpp"

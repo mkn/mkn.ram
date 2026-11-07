@@ -31,6 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_WIN_TCP_HPP
 #define MKN_RAM_OS_WIN_TCP_HPP
 
+// IWYU pragma: private, include "mkn/ram/tcp.hpp"
+
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+
 #include "mkn/ram/tcp/def.hpp"
 
 #undef UNICODE

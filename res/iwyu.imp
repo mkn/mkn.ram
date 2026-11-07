@@ -1,0 +1,9 @@
+# iwyu mappings for mkn.ram, used by the iwyu profile in mkn.yaml
+[
+  # libstdc++ forward declares these in other headers, iwyu credits them when only a declaration is needed
+  { symbol: ["std::vector", "private", "<vector>", "public"] },
+  { symbol: ["std::pair", "private", "<utility>", "public"] },
+
+  # OpenSSL 3: openssl/types.h is internal, the API headers include it
+  { include: ["<openssl/types.h>", "private", "<openssl/ssl.h>", "public"] },
+]

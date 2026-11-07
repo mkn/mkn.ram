@@ -35,6 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_WIN_HTTP_HPP
 #define MKN_RAM_OS_WIN_HTTP_HPP
 
+// IWYU pragma: private, include "mkn/ram/http.hpp"
+
+#include "mkn/kul/except.hpp"
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif

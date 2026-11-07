@@ -31,17 +31,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_HTTP_SESSION_HPP
 #define MKN_RAM_HTTP_SESSION_HPP
 
-#include "mkn/kul/threads.hpp"
-#include "mkn/kul/time.hpp"
-#include "mkn/ram/http.hpp"
 #include "mkn/ram/http/def.hpp"
+#include "mkn/kul/map.hpp"
+
+#include <chrono>
+#include <condition_variable>
+#include <ctime>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
 namespace mkn {
 namespace ram {
 namespace http {
-
-template <class S>
-class SessionServer;
 
 class Session {
  private:

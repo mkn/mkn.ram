@@ -29,6 +29,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/threads.hpp"
+#include "mkn/kul/time.hpp"
+
+#include <netinet/in.h>
+#include <poll.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <functional>
 
 void mkn::ram::http::MultiServer::start() KTHROW(kul::tcp::Exception) {
   MKN_KUL_DBG_FUNC_ENTER;

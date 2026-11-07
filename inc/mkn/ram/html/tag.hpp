@@ -32,10 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MKN_RAM_HTML_TAG_HPP
 
 #include "mkn/kul/except.hpp"
-#include "mkn/kul/log.hpp"
-#include "mkn/kul/map.hpp"
-#include "mkn/kul/string.hpp"
 #include "mkn/ram/html/def.hpp"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace mkn {
 namespace ram {
@@ -64,7 +69,6 @@ class HTML {
 
 namespace html4 {
 
-class Page;
 
 class Tag {
  protected:
@@ -254,7 +258,6 @@ class TableData : public Tag {
   TableData(std::string const& v = "") : Tag(v) {}
 };
 
-class Table;
 class TableColumn : public Tag {
  protected:
   std::vector<std::shared_ptr<Tag>> tds;

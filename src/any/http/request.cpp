@@ -29,6 +29,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/map.hpp"
+#include "mkn/ram/tcp.hpp"
+#include "mkn/ram/tcp/def.hpp"
+
+#include <stdint.h>
+#include <strings.h>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 void mkn::ram::http::A1_1Request::send() KTHROW(mkn::ram::http::Exception) {
   MKN_KUL_DBG_FUNC_ENTER;

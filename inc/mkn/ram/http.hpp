@@ -38,6 +38,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/kul/map.hpp"
 #include "mkn/kul/string.hpp"
 #include "mkn/ram/tcp.hpp"
+#include "mkn/kul/defs.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/time.hpp"
+
+#include <stdint.h>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace mkn {
 namespace ram {
@@ -272,9 +285,9 @@ class MKN_KUL_PUBLISH AServer : public mkn::ram::tcp::SocketServer<char> {
 }  // namespace mkn
 
 #if defined(_WIN32)
-#include "mkn/ram/os/win/http.hpp"
+#include "mkn/ram/os/win/http.hpp"  // IWYU pragma: export
 #else
-#include "mkn/ram/os/nixish/http.hpp"
+#include "mkn/ram/os/nixish/http.hpp"  // IWYU pragma: export
 #endif
 
 #endif /* MKN_RAM_HTTP_HPP */
