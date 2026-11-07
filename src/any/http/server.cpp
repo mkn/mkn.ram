@@ -33,9 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/kul/except.hpp"
 #include "mkn/kul/log.hpp"
 #include "mkn/kul/string.hpp"
+#include "mkn/ram/tcp.hpp"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <map>

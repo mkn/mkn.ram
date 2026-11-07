@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/ram/tcp/def.hpp"
 
 #include <stdint.h>
-#include <strings.h>
 #include <memory>
 #include <sstream>
 #include <string>

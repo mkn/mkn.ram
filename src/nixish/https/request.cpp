@@ -39,8 +39,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <openssl/ssl.h>
 #include <stdint.h>
-#include <strings.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <sstream>
 #include <string>
