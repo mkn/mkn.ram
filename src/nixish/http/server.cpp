@@ -29,6 +29,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/log.hpp"
+#include "mkn/ram/tcp/def.hpp"
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <map>
 
 bool mkn::ram::http::Server::receive(std::map<int, uint8_t>& fds, int const& fd) {
   MKN_KUL_DBG_FUNC_ENTER;

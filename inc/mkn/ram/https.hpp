@@ -33,6 +33,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "mkn/kul/except.hpp"
 
+#include <stdint.h>
+#include <string>
+
 namespace mkn {
 namespace ram {
 namespace https {
@@ -46,9 +49,9 @@ class Exception : public mkn::kul::Exception {
 }  // namespace mkn
 
 #if defined(_WIN32)
-#include "mkn/ram/os/win/https.hpp"
+#include "mkn/ram/os/win/https.hpp"  // IWYU pragma: export
 #else
-#include "mkn/ram/os/nixish/https.hpp"
+#include "mkn/ram/os/nixish/https.hpp"  // IWYU pragma: export
 #endif
 
 #endif  //MKN_RAM_HTTPS_HPP

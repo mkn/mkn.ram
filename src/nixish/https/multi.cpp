@@ -30,6 +30,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/threads.hpp"
+#include "mkn/kul/time.hpp"
+
+#include <poll.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <functional>
 
 void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   MKN_KUL_DBG_FUNC_ENTER;

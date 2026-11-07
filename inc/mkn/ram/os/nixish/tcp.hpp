@@ -31,14 +31,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_NIXISH_TCP_HPP
 #define MKN_RAM_OS_NIXISH_TCP_HPP
 
-#include <arpa/inet.h>
+// IWYU pragma: private, include "mkn/ram/tcp.hpp"
+
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+
+#include <arpa/inet.h>  // IWYU pragma: export
 #include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
+#include <netdb.h>  // IWYU pragma: export
+#include <netinet/in.h>  // IWYU pragma: export
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <sys/poll.h>
-#include <sys/socket.h>
+#include <sys/socket.h>  // IWYU pragma: export
 #include <sys/types.h>
 #include <unistd.h>
 

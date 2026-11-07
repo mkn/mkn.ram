@@ -29,6 +29,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
+#include "mkn/kul/defs.hpp"
+#include "mkn/kul/string.hpp"
+
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 std::string mkn::ram::http::_1_1Response::toString() const {
   std::stringstream ss;

@@ -30,6 +30,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+#include "mkn/ram/http.hpp"
+#include "mkn/ram/tcp.hpp"
+#include "mkn/ram/tcp/def.hpp"
+
+#include <openssl/ssl.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <sstream>
+#include <string>
 
 void mkn::ram::https::Requester::send(std::string const& h, std::string const& req,
                                       uint16_t const& p, std::stringstream& ss, SSL* ssl) {

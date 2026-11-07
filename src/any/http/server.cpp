@@ -29,6 +29,19 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "mkn/ram/http.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+#include "mkn/kul/string.hpp"
+#include "mkn/ram/tcp.hpp"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
 std::shared_ptr<mkn::ram::http::A1_1Request> mkn::ram::http::AServer::handleRequest(
     int const& fd, std::string const& b, std::string& path) {

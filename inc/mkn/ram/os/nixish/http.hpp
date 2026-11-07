@@ -31,6 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_OS_NIXISH_HTTP_HPP
 #define MKN_RAM_OS_NIXISH_HTTP_HPP
 
+// IWYU pragma: private, include "mkn/ram/http.hpp"
+
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+
 #include <unordered_map>
 
 #include "mkn/kul/threads.hpp"

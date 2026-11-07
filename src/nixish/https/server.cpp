@@ -30,6 +30,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
+#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/log.hpp"
+#include "mkn/kul/os.hpp"
+#include "mkn/ram/http.hpp"
+#include "mkn/ram/tcp/def.hpp"
+
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#include <poll.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp::Exception) {
   MKN_KUL_DBG_FUNC_ENTER;

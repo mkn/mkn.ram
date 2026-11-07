@@ -51,8 +51,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MKN_RAM_TCP_REQUEST_BUFFER 963210
 #endif /* MKN_RAM_TCP_REQUEST_BUFFER */
 
+// bzero on every platform
 #ifdef _WIN32
 #define bzero ZeroMemory
+#else
+#include <strings.h>  // IWYU pragma: export
 #endif
 
 #endif /* MKN_RAM_TCP_DEF_HPP */

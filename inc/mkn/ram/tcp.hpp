@@ -31,7 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_TCP_HPP
 #define MKN_RAM_TCP_HPP
 
-#include "mkn/kul/dbg.hpp"
+#include "mkn/kul/except.hpp"
+#include "mkn/kul/time.hpp"
+
+#include <stddef.h>
+#include <stdint.h>
+#include <string>
 
 namespace mkn {
 namespace ram {
@@ -81,9 +86,9 @@ class ASocketServer {
 }  // namespace mkn
 
 #if defined(_WIN32)
-#include "mkn/ram/os/win/tcp.hpp"
+#include "mkn/ram/os/win/tcp.hpp"  // IWYU pragma: export
 #else
-#include "mkn/ram/os/nixish/tcp.hpp"
+#include "mkn/ram/os/nixish/tcp.hpp"  // IWYU pragma: export
 #endif
 
 #endif  //MKN_RAM_TCP_HPP
