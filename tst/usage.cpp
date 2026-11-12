@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef MKN_RAM_INCLUDE_HTTPS
 #include "mkn/ram/https.hpp"
-#endif  //MKN_RAM_INCLUDE_HTTPS
+#endif  // MKN_RAM_INCLUDE_HTTPS
 
 #include "mkn/ram/html4.hpp"
 
@@ -114,7 +114,7 @@ class HTTPS_Post : public mkn::ram::https::_1_1PostRequest {
     KOUT(NON) << "HTTPS POST RESPONSE: " << r.body();
   }
 };
-#endif  //MKN_RAM_INCLUDE_HTTPS
+#endif  // MKN_RAM_INCLUDE_HTTPS
 
 class TestSocketServer : public mkn::ram::tcp::SocketServer<char> {
  public:
@@ -311,4 +311,4 @@ int main(int argc, char* argv[]) {
   }
   return 0;
 }
-#endif  //MKN_RAM_NOMAIN
+#endif  // MKN_RAM_NOMAIN

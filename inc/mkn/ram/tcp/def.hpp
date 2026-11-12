@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef MKN_RAM_TCP_SESSION_TTL
 #define MKN_RAM_TCP_SESSION_TTL 600  // seconds
-#endif                                 /* MKN_RAM_TCP_SESSION_TTL */
+#endif                               /* MKN_RAM_TCP_SESSION_TTL */
 
 #ifndef MKN_RAM_TCP_SESSION_CHECK
 #define MKN_RAM_TCP_SESSION_CHECK 10000  // milliseconds to sleep between checks
-#endif                                     /* MKN_RAM_TCP_SESSION_CHECK */
+#endif                                   /* MKN_RAM_TCP_SESSION_CHECK */
 
 #ifndef MKN_RAM_TCP_READ_BUFFER
 #define MKN_RAM_TCP_READ_BUFFER 963210

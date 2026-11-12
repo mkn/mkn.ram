@@ -206,4 +206,4 @@ size_t mkn::ram::asio::fcgi::Server::FORM_RESPONSE(FCGI_Message const& msg, uint
   return size + pad + 40;
 }
 
-#endif  //KUL_INCLUDE_FCGI
+#endif  // KUL_INCLUDE_FCGI
