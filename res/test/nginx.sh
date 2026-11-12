@@ -136,10 +136,16 @@ for MODE in serial async; do
   check "20 sequential" "200" "$codes"
   check "upstream connection kept" "1" "$(upstream_conns)"
 
+  # waits on its own pids, a bare wait in $(...) can spin on inherited jobs in some bash 5.2
   start=$(date +%s%N)
-  codes=$(for i in 1 2 3 4; do curl -s -o /dev/null -w '%{http_code}\n' "$URL/sleep" & done; wait)
+  pids=()
+  for i in 1 2 3 4; do
+    curl -s -o /dev/null -w '%{http_code}\n' "$URL/sleep" > "$TMP/sleep.$i" &
+    pids+=($!)
+  done
+  wait "${pids[@]}"
   took=$((($(date +%s%N) - start) / 1000000))
-  check "4 concurrent" "200" "$(sort -u <<< "$codes")"
+  check "4 concurrent" "200" "$(cat "$TMP"/sleep.* | sort -u)"
   if [ "$MODE" == async ]; then  # 4 x 300ms on 4 workers, serial takes 1200ms+
     check "4 concurrent in parallel" "yes" "$([ "$took" -lt 900 ] && echo yes || echo "no, ${took}ms")"
   fi
