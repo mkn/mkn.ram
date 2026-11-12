@@ -14,8 +14,10 @@ SERVE=${SERVE:-bin/test.fcgi.serve/mkn.ram}
 HTTP_PORT=${HTTP_PORT:-18080}
 FCGI_PORT=${FCGI_PORT:-19000}
 URL="http://127.0.0.1:${HTTP_PORT}"
+curl() { command curl --max-time 20 "$@"; }
 
 TMP=$(mktemp -d)
+FAILS=0
 SERVER_PID= NGINX_PID=
 stop() {
   [ -n "$NGINX_PID" ] && kill "$NGINX_PID" 2>/dev/null && wait "$NGINX_PID" 2>/dev/null || true
@@ -23,12 +25,15 @@ stop() {
   NGINX_PID= SERVER_PID=
 }
 cleanup() {
+  local code=$?
   stop
+  if [ "$code" != 0 ] || [ "$FAILS" != 0 ]; then
+    for f in error.log serve.log; do echo "== $f" && cat "$TMP/$f" 2>/dev/null || true; done
+  fi
   rm -rf "$TMP"
 }
 trap cleanup EXIT
 
-FAILS=0
 check() {  # name expected actual
   if [ "$2" == "$3" ]; then
     echo "PASS $MODE $1"
@@ -85,6 +90,9 @@ http {
   uwsgi_temp_path $TMP/uwsgi;
   scgi_temp_path $TMP/scgi;
   client_max_body_size 16m;
+  fastcgi_connect_timeout 5s;
+  fastcgi_read_timeout 10s;
+  fastcgi_send_timeout 10s;
   upstream fcgi {
     server 127.0.0.1:${FCGI_PORT};
     keepalive 8;

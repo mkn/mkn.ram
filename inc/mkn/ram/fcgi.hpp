@@ -40,10 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // The record codec and Request are portable, the servers are POSIX only.
 
+#include "mkn/ram/http.hpp"  // first, windows.h before mkn/kul/threads.hpp on Windows
 #include "mkn/kul/except.hpp"
 #include "mkn/kul/threads.hpp"
 #include "mkn/ram/fcgi/def.hpp"
-#include "mkn/ram/http.hpp"
 
 #include <cstddef>
 #include <cstdint>
