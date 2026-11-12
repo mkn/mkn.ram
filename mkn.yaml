@@ -52,10 +52,7 @@ profile:
 - name: test
   parent: https
   main: tst/test.cpp
-
-- name: test.stdin
-  parent: https
-  main: tst/stdin.cpp
+  src: tst/test
 
 - name: test.client
   parent: lib

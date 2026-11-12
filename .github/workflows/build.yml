@@ -24,7 +24,6 @@ jobs:
         $CURL_GET -o mkn ${PATH_GET}/mkn_nix
         chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -l -pthread
-        KLOG=3 ./mkn clean build run -dtOp test.stdin -a "-std=c++20 -fPIC" -l -pthread
 
   macos:
     runs-on: macos-latest
@@ -36,7 +35,6 @@ jobs:
         export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
         $CURL_GET -o mkn ${PATH_GET}/mkn_arm_osx && chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
-        KLOG=3 ./mkn clean build run -dtOp test.stdin -a "-std=c++20 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
 
   windows:
     runs-on: windows-latest

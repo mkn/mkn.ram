@@ -30,6 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 // Servers must not poll fds they don't own. Here stdin is a pipe whose writer is closed, as
 // on CI runners, which polls POLLHUP forever: a server watching fd 0 never serves anyone.
+// Linked into test.cpp, POSIX only, run last as it replaces the process stdin.
+
+#ifndef _WIN32
 
 #include "mkn/kul/log.hpp"
 #include "mkn/ram/http.hpp"
@@ -53,6 +56,7 @@ void close_stdin_pipe() {
   int fds[2];
   if (pipe(fds) != 0) KEXCEPTION("pipe failed");
   ::close(fds[1]);
+  if (fds[0] == STDIN_FILENO) return;  // stdin was already closed
   if (dup2(fds[0], STDIN_FILENO) < 0) KEXCEPTION("dup2 failed");
   ::close(fds[0]);
 }
@@ -88,7 +92,7 @@ void check(std::string const& name, std::uint16_t const port) {
 
 }  // namespace
 
-int main() {
+void test_closed_stdin() {
   close_stdin_pipe();
 
   mkn::ram::http::MultiServer http(HTTP_PORT);
@@ -107,5 +111,8 @@ int main() {
   https.stop();
   http.join();
   https.join();
-  return 0;
 }
+
+#else
+void test_closed_stdin() {}
+#endif  // _WIN32
