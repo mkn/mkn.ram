@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "usage.cpp"
 
 void test_closed_stdin();  // tst/test/stdin.cpp
+void test_fcgi();          // tst/test/fcgi.cpp
 
 class TestHTTPSServer : public mkn::ram::https::Server {
  public:
@@ -70,5 +71,6 @@ int main(int, char*[]) {
     t.finish().join();
   }
   test_closed_stdin();
+  test_fcgi();
   return 0;
 }
