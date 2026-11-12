@@ -24,6 +24,12 @@ jobs:
         $CURL_GET -o mkn ${PATH_GET}/mkn_nix
         chmod +x mkn
         KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -l -pthread
+    - name: "nginx FastCGI"
+      timeout-minutes: 5
+      run: |
+        command -v nginx || [ -x /usr/sbin/nginx ] || (sudo apt-get update && sudo apt-get install -y nginx)
+        KLOG=3 ./mkn build -dtOp test.fcgi.serve -a "-std=c++20 -fPIC" -l -pthread
+        res/test/nginx.sh
 
   macos:
     runs-on: macos-latest

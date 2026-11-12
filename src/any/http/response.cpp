@@ -42,19 +42,23 @@ std::string mkn::ram::http::_1_1Response::toString() const {
   std::stringstream ss;
   ss << version() << " " << _s << " " << r << mkn::kul::os::EOL();
   for (auto const& h : headers()) ss << h.first << ": " << h.second << mkn::kul::os::EOL();
-  for (auto const& p : cookies()) {
-    ss << "Set-Cookie: " << p.first << "=" << p.second.value() << "; ";
-    if (p.second.domain().size()) ss << "domain=" << p.second.domain() << "; ";
-    if (p.second.path().size()) ss << "path=" << p.second.path() << "; ";
-    if (p.second.httpOnly()) ss << "httponly; ";
-    if (p.second.secure()) ss << "secure; ";
-    if (p.second.invalidated())
-      ss << "expires=Sat, 25-Apr-2015 13:33:33 GMT; maxage=-1; ";
-    else if (p.second.expires().size())
-      ss << "expires=" << p.second.expires() << "; ";
-    ss << mkn::kul::os::EOL();
-  }
+  for (auto const& p : cookies())
+    ss << "Set-Cookie: " << SET_COOKIE(p.first, p.second) << mkn::kul::os::EOL();
   ss << mkn::kul::os::EOL() << body() << "\r\n" << '\0';
+  return ss.str();
+}
+
+std::string mkn::ram::http::_1_1Response::SET_COOKIE(std::string const& k, Cookie const& c) {
+  std::stringstream ss;
+  ss << k << "=" << c.value() << "; ";
+  if (c.domain().size()) ss << "domain=" << c.domain() << "; ";
+  if (c.path().size()) ss << "path=" << c.path() << "; ";
+  if (c.httpOnly()) ss << "httponly; ";
+  if (c.secure()) ss << "secure; ";
+  if (c.invalidated())
+    ss << "expires=Sat, 25-Apr-2015 13:33:33 GMT; maxage=-1; ";
+  else if (c.expires().size())
+    ss << "expires=" << c.expires() << "; ";
   return ss.str();
 }
 

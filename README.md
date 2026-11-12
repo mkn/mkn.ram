@@ -26,9 +26,35 @@ class Server : public mkn::ram::http::Server {
 
 | profile | adds |
 |---|---|
-| `lib` | TCP, HTTP (default) |
+| `lib` | TCP, HTTP, FastCGI (default) |
 | `https` | HTTPS, links OpenSSL (Conan on Windows) |
-| `fcgi` | FastCGI |
+
+## FastCGI
+
+`mkn/ram/fcgi.hpp` has FastCGI responder servers to run behind a web server such as nginx.
+Handlers take and return the http types, so one handler can serve http, https and FastCGI.
+POSIX only.
+
+- `fcgi::Server` handles one request at a time on its connection thread
+- `fcgi::AsyncServer` hands requests to a worker pool and multiplexes connections
+
+```cpp
+mkn::ram::fcgi::AsyncServer server(9000, /*workers=*/4);  // binds 127.0.0.1 by default
+server.withResponse([](mkn::ram::http::A1_1Request const& r) {
+  return mkn::ram::http::Response{}.withBody("hello " + r.path()).withDefaultHeaders();
+});
+server.start();  // non-blocking, see stop() and join()
+```
+
+```nginx
+location / {
+  include fastcgi_params;
+  fastcgi_pass 127.0.0.1:9000;
+  fastcgi_keep_conn on;
+}
+```
+
+`res/test/nginx.sh` runs both servers behind nginx, see the script for how to build and run it.
 
 ## Usage
 

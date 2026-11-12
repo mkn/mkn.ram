@@ -1,110 +1,87 @@
-/*
- * Listening socket file number
- */
-#define FCGI_LISTENSOCK_FILENO 0
+/**
+Copyright (c) 2026, Philip Deegan.
+All rights reserved.
 
-typedef struct {
-  unsigned char version;
-  unsigned char type;
-  unsigned char requestIdB1;
-  unsigned char requestIdB0;
-  unsigned char contentLengthB1;
-  unsigned char contentLengthB0;
-  unsigned char paddingLength;
-  unsigned char reserved;
-} FCGI_Header;
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
 
-/*
- * Number of bytes in a FCGI_Header.  Future versions of the protocol
- * will not reduce this number.
- */
-#define FCGI_HEADER_LEN 8
+    * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+    * Neither the name of Philip Deegan nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
 
-/*
- * Value for version component of FCGI_Header
- */
-#define FCGI_VERSION_1 1
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+#ifndef MKN_RAM_FCGI_DEF_HPP
+#define MKN_RAM_FCGI_DEF_HPP
 
-/*
- * Values for type component of FCGI_Header
- */
-#define FCGI_BEGIN_REQUEST 1
-#define FCGI_ABORT_REQUEST 2
-#define FCGI_END_REQUEST 3
-#define FCGI_PARAMS 4
-#define FCGI_STDIN 5
-#define FCGI_STDOUT 6
-#define FCGI_STDERR 7
-#define FCGI_DATA 8
-#define FCGI_GET_VALUES 9
-#define FCGI_GET_VALUES_RESULT 10
-#define FCGI_UNKNOWN_TYPE 11
-#define FCGI_MAXTYPE (FCGI_UNKNOWN_TYPE)
+#include <cstdint>
 
-/*
- * Value for requestId component of FCGI_Header
- */
-#define FCGI_NULL_REQUEST_ID 0
+// connections an fcgi server holds open at once, further ones are closed on accept
+#ifndef MKN_RAM_FCGI_MAX_CONNS
+#define MKN_RAM_FCGI_MAX_CONNS 1024
+#endif /* MKN_RAM_FCGI_MAX_CONNS */
 
-typedef struct {
-  unsigned char roleB1;
-  unsigned char roleB0;
-  unsigned char flags;
-  unsigned char reserved[5];
-} FCGI_BeginRequestBody;
+// bytes read from a connection per read call
+#ifndef MKN_RAM_FCGI_READ_BUFFER
+#define MKN_RAM_FCGI_READ_BUFFER 65536
+#endif /* MKN_RAM_FCGI_READ_BUFFER */
 
-typedef struct {
-  FCGI_Header header;
-  FCGI_BeginRequestBody body;
-} FCGI_BeginRequestRecord;
+// FastCGI 1.0, https://fastcgi-archives.github.io/FastCGI_Specification.html
+namespace mkn::ram::fcgi {
 
-/*
- * Mask for flags component of FCGI_BeginRequestBody
- */
-#define FCGI_KEEP_CONN 1
+constexpr std::uint8_t VERSION_1 = 1;
+constexpr std::size_t HEADER_LEN = 8;
+constexpr std::size_t MAX_CONTENT = 65535;
+constexpr std::uint16_t NULL_REQUEST_ID = 0;
 
-/*
- * Values for role component of FCGI_BeginRequestBody
- */
-#define FCGI_RESPONDER 1
-#define FCGI_AUTHORIZER 2
-#define FCGI_FILTER 3
+namespace type {
+constexpr std::uint8_t BEGIN_REQUEST = 1;
+constexpr std::uint8_t ABORT_REQUEST = 2;
+constexpr std::uint8_t END_REQUEST = 3;
+constexpr std::uint8_t PARAMS = 4;
+constexpr std::uint8_t STDIN = 5;
+constexpr std::uint8_t STDOUT = 6;
+constexpr std::uint8_t STDERR = 7;
+constexpr std::uint8_t DATA = 8;
+constexpr std::uint8_t GET_VALUES = 9;
+constexpr std::uint8_t GET_VALUES_RESULT = 10;
+constexpr std::uint8_t UNKNOWN_TYPE = 11;
+}  // namespace type
 
-typedef struct {
-  unsigned char appStatusB3;
-  unsigned char appStatusB2;
-  unsigned char appStatusB1;
-  unsigned char appStatusB0;
-  unsigned char protocolStatus;
-  unsigned char reserved[3];
-} FCGI_EndRequestBody;
+// BEGIN_REQUEST flags
+constexpr std::uint8_t KEEP_CONN = 1;
 
-typedef struct {
-  FCGI_Header header;
-  FCGI_EndRequestBody body;
-} FCGI_EndRequestRecord;
+namespace role {
+constexpr std::uint16_t RESPONDER = 1;
+constexpr std::uint16_t AUTHORIZER = 2;
+constexpr std::uint16_t FILTER = 3;
+}  // namespace role
 
-/*
- * Values for protocolStatus component of FCGI_EndRequestBody
- */
-#define FCGI_REQUEST_COMPLETE 0
-#define FCGI_CANT_MPX_CONN 1
-#define FCGI_OVERLOADED 2
-#define FCGI_UNKNOWN_ROLE 3
+// END_REQUEST protocolStatus
+namespace status {
+constexpr std::uint8_t REQUEST_COMPLETE = 0;
+constexpr std::uint8_t CANT_MPX_CONN = 1;
+constexpr std::uint8_t OVERLOADED = 2;
+constexpr std::uint8_t UNKNOWN_ROLE = 3;
+}  // namespace status
 
-/*
- * Variable names for FCGI_GET_VALUES / FCGI_GET_VALUES_RESULT records
- */
-#define FCGI_MAX_CONNS "FCGI_MAX_CONNS"
-#define FCGI_MAX_REQS "FCGI_MAX_REQS"
-#define FCGI_MPXS_CONNS "FCGI_MPXS_CONNS"
+}  // namespace mkn::ram::fcgi
 
-typedef struct {
-  unsigned char type;
-  unsigned char reserved[7];
-} FCGI_UnknownTypeBody;
-
-typedef struct {
-  FCGI_Header header;
-  FCGI_UnknownTypeBody body;
-} FCGI_UnknownTypeRecord;
+#endif /* MKN_RAM_FCGI_DEF_HPP */

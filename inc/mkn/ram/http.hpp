@@ -161,6 +161,8 @@ class MKN_KUL_PUBLISH _1_1Response : public Message {
   }
 
   static _1_1Response FROM_STRING(std::string&);
+  // the value of a Set-Cookie header for cookie `k`
+  static std::string SET_COOKIE(std::string const& k, Cookie const& c);
 };
 using Response = _1_1Response;
 inline std::ostream& operator<<(std::ostream& s, _1_1Response const& r) {

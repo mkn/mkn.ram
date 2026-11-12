@@ -90,4 +90,4 @@ void mkn::ram::https::_1_1PostRequest::send() KTHROW(mkn::ram::http::Exception) 
   }
 }
 
-#endif  //MKN_RAM_INCLUDE_HTTPS
+#endif  // MKN_RAM_INCLUDE_HTTPS
