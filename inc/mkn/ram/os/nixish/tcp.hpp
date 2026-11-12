@@ -351,7 +351,8 @@ class SocketServer : public ASocketServer<T> {
  public:
   SocketServer(uint16_t const& p, bool _bind = 1) : mkn::ram::tcp::ASocketServer<T>(p) {
     if (_bind) bind(MKN_RAM_TCP_BIND_SOCKTOPTS);
-    memset(m_fds, 0, sizeof(m_fds));
+    // poll ignores negative fds, 0 would be stdin
+    for (auto& pfd : m_fds) pfd = {-1, 0, 0};
   }
   ~SocketServer() {
     for (int i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) ::close(m_fds[i].fd);

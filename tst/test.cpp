@@ -31,6 +31,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // #define MKN_RAM_INCLUDE_HTTPS
 #define MKN_RAM_NOMAIN
 #include "usage.cpp"
+
+void test_closed_stdin();  // tst/test/stdin.cpp
+
 class TestHTTPSServer : public mkn::ram::https::Server {
  public:
   void operator()() { start(); }
@@ -66,5 +69,6 @@ int main(int, char*[]) {
     serv.stop();
     t.finish().join();
   }
+  test_closed_stdin();
   return 0;
 }
