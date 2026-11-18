@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -146,9 +147,22 @@ bool has(std::string const& s, std::string const& part) {
   return s.find(part) != std::string::npos;
 }
 
+std::atomic<int> active{0}, peak{0};  // /sleep handlers running at once
+
 http::Response respond(http::A1_1Request const& req) {
   if (req.path() == "/throw") throw std::runtime_error("expected test exception");
-  if (req.path() == "/sleep") std::this_thread::sleep_for(300ms);
+  if (req.path() == "/sleep") {
+    auto const now = ++active;
+    for (int p = peak; p < now && !peak.compare_exchange_weak(p, now);) {
+    }
+    std::this_thread::sleep_for(300ms);
+    --active;
+  }
+  if (req.path() == "/crlf") {
+    http::Response res;
+    res.header("X-Bad", "a\r\nInjected: 1");
+    return res.withBody("crlf").withDefaultHeaders();
+  }
   auto const header = [&](std::string const& k) {
     auto const it = req.headers().find(k);
     return it == req.headers().end() ? std::string("-") : it->second;
@@ -185,7 +199,7 @@ std::string mpxs(std::uint16_t const port) {
 
 void test_server() {
   fcgi::Server server(0);
-  server.withResponse(respond);
+  server.withResponse(respond).withMaxParams(4096).withMaxStdin(300000);
   server.start();
   auto const port = server.port();
 
@@ -228,6 +242,34 @@ void test_server() {
     Client c(port);
     expect(c.send(request(1, get("/throw"))).read()[1].out.starts_with("Status: 500"), "500");
   }
+  {  // a header with a line break is a 500, not a second header
+    Client c(port);
+    auto const out = c.send(request(1, get("/crlf"))).read()[1].out;
+    expect(out.starts_with("Status: 500"), "CR/LF 500");
+    expect(!has(out, "Injected"), "CR/LF not written");
+  }
+  {  // over the limits: 431 / 413 without respond(), the connection still usable
+    Client c(port);
+    auto params = get("/limit");
+    params["BIG"] = std::string(5000, 'p');
+    expect(c.send(request(1, params, "", true)).read()[1].out.starts_with("Status: 431"), "431");
+    auto const big = c.send(request(2, get("/limit"), std::string(400000, 'y'), true)).read()[2];
+    expect(big.out.starts_with("Status: 413") && big.status == fcgi::status::REQUEST_COMPLETE,
+           "413");
+    expect(c.send(request(3, get("/after"), "", true)).read()[3].out.ends_with("|0|0"),
+           "after 413");
+  }
+  {  // CONTENT_LENGTH must match STDIN
+    Client c(port);
+    fcgi::Params params{{"REQUEST_METHOD", "POST"}, {"SCRIPT_NAME", "/cl"}};
+    params["CONTENT_LENGTH"] = "10";
+    expect(c.send(request(1, params, "123456789", true)).read()[1].out.starts_with("Status: 400"),
+           "CONTENT_LENGTH short");
+    expect(c.send(request(2, params, "12345678901", true)).read()[2].out.starts_with("Status: 400"),
+           "CONTENT_LENGTH long");
+    expect(c.send(request(3, params, "1234567890", true)).read()[3].out.ends_with("|10"),
+           "CONTENT_LENGTH match");
+  }
   {  // roles, multiplexing, unknown management records
     Client c(port);
     std::string out;
@@ -257,6 +299,12 @@ void test_server() {
   server.stop().join();
   expect(idle.closed(), "closed on stop");
   if (server.exception()) std::rethrow_exception(server.exception());
+
+  // start() straight after stop(), without join(), waits for the old loop then runs again
+  server.start().stop().start();
+  expect(Client(server.port()).send(request(1, get("/again"))).read()[1].out.ends_with("|0|0"),
+         "restarted");
+  server.stop().join();
   std::cout << "PASS fcgi::Server" << std::endl;
 }
 
@@ -283,8 +331,21 @@ void test_async_server() {
     expect(replies[1].out.ends_with("GET|/sleep|-|-|-|||0|0"), "multiplexed 1");
     expect(replies[2].out.ends_with("GET|/two|-|-|-|||0|0"), "multiplexed 2");
   }
-  {  // 4 slow requests on 4 workers run together
-    auto const start = std::chrono::steady_clock::now();
+  {  // aborted while with respond(): ended at once, the late response dropped, the id reusable
+    Client c(port);
+    c.send(request(1, get("/sleep"), "", true));
+    std::this_thread::sleep_for(100ms);  // dispatched
+    std::string out;
+    fcgi::record::append(out, fcgi::type::ABORT_REQUEST, 1, {});
+    auto const aborted = c.send(out).read()[1];
+    expect(aborted.status == fcgi::status::REQUEST_COMPLETE && aborted.out.empty(), "aborted");
+    std::this_thread::sleep_for(400ms);  // the aborted response is done and dropped
+    expect(
+        c.send(request(1, get("/two"), "", true)).read()[1].out.ends_with("GET|/two|-|-|-|||0|0"),
+        "id reused after abort");
+  }
+  {  // 4 slow requests on 4 workers run together, as the server saw them, not timed
+    peak = 0;
     std::vector<std::thread> threads;
     for (int i = 0; i < 4; ++i)
       threads.emplace_back([port]() {
@@ -292,11 +353,7 @@ void test_async_server() {
         expect(c.send(request(1, get("/sleep"))).read()[1].status == 0, "concurrent request");
       });
     for (auto& t : threads) t.join();
-    auto const took = std::chrono::steady_clock::now() - start;
-    expect(took < 900ms,
-           "concurrent requests took " +
-               std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(took).count()) +
-               "ms");
+    expect(peak >= 2, "concurrent requests ran at most " + std::to_string(peak) + " at once");
   }
 
   server.stop().join();

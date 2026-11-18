@@ -85,6 +85,9 @@ Params decode(std::string_view content) KTHROW(Exception);
 
 // CGI response: "Status:" line, headers less hop-by-hop ones, cookies, blank line, body
 std::string cgi(http::Response const& response);
+// throws if a CR or LF in the reason, a header or a cookie would break the CGI response
+void check(http::Response const& response) KTHROW(Exception);
+
 // STDOUT records of the CGI response, the end of STDOUT, and END_REQUEST
 std::string respond(std::uint16_t id, http::Response const& response);
 
@@ -143,6 +146,16 @@ class MKN_KUL_PUBLISH AServer {
     _func = func;
     return *this;
   }
+  // a request with more PARAMS bytes than this is answered with 431, without respond()
+  AServer& withMaxParams(std::size_t const bytes) {
+    _maxParams = bytes;
+    return *this;
+  }
+  // a request with more STDIN bytes than this is answered with 413, without respond()
+  AServer& withMaxStdin(std::size_t const bytes) {
+    _maxStdin = bytes;
+    return *this;
+  }
   virtual http::Response respond(http::A1_1Request const& req) {
     if (_func) return _func(req);
     KEXCEPTION("mkn::ram::fcgi::AServer::respond - no response defined");
@@ -164,17 +177,21 @@ class MKN_KUL_PUBLISH AServer {
  protected:
   // FCGI_MPXS_CONNS, whether a connection may carry concurrent requests
   virtual bool multiplexed() const = 0;
-  // called on the loop thread for each complete request, the response goes to complete()
-  virtual void dispatch(std::uint64_t conn, std::uint16_t id, std::shared_ptr<Request> req) = 0;
-  // respond(), an exception from it is logged and becomes a 500
+  // called on the loop thread for each complete request, the response goes to complete() with
+  //  the same token, which identifies this request
+  virtual void dispatch(std::uint64_t token, std::uint16_t id, std::shared_ptr<Request> req) = 0;
+  // respond(), an exception from it or a response record::check() rejects is logged and becomes
+  //  a 500
   http::Response respondSafely(http::A1_1Request const& req) noexcept;
-  // hands a response to the loop, safe from any thread, dropped if the connection closed
-  void complete(std::uint64_t conn, std::uint16_t id, http::Response const& res);
+  // hands a response to the loop, safe from any thread, dropped if the request was aborted or
+  //  its connection closed
+  void complete(std::uint64_t token, std::uint16_t id, http::Response const& res);
 
  private:
   struct Impl;
   std::unique_ptr<Impl> _impl;
   Responder _func;
+  std::size_t _maxParams = MKN_RAM_FCGI_MAX_PARAMS, _maxStdin = MKN_RAM_FCGI_MAX_STDIN;
 
   void loop();
 };
@@ -188,8 +205,8 @@ class MKN_KUL_PUBLISH Server : public AServer {
 
  protected:
   bool multiplexed() const override { return false; }
-  void dispatch(std::uint64_t conn, std::uint16_t id, std::shared_ptr<Request> req) override {
-    complete(conn, id, respondSafely(*req));
+  void dispatch(std::uint64_t token, std::uint16_t id, std::shared_ptr<Request> req) override {
+    complete(token, id, respondSafely(*req));
   }
 };
 
@@ -219,9 +236,9 @@ class MKN_KUL_PUBLISH AsyncServer : public AServer {
 
  protected:
   bool multiplexed() const override { return true; }
-  void dispatch(std::uint64_t conn, std::uint16_t id, std::shared_ptr<Request> req) override {
+  void dispatch(std::uint64_t token, std::uint16_t id, std::shared_ptr<Request> req) override {
     _pool.async(
-        [this, conn, id, req = std::move(req)]() { complete(conn, id, respondSafely(*req)); });
+        [this, token, id, req = std::move(req)]() { complete(token, id, respondSafely(*req)); });
   }
 
  private:

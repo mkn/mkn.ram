@@ -4,6 +4,9 @@
 #   mkn build -dtOp test.fcgi.serve -a "-std=c++20 -fPIC" -l -pthread
 #   res/test/nginx.sh
 #
+# Modes: serial (fcgi::Server), async (fcgi::AsyncServer), limited (AsyncServer with a 1MB
+# STDIN limit, under nginx's 16m client_max_body_size)
+#
 # Needs nginx, curl and ss, NGINX_BIN=/path/to/nginx overrides nginx on PATH
 # (nginx itself reads NGINX).
 set -euo pipefail
@@ -112,14 +115,32 @@ upstream_conns() {
   ss -Htn state established "( dport = :${FCGI_PORT} )" | wc -l | tr -d ' '
 }
 
-for MODE in serial async; do
+for MODE in serial async limited; do
   : > "$TMP/error.log"
-  "$SERVE" "$MODE" "$FCGI_PORT" > "$TMP/serve.log" 2>&1 &
+  if [ "$MODE" == limited ]; then
+    "$SERVE" async "$FCGI_PORT" 1048576 > "$TMP/serve.log" 2>&1 &
+  else
+    "$SERVE" "$MODE" "$FCGI_PORT" > "$TMP/serve.log" 2>&1 &
+  fi
   SERVER_PID=$!
   wait_for "$TMP/serve.log" "listening"
   "$NGINX_BIN" -p "$TMP" -c "$TMP/nginx.conf" -e "$TMP/error.log" &
   NGINX_PID=$!
   for _ in $(seq 100); do curl -so /dev/null "$URL/" && break; sleep 0.1; done
+
+  if [ "$MODE" == limited ]; then
+    post() {  # bytes, the status code
+      head -c "$1" /dev/zero | curl -s -o /dev/null -w '%{http_code}' --data-binary @- "$URL/post"
+    }
+    check "POST 512KB under the limit" "POST|/post|-|-|-|127.0.0.1:${HTTP_PORT}|524288" \
+      "$(head -c 524288 /dev/zero | curl -sf --data-binary @- "$URL/post")"
+    check "POST 2MB over the server limit" "413" "$(post 2097152)"
+    check "POST 20MB over nginx's limit" "413" "$(post 20971520)"
+    check "GET after 413" "200" "$(curl -s -o /dev/null -w '%{http_code}' "$URL/")"
+    check "upstream connection kept" "1" "$(upstream_conns)"
+    stop
+    continue
+  fi
 
   check "GET" "GET|/echo/x|1|hi|3|127.0.0.1:${HTTP_PORT}|0" \
     "$(curl -sf -H 'X-Test: hi' -b 'c=3' "$URL/echo/x?q=1")"
@@ -137,17 +158,21 @@ for MODE in serial async; do
   check "upstream connection kept" "1" "$(upstream_conns)"
 
   # waits on its own pids, a bare wait in $(...) can spin on inherited jobs in some bash 5.2
-  start=$(date +%s%N)
+  curl -sf -o /dev/null "$URL/peak"  # reset
   pids=()
   for i in 1 2 3 4; do
     curl -s -o /dev/null -w '%{http_code}\n' "$URL/sleep" > "$TMP/sleep.$i" &
     pids+=($!)
   done
   wait "${pids[@]}"
-  took=$((($(date +%s%N) - start) / 1000000))
   check "4 concurrent" "200" "$(cat "$TMP"/sleep.* | sort -u)"
-  if [ "$MODE" == async ]; then  # 4 x 300ms on 4 workers, serial takes 1200ms+
-    check "4 concurrent in parallel" "yes" "$([ "$took" -lt 900 ] && echo yes || echo "no, ${took}ms")"
+  # handlers running at once, as the server saw them, not timed: 4 on 4 workers, at least 2
+  #  however the runner schedules the clients
+  peak=$(curl -sf "$URL/peak")
+  if [ "$MODE" == async ]; then
+    check "4 concurrent in parallel" "yes" "$([ "$peak" -ge 2 ] && echo yes || echo "no, peak $peak")"
+  else
+    check "4 concurrent in turn" "1" "$peak"
   fi
 
   if grep -E '\[(error|crit|alert|emerg)\]' "$TMP/error.log"; then

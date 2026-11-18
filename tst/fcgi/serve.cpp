@@ -29,11 +29,14 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 // FastCGI server for res/test/nginx.sh, runs until interrupted
-//   serve [serial|async] [port]
+//   serve [serial|async] [port] [max STDIN bytes]
 
 #include "mkn/ram/fcgi.hpp"
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <csignal>
 #include <iostream>
 #include <memory>
@@ -45,6 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace {
 
 std::sig_atomic_t volatile interrupted = 0;
+std::atomic<int> active{0}, peak{0};  // /sleep handlers running at once
 
 mkn::ram::http::Response respond(mkn::ram::http::A1_1Request const& req) {
   using namespace std::chrono_literals;
@@ -56,7 +60,15 @@ mkn::ram::http::Response respond(mkn::ram::http::A1_1Request const& req) {
     return res.withBody("missing").withDefaultHeaders();
   }
   if (req.path() == "/big") return res.withBody(std::string(1 << 20, 'z')).withDefaultHeaders();
-  if (req.path() == "/sleep") std::this_thread::sleep_for(300ms);
+  if (req.path() == "/peak")
+    return res.withBody(std::to_string(peak.exchange(0))).withDefaultHeaders();
+  if (req.path() == "/sleep") {
+    auto const now = ++active;
+    for (int p = peak; p < now && !peak.compare_exchange_weak(p, now);) {
+    }
+    std::this_thread::sleep_for(300ms);
+    --active;
+  }
 
   auto const find = [](auto const& map, std::string const& k) {
     auto const it = map.find(k);
@@ -84,6 +96,7 @@ int main(int argc, char* argv[]) {
   else
     server = std::make_unique<mkn::ram::fcgi::Server>(port);
   server->withResponse(respond);
+  if (argc > 3) server->withMaxStdin(static_cast<std::size_t>(std::stoull(argv[3])));
   server->start();
   std::cout << "listening " << server->port() << std::endl;
 

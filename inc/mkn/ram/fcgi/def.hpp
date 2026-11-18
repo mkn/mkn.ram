@@ -31,12 +31,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MKN_RAM_FCGI_DEF_HPP
 #define MKN_RAM_FCGI_DEF_HPP
 
+#include <cstddef>
 #include <cstdint>
 
 // connections an fcgi server holds open at once, further ones are closed on accept
 #ifndef MKN_RAM_FCGI_MAX_CONNS
 #define MKN_RAM_FCGI_MAX_CONNS 1024
 #endif /* MKN_RAM_FCGI_MAX_CONNS */
+
+// bytes of PARAMS a request may carry, more is answered with 431, see AServer::withMaxParams
+#ifndef MKN_RAM_FCGI_MAX_PARAMS
+#define MKN_RAM_FCGI_MAX_PARAMS (1024 * 1024)
+#endif /* MKN_RAM_FCGI_MAX_PARAMS */
+
+// bytes of STDIN a request may carry, more is answered with 413, see AServer::withMaxStdin
+#ifndef MKN_RAM_FCGI_MAX_STDIN
+#define MKN_RAM_FCGI_MAX_STDIN (64 * 1024 * 1024)
+#endif /* MKN_RAM_FCGI_MAX_STDIN */
 
 // bytes read from a connection per read call
 #ifndef MKN_RAM_FCGI_READ_BUFFER

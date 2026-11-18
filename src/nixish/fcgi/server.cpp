@@ -39,9 +39,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <cstring>
 #include <mutex>
+#include <string>
+#include <system_error>
 #include <thread>
 #include <tuple>
 #include <unordered_map>
@@ -63,16 +67,29 @@ void nonblocking(int const fd) {
 struct Pending {
   std::string params, in;
   bool keep = false, paramsDone = false, inDone = false;
+  int reject = 0;  // an http status to answer with once the streams end, without dispatching
+};
+
+struct Inflight {
+  bool keep = false;
+  std::uint64_t token = 0;
 };
 
 struct Connection {
   int fd = -1;
   record::Parser parser;
   std::string out;
-  std::unordered_map<std::uint16_t, Pending> pending;  // receiving
-  std::unordered_map<std::uint16_t, bool> inflight;    // dispatched, value is keep
+  std::unordered_map<std::uint16_t, Pending> pending;    // receiving
+  std::unordered_map<std::uint16_t, Inflight> inflight;  // dispatched
   bool closing = false;  // close once out is flushed and nothing is inflight
 };
+
+http::Response http_status(int const code, std::string const& reason) {
+  http::Response res;
+  res.status(code);
+  res.reason(reason);
+  return res.withBody(reason).withDefaultHeaders();
+}
 
 }  // namespace
 
@@ -83,12 +100,15 @@ struct AServer::Impl {
   std::thread thread;
   std::atomic<bool> run{false};
 
+  std::mutex starting;       // one start() at a time
   mutable std::mutex mutex;  // guards done and ep
   std::vector<std::tuple<std::uint64_t, std::uint16_t, std::string>> done;
   std::exception_ptr ep;
 
-  std::uint64_t next = 0;
+  std::uint64_t next = 0, nextToken = 0;
   std::unordered_map<std::uint64_t, Connection> conns;  // loop thread only
+  // a dispatched request's token to its connection and id, gone once aborted or closed
+  std::unordered_map<std::uint64_t, std::pair<std::uint64_t, std::uint16_t>> tokens;
 
   Impl(std::uint16_t p, std::string a) : addr(std::move(a)), port(p) {}
   ~Impl() {
@@ -136,22 +156,33 @@ AServer& AServer::init() {
     ::close(fd);
     KEXCEPT(Exception, "fcgi bind/listen failed on ", m.addr, ":", m.port, ": ", strerror(e));
   }
+  int wake[2] = {-1, -1};
+  try {
+    if (pipe(wake) < 0) KEXCEPT(Exception, "fcgi pipe failed: ", strerror(errno));
+    for (int const f : {fd, wake[0], wake[1]}) nonblocking(f);
+  } catch (...) {  // nothing is kept from a failed init, a later one starts over
+    for (int const f : {fd, wake[0], wake[1]})
+      if (f >= 0) ::close(f);
+    throw;
+  }
   socklen_t len = sizeof(sa);
   getsockname(fd, reinterpret_cast<sockaddr*>(&sa), &len);
   m.port = ntohs(sa.sin_port);
-  nonblocking(fd);
+  m.wake[0] = wake[0];
+  m.wake[1] = wake[1];
   m.lisock = fd;
-
-  if (pipe(m.wake) < 0) KEXCEPT(Exception, "fcgi pipe failed: ", strerror(errno));
-  nonblocking(m.wake[0]);
-  nonblocking(m.wake[1]);
   return *this;
 }
 
 AServer& AServer::start() {
   init();
   auto& m = *_impl;
-  if (m.run.exchange(true)) return *this;
+  std::lock_guard<std::mutex> lock(m.starting);
+  if (m.run) return *this;
+  // a loop that ended, or is ending after stop() or an error, without join(): run is only set
+  //  once it's gone, a loop still ending would otherwise see it and carry on
+  if (m.thread.joinable() && m.thread.get_id() != std::this_thread::get_id()) m.thread.join();
+  m.run = true;
   m.thread = std::thread([this]() {
     try {
       loop();
@@ -161,6 +192,7 @@ AServer& AServer::start() {
     }
     for (auto& [key, conn] : _impl->conns) ::close(conn.fd);
     _impl->conns.clear();
+    _impl->tokens.clear();
     _impl->run = false;
   });
   return *this;
@@ -179,7 +211,9 @@ AServer& AServer::join() {
 
 http::Response AServer::respondSafely(http::A1_1Request const& req) noexcept {
   try {
-    return respond(req);
+    auto res = respond(req);
+    record::check(res);
+    return res;
   } catch (mkn::kul::Exception const& e) {
     KERR << e.stack();
   } catch (std::exception const& e) {
@@ -193,12 +227,12 @@ http::Response AServer::respondSafely(http::A1_1Request const& req) noexcept {
   return res;
 }
 
-void AServer::complete(std::uint64_t const conn, std::uint16_t const id,
+void AServer::complete(std::uint64_t const token, std::uint16_t const id,
                        http::Response const& res) {
   auto out = record::respond(id, res);
   {
     std::lock_guard<std::mutex> lock(_impl->mutex);
-    _impl->done.emplace_back(conn, id, std::move(out));
+    _impl->done.emplace_back(token, id, std::move(out));
   }
   _impl->notify();
 }
@@ -250,6 +284,17 @@ void AServer::loop() {
       return;
     }
 
+    if (r.type == type::ABORT_REQUEST) {
+      if (auto const f = c.inflight.find(r.id); f != c.inflight.end()) {
+        // already with respond(): ended now, its response is dropped when it comes
+        record::end(c.out, r.id, status::REQUEST_COMPLETE);
+        if (!f->second.keep) c.closing = true;
+        m.tokens.erase(f->second.token);
+        c.inflight.erase(f);
+        return;
+      }
+    }
+
     auto const it = c.pending.find(r.id);
     if (it == c.pending.end()) return;  // records for inactive requests are ignored
     auto& p = it->second;
@@ -260,24 +305,51 @@ void AServer::loop() {
       c.pending.erase(it);
       return;
     }
-    if (r.type == type::PARAMS && !p.paramsDone) {
-      if (r.content.empty())
-        p.paramsDone = true;
-      else
-        p.params += r.content;
-    } else if (r.type == type::STDIN && !p.inDone) {
-      if (r.content.empty())
-        p.inDone = true;
-      else
-        p.in += r.content;
+
+    // over a limit, a stream is read to its end and dropped, then answered with p.reject
+    auto const take = [&p](std::string& stream, bool& ended, std::string const& content,
+                           std::size_t const max, int const code) {
+      if (content.empty()) {
+        ended = true;
+      } else if (!p.reject && content.size() > max - std::min(max, stream.size())) {
+        p.reject = code;
+        std::string{}.swap(p.params);
+        std::string{}.swap(p.in);
+      } else if (!p.reject) {
+        stream += content;
+      }
+    };
+    if (r.type == type::PARAMS && !p.paramsDone)
+      take(p.params, p.paramsDone, r.content, _maxParams, 431);
+    else if (r.type == type::STDIN && !p.inDone)
+      take(p.in, p.inDone, r.content, _maxStdin, 413);
+
+    if (!p.paramsDone || !p.inDone) return;
+
+    auto const answer = [&](http::Response const& res) {
+      c.out += record::respond(r.id, res);
+      if (!p.keep) c.closing = true;
+      c.pending.erase(it);
+    };
+    if (p.reject == 431) return answer(http_status(431, "Request Header Fields Too Large"));
+    if (p.reject == 413) return answer(http_status(413, "Content Too Large"));
+
+    auto params = record::decode(p.params);
+    // a body shorter or longer than declared, e.g. cut off, is not handed to respond()
+    if (auto const cl = params.find("CONTENT_LENGTH"); cl != params.end() && !cl->second.empty()) {
+      std::size_t length = 0;
+      auto const& v = cl->second;
+      auto const [end, ec] = std::from_chars(v.data(), v.data() + v.size(), length);
+      if (ec != std::errc{} || end != v.data() + v.size() || length != p.in.size())
+        return answer(http_status(400, "Bad Request"));
     }
 
-    if (p.paramsDone && p.inDone) {
-      auto req = std::make_shared<Request>(record::decode(p.params), std::move(p.in));
-      c.inflight[r.id] = p.keep;
-      c.pending.erase(it);
-      dispatch(key, r.id, std::move(req));
-    }
+    auto req = std::make_shared<Request>(std::move(params), std::move(p.in));
+    auto const token = m.nextToken++;
+    m.tokens[token] = {key, r.id};
+    c.inflight[r.id] = {p.keep, token};
+    c.pending.erase(it);
+    dispatch(token, r.id, std::move(req));
   };
 
   std::vector<pollfd> fds;
@@ -315,13 +387,17 @@ void AServer::loop() {
         std::lock_guard<std::mutex> lock(m.mutex);
         done.swap(m.done);
       }
-      for (auto& [key, id, out] : done) {
+      for (auto& [token, id, out] : done) {
+        auto const t = m.tokens.find(token);
+        if (t == m.tokens.end()) continue;  // aborted, or closed while responding
+        auto const key = t->second.first;
+        m.tokens.erase(t);
         auto const it = m.conns.find(key);
-        if (it == m.conns.end()) continue;  // closed while responding
+        if (it == m.conns.end()) continue;
         auto& c = it->second;
         c.out += out;
-        if (auto const f = c.inflight.find(id); f != c.inflight.end()) {
-          if (!f->second) c.closing = true;
+        if (auto const f = c.inflight.find(id); f != c.inflight.end() && f->second.token == token) {
+          if (!f->second.keep) c.closing = true;
           c.inflight.erase(f);
         }
         if (!flush(c)) closed.push_back(key);
@@ -378,6 +454,7 @@ void AServer::loop() {
 
     for (auto const key : closed)
       if (auto const it = m.conns.find(key); it != m.conns.end()) {
+        for (auto const& [id, f] : it->second.inflight) m.tokens.erase(f.token);
         ::close(it->second.fd);
         m.conns.erase(it);
       }

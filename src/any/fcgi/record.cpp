@@ -223,6 +223,21 @@ std::string record::cgi(http::Response const& response) {
   return out;
 }
 
+void record::check(http::Response const& response) {
+  // a line break would end the field early, and what follows would be read as more headers
+  auto const clean = [](std::string const& s, char const* const what) {
+    if (s.find_first_of("\r\n") != std::string::npos)
+      KEXCEPT(Exception, "fcgi response ", what, " has a CR or LF");
+  };
+  clean(response.reason(), "reason");
+  for (auto const& [k, v] : response.headers()) {
+    clean(k, "header name");
+    clean(v, "header value");
+  }
+  for (auto const& p : response.cookies())
+    clean(http::Response::SET_COOKIE(p.first, p.second), "cookie");
+}
+
 std::string record::respond(std::uint16_t const id, http::Response const& response) {
   std::string out;
   append(out, type::STDOUT, id, cgi(response));
