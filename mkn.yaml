@@ -34,6 +34,18 @@ profile:
   if_link:
     win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
+# HTTP/2 client requests: -w mkn.ram[https2] and mkn/ram/http2.hpp (POSIX only for now)
+- name: https2
+  parent: https
+  src: src/http2/any
+  if_src:
+    bsd: src/http2/nixish
+    nix: src/http2/nixish
+
+- name: test.http2
+  parent: https2
+  main: tst/http2.cpp
+
 - name: usage
   parent: https
   main: tst/usage.cpp
