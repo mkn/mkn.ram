@@ -38,7 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <arpa/inet.h>  // IWYU pragma: export
 #include <fcntl.h>
-#include <netdb.h>  // IWYU pragma: export
+#include <netdb.h>       // IWYU pragma: export
 #include <netinet/in.h>  // IWYU pragma: export
 #include <stdio.h>
 #include <sys/ioctl.h>
@@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef MKN_RAM_TCP_BIND_SOCKTOPTS
 #define MKN_RAM_TCP_BIND_SOCKTOPTS SO_REUSEADDR
-#endif  //MKN_RAM_TCP_BIND_SOCKTOPTS
+#endif  // MKN_RAM_TCP_BIND_SOCKTOPTS
 
 namespace mkn {
 namespace ram {
@@ -420,4 +420,4 @@ class SocketServer : public ASocketServer<T> {
 }  // namespace ram
 }  // namespace mkn
 
-#endif  //MKN_RAM_OS_NIXISH_TCP_HPP
+#endif  // MKN_RAM_OS_NIXISH_TCP_HPP

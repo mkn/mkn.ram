@@ -175,4 +175,4 @@ std::vector<Data> collect(Data const& data, int mpi_size) {
 }  // namespace mpi
 }  // namespace mkn
 
-#endif  //MKN_RAM_MPI_HPP
+#endif  // MKN_RAM_MPI_HPP

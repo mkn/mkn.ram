@@ -183,4 +183,4 @@ bool mkn::ram::https::Server::receive(std::map<int, uint8_t>& fds, int const& fd
   return true;
 }
 
-#endif  //MKN_RAM_INCLUDE_HTTPS
+#endif  // MKN_RAM_INCLUDE_HTTPS

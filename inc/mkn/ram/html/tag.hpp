@@ -69,7 +69,6 @@ class HTML {
 
 namespace html4 {
 
-
 class Tag {
  protected:
   std::string v = "";

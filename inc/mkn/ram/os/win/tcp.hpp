@@ -57,7 +57,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef MKN_RAM_TCP_BIND_SOCKTOPTS
 #define MKN_RAM_TCP_BIND_SOCKTOPTS SO_REUSEADDR
-#endif  //MKN_RAM_TCP_BIND_SOCKTOPTS
+#endif  // MKN_RAM_TCP_BIND_SOCKTOPTS
 
 namespace mkn {
 namespace ram {
@@ -328,8 +328,7 @@ class SocketServer : public ASocketServer<T> {
 
     lisock = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     int iso = 1;
-    int rc =
-        setsockopt(lisock, SOL_SOCKET, MKN_RAM_TCP_BIND_SOCKTOPTS, (char*)&iso, sizeof(iso));
+    int rc = setsockopt(lisock, SOL_SOCKET, MKN_RAM_TCP_BIND_SOCKTOPTS, (char*)&iso, sizeof(iso));
     if (lisock == INVALID_SOCKET) KEXCEPTION("socket failed with error: ", WSAGetLastError());
 
     {
@@ -372,4 +371,4 @@ class SocketServer : public ASocketServer<T> {
 }  // namespace ram
 }  // namespace mkn
 
-#endif  //MKN_RAM_OS_WIN_TCP_HPP
+#endif  // MKN_RAM_OS_WIN_TCP_HPP

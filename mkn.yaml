@@ -34,10 +34,6 @@ profile:
   if_link:
     win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
-- name: fcgi
-  parent: lib
-  arg: -DKUL_INCLUDE_FCGI
-
 - name: usage
   parent: https
   main: tst/usage.cpp
@@ -45,14 +41,15 @@ profile:
   # if_link:
   #   win_cl: -nodefaultlib:libucrt.lib ucrt.lib
 
-- name: test_fcgi
-  main: tst/fcgi.cpp
-  self: fcgi
-
 - name: test
   parent: https
   main: tst/test.cpp
   src: tst/test
+
+# FastCGI server behind nginx, see res/test/nginx.sh
+- name: test.fcgi.serve
+  parent: lib
+  main: tst/fcgi/serve.cpp
 
 - name: test.client
   parent: lib
@@ -79,7 +76,7 @@ profile:
     compile:
       paths: inc
       # os/win: other platform, os/nixish: fragments of tcp/http/https.hpp
-      # fcgi and mpi need their libraries
-      ignore: os/win src/win os/nixish fcgi mpi
+      # mpi needs its library
+      ignore: os/win src/win os/nixish mpi
       headers: -x c++-header
       args: -Xiwyu --mapping_file=res/iwyu.imp

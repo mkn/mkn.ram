@@ -47,4 +47,4 @@ void mkn::ram::https::MultiServer::start() KTHROW(kul::tcp::Exception) {
   _workerPool.start();
 }
 
-#endif  //MKN_RAM_INCLUDE_HTTPS
+#endif  // MKN_RAM_INCLUDE_HTTPS

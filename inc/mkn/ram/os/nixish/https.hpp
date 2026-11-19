@@ -253,4 +253,4 @@ using Post = _1_1PostRequest;
 }  // namespace https
 }  // namespace ram
 }  // namespace mkn
-#endif  //MKN_RAM_OS_NIXISH_HTTPS_HPP
+#endif  // MKN_RAM_OS_NIXISH_HTTPS_HPP

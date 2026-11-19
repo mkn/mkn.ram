@@ -54,4 +54,4 @@ class Exception : public mkn::kul::Exception {
 #include "mkn/ram/os/nixish/https.hpp"  // IWYU pragma: export
 #endif
 
-#endif  //MKN_RAM_HTTPS_HPP
+#endif  // MKN_RAM_HTTPS_HPP

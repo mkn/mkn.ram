@@ -91,4 +91,4 @@ class ASocketServer {
 #include "mkn/ram/os/nixish/tcp.hpp"  // IWYU pragma: export
 #endif
 
-#endif  //MKN_RAM_TCP_HPP
+#endif  // MKN_RAM_TCP_HPP

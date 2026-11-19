@@ -36,7 +36,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mkn/kul/except.hpp"
 #include "mkn/kul/log.hpp"
 
-
 #include "mkn/kul/os.hpp"
 #include "mkn/ram/http.hpp"
 
@@ -240,4 +239,4 @@ using Post = _1_1PostRequest;
 }  // namespace https
 }  // namespace ram
 }  // namespace mkn
-#endif  //MKN_RAM_OS_WIN_HTTPS_HPP
+#endif  // MKN_RAM_OS_WIN_HTTPS_HPP
