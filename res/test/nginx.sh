@@ -111,8 +111,15 @@ http {
 }
 CONF
 
-upstream_conns() {
-  ss -Htn state established "( dport = :${FCGI_PORT} )" | wc -l | tr -d ' '
+upstream_conns() {  # nginx's local address of each, the same one is the same connection
+  ss -Htn state established "( dport = :${FCGI_PORT} )" | awk '{print $3}' | sort
+}
+
+error_log() {  # unexpected nginx errors, $1 an expected one
+  local errors
+  errors=$(grep -E '\[(error|crit|alert|emerg)\]' "$TMP/error.log" || true)
+  [ -z "${1:-}" ] || errors=$(grep -vF "$1" <<< "$errors" || true)
+  [ -z "$errors" ] || { echo "$errors"; check "nginx error.log" "clean" "errors"; }
 }
 
 for MODE in serial async limited; do
@@ -134,16 +141,20 @@ for MODE in serial async limited; do
     }
     check "POST 512KB under the limit" "POST|/post|-|-|-|127.0.0.1:${HTTP_PORT}|524288" \
       "$(head -c 524288 /dev/zero | curl -sf --data-binary @- "$URL/post")"
+    conns=$(upstream_conns)
     check "POST 2MB over the server limit" "413" "$(post 2097152)"
     check "POST 20MB over nginx's limit" "413" "$(post 20971520)"
     check "GET after 413" "200" "$(curl -s -o /dev/null -w '%{http_code}' "$URL/")"
-    check "upstream connection kept" "1" "$(upstream_conns)"
+    check "one upstream connection" "1" "$(wc -l <<< "$conns" | tr -d ' ')"
+    check "upstream connection kept" "$conns" "$(upstream_conns)"
+    error_log "client intended to send too large body"  # the 20MB, nginx's own 413
     stop
     continue
   fi
 
   check "GET" "GET|/echo/x|1|hi|3|127.0.0.1:${HTTP_PORT}|0" \
     "$(curl -sf -H 'X-Test: hi' -b 'c=3' "$URL/echo/x?q=1")"
+  conns=$(upstream_conns)
   headers=$(curl -sf -D - -o /dev/null "$URL/")
   check "header" "1" "$(grep -ci '^X-Echo: 1' <<< "$headers")"
   check "cookie" "1" "$(grep -ci '^Set-Cookie: s=v' <<< "$headers")"
@@ -155,7 +166,8 @@ for MODE in serial async limited; do
 
   codes=$(for i in $(seq 20); do curl -s -o /dev/null -w '%{http_code}\n' "$URL/seq/$i"; done | sort -u)
   check "20 sequential" "200" "$codes"
-  check "upstream connection kept" "1" "$(upstream_conns)"
+  check "one upstream connection" "1" "$(wc -l <<< "$conns" | tr -d ' ')"
+  check "upstream connection kept" "$conns" "$(upstream_conns)"
 
   # waits on its own pids, a bare wait in $(...) can spin on inherited jobs in some bash 5.2
   curl -sf -o /dev/null "$URL/peak"  # reset
@@ -175,9 +187,7 @@ for MODE in serial async limited; do
     check "4 concurrent in turn" "1" "$peak"
   fi
 
-  if grep -E '\[(error|crit|alert|emerg)\]' "$TMP/error.log"; then
-    check "nginx error.log" "clean" "errors"
-  fi
+  error_log
   stop
 done
 

@@ -37,6 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace mkn::ram::fcgi {
 namespace {
@@ -209,11 +210,23 @@ Params record::decode(std::string_view const in) {
 std::string record::cgi(http::Response const& response) {
   std::string out =
       "Status: " + std::to_string(response.status()) + " " + response.reason() + "\r\n";
+  // the web server owns the client connection, headers Connection names are for it alone
+  std::vector<std::string_view> hop{"Status", "Connection", "Keep-Alive", "Transfer-Encoding"};
   for (auto const& [k, v] : response.headers()) {
-    // the web server owns the client connection
-    if (iequals(k, "Status") || iequals(k, "Connection") || iequals(k, "Keep-Alive") ||
-        iequals(k, "Transfer-Encoding"))
-      continue;
+    if (!iequals(k, "Connection")) continue;
+    for (std::size_t pos = 0; pos <= v.size();) {
+      auto const end = (std::min)(v.find(',', pos), v.size());
+      auto option = std::string_view(v).substr(pos, end - pos);
+      while (!option.empty() && (option.front() == ' ' || option.front() == '\t'))
+        option.remove_prefix(1);
+      while (!option.empty() && (option.back() == ' ' || option.back() == '\t'))
+        option.remove_suffix(1);
+      if (!option.empty()) hop.push_back(option);
+      pos = end + 1;
+    }
+  }
+  for (auto const& [k, v] : response.headers()) {
+    if (std::any_of(hop.begin(), hop.end(), [&k](auto const h) { return iequals(k, h); })) continue;
     out += k + ": " + v + "\r\n";
   }
   for (auto const& p : response.cookies())

@@ -100,8 +100,8 @@ struct AServer::Impl {
   std::thread thread;
   std::atomic<bool> run{false};
 
-  std::mutex starting;       // one start() at a time
-  mutable std::mutex mutex;  // guards done and ep
+  std::mutex starting;       // one init() / start() at a time
+  mutable std::mutex mutex;  // guards done and ep, and run turning false at the loop's end
   std::vector<std::tuple<std::uint64_t, std::uint16_t, std::string>> done;
   std::exception_ptr ep;
 
@@ -115,6 +115,8 @@ struct AServer::Impl {
     for (int const fd : {lisock, wake[0], wake[1]})
       if (fd >= 0) ::close(fd);
   }
+
+  void init();
 
   void notify() {
     char const c = 0;
@@ -138,8 +140,14 @@ std::exception_ptr AServer::exception() const {
 }
 
 AServer& AServer::init() {
-  auto& m = *_impl;
-  if (m.lisock >= 0) return *this;
+  std::lock_guard<std::mutex> lock(_impl->starting);
+  _impl->init();
+  return *this;
+}
+
+void AServer::Impl::init() {
+  auto& m = *this;
+  if (m.lisock >= 0) return;
 
   sockaddr_in sa{};
   sa.sin_family = AF_INET;
@@ -171,30 +179,44 @@ AServer& AServer::init() {
   m.wake[0] = wake[0];
   m.wake[1] = wake[1];
   m.lisock = fd;
-  return *this;
 }
 
 AServer& AServer::start() {
-  init();
   auto& m = *_impl;
   std::lock_guard<std::mutex> lock(m.starting);
+  m.init();
   if (m.run) return *this;
   // a loop that ended, or is ending after stop() or an error, without join(): run is only set
   //  once it's gone, a loop still ending would otherwise see it and carry on
-  if (m.thread.joinable() && m.thread.get_id() != std::this_thread::get_id()) m.thread.join();
+  if (m.thread.joinable()) {
+    if (m.thread.get_id() == std::this_thread::get_id())  // it can't join itself
+      KEXCEPT(Exception, "fcgi start() from the connection loop after stop()");
+    m.thread.join();
+  }
+  {
+    std::lock_guard<std::mutex> lock(m.mutex);
+    m.ep = nullptr;  // the previous run's
+  }
   m.run = true;
-  m.thread = std::thread([this]() {
-    try {
-      loop();
-    } catch (...) {
+  try {
+    m.thread = std::thread([this]() {
+      try {
+        loop();
+      } catch (...) {
+        std::lock_guard<std::mutex> lock(_impl->mutex);
+        _impl->ep = std::current_exception();
+      }
+      for (auto& [key, conn] : _impl->conns) ::close(conn.fd);
+      _impl->conns.clear();
+      _impl->tokens.clear();
       std::lock_guard<std::mutex> lock(_impl->mutex);
-      _impl->ep = std::current_exception();
-    }
-    for (auto& [key, conn] : _impl->conns) ::close(conn.fd);
-    _impl->conns.clear();
-    _impl->tokens.clear();
-    _impl->run = false;
-  });
+      _impl->done.clear();  // responses for this run, undeliverable now, complete() adds no more
+      _impl->run = false;
+    });
+  } catch (...) {
+    m.run = false;
+    throw;
+  }
   return *this;
 }
 
@@ -232,6 +254,7 @@ void AServer::complete(std::uint64_t const token, std::uint16_t const id,
   auto out = record::respond(id, res);
   {
     std::lock_guard<std::mutex> lock(_impl->mutex);
+    if (!_impl->run) return;  // stopped, nothing would send it
     _impl->done.emplace_back(token, id, std::move(out));
   }
   _impl->notify();

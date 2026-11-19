@@ -147,7 +147,12 @@ bool has(std::string const& s, std::string const& part) {
   return s.find(part) != std::string::npos;
 }
 
-std::atomic<int> active{0}, peak{0};  // /sleep handlers running at once
+std::atomic<int> active{0}, peak{0};                              // /sleep handlers running at once
+std::atomic<bool> held{false}, release{false}, hold_done{false};  // /hold waits for release
+
+void wait_until(std::atomic<bool> const& flag) {  // under test_fcgi()'s timeout
+  while (!flag) std::this_thread::sleep_for(1ms);
+}
 
 http::Response respond(http::A1_1Request const& req) {
   if (req.path() == "/throw") throw std::runtime_error("expected test exception");
@@ -157,6 +162,18 @@ http::Response respond(http::A1_1Request const& req) {
     }
     std::this_thread::sleep_for(300ms);
     --active;
+  }
+  if (req.path() == "/hold") {
+    held = true;
+    wait_until(release);
+    hold_done = true;
+  }
+  if (req.path() == "/hop") {  // headers Connection names go with it
+    http::Response res;
+    res.header("Connection", "close, X-Timing");
+    res.header("x-timing", "1");
+    res.header("X-Kept", "1");
+    return res.withBody("hop").withDefaultHeaders();
   }
   if (req.path() == "/crlf") {
     http::Response res;
@@ -222,6 +239,11 @@ void test_server() {
     expect(!has(reply.out, "Connection:"), "hop-by-hop header dropped");
     expect(reply.out.ends_with("\r\n\r\nGET|/p/x|1|gzip|3|example.com|10.0.0.1|1234|0"), "body");
     expect(c.closed(), "closed without KEEP_CONN");
+  }
+  {  // headers named by Connection are dropped with it
+    auto const out = Client(port).send(request(1, get("/hop"))).read()[1].out;
+    expect(has(out, "\r\nX-Kept: 1\r\n"), "unnamed header kept");
+    expect(!has(out, "Connection:") && !has(out, "x-timing:"), "Connection named header dropped");
   }
   {  // STDIN over several records, then a request sent a byte at a time
     Client c(port);
@@ -331,18 +353,24 @@ void test_async_server() {
     expect(replies[1].out.ends_with("GET|/sleep|-|-|-|||0|0"), "multiplexed 1");
     expect(replies[2].out.ends_with("GET|/two|-|-|-|||0|0"), "multiplexed 2");
   }
-  {  // aborted while with respond(): ended at once, the late response dropped, the id reusable
+  {  // aborted while with respond(): ended at once, the id reusable, the late response dropped
     Client c(port);
-    c.send(request(1, get("/sleep"), "", true));
-    std::this_thread::sleep_for(100ms);  // dispatched
+    c.send(request(1, get("/hold"), "", true));
+    wait_until(held);
     std::string out;
     fcgi::record::append(out, fcgi::type::ABORT_REQUEST, 1, {});
     auto const aborted = c.send(out).read()[1];
     expect(aborted.status == fcgi::status::REQUEST_COMPLETE && aborted.out.empty(), "aborted");
-    std::this_thread::sleep_for(400ms);  // the aborted response is done and dropped
     expect(
         c.send(request(1, get("/two"), "", true)).read()[1].out.ends_with("GET|/two|-|-|-|||0|0"),
         "id reused after abort");
+    release = true;
+    wait_until(hold_done);
+    std::this_thread::sleep_for(
+        100ms);  // its complete(), after respond() returns, reaches the loop
+    auto const next = c.send(request(1, get("/three"), "", true)).read()[1].out;
+    expect(next.ends_with("GET|/three|-|-|-|||0|0") && !has(next, "/hold"),
+           "aborted response dropped");
   }
   {  // 4 slow requests on 4 workers run together, as the server saw them, not timed
     peak = 0;

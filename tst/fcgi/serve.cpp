@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <chrono>
 #include <cstddef>
 #include <csignal>
@@ -43,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
 
 namespace {
@@ -96,7 +98,14 @@ int main(int argc, char* argv[]) {
   else
     server = std::make_unique<mkn::ram::fcgi::Server>(port);
   server->withResponse(respond);
-  if (argc > 3) server->withMaxStdin(static_cast<std::size_t>(std::stoull(argv[3])));
+  if (argc > 3) {  // all of it a number in range, "1048576x" is not 1048576
+    std::string_view const v = argv[3];
+    std::size_t max = 0;
+    auto const [end, ec] = std::from_chars(v.data(), v.data() + v.size(), max);
+    if (ec != std::errc{} || end != v.data() + v.size())
+      throw std::invalid_argument("invalid STDIN limit: " + std::string(v));
+    server->withMaxStdin(max);
+  }
   server->start();
   std::cout << "listening " << server->port() << std::endl;
 
