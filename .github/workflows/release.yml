@@ -1,7 +1,8 @@
 name: release
 
-# Release binaries, see res/ci/manifest.py: every PR into master or latest builds them, a PR merged into
-#  latest publishes them as mkn.yaml's version: that tag, a GitHub release marked latest, mkn.manifest.yml.
+# Release binaries: every PR into master or latest builds them (mkn's manifest command collects each
+#  build into .mkn/manifest/), a PR merged into latest publishes them as mkn.yaml's version: that tag, a
+#  GitHub release marked latest, mkn.manifest.yml (every platform's merged).
 #  Dependency versions left as `latest` (property <dep>.version: latest) are pinned to the dependency's
 #  newest release tag (res/ci/pin.sh) in every build and in a commit on top of the merge commit, which gets
 #  the tag; the latest branch keeps `latest`. A pre-release version (e.g. 0.1.0-beta.1) publishes a GitHub
@@ -72,19 +73,15 @@ jobs:
         dnf install -y epel-release && dnf install -y openssl3-devel  # OpenSSL 3, the system one is 1.1.1
         res/ci/pin.sh apply
         $CURL_GET -o mkn ${PATH_GET}/${{ matrix.mkn }} && chmod +x mkn
-        PY=$(command -v python3 || ls /opt/python/cp312-cp312/bin/python3)
-        KEY="os=nix;arch=${{ matrix.arch }};cxxrt=libstdc++;libc=manylinux_2_28"
         SSL="-b /usr/include/openssl3 -B /usr/lib64/openssl3"
-        for profile in @ https2; do for mode in static shared; do
-          p=; dir=bin/build; [ $profile = @ ] || { p="-p $profile"; dir=bin/$profile; }
-          m=-K; [ $mode = static ] || m=-S
-          ./mkn clean build -dt $m $p -a "$ARGS" -g 0 $SSL
-          $PY res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" $profile $mode $dir
+        for p in @ https2; do for m in -K -S; do
+          ./mkn clean build manifest -dt $m -p $p -a "$ARGS" -g 0 $SSL
         done; done
     - uses: actions/upload-artifact@v4.4.0
       with:
         name: nix-${{ matrix.arch }}
-        path: dist
+        path: .mkn/manifest
+        include-hidden-files: true  # .mkn/
         retention-days: 3
 
   macos:
@@ -101,18 +98,15 @@ jobs:
         set -ex
         res/ci/pin.sh apply
         $CURL_GET -o mkn ${PATH_GET}/mkn_arm_osx && chmod +x mkn
-        KEY="os=bsd;arch=arm64;cxxrt=libc++;macos=13.0"
         SSL_DIR=$(brew --prefix openssl@3)  # stable opt/ path, not the versioned Cellar one
-        for profile in @ https2; do for mode in static shared; do
-          p=; dir=bin/build; [ $profile = @ ] || { p="-p $profile"; dir=bin/$profile; }
-          m=-K; [ $mode = static ] || m=-S
-          ./mkn clean build -dt $m $p -a "$ARGS" -g 0 -b "$SSL_DIR/include" -B "$SSL_DIR/lib"
-          python3 res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" $profile $mode $dir
+        for p in @ https2; do for m in -K -S; do
+          ./mkn clean build manifest -dt $m -p $p -a "$ARGS" -g 0 -b "$SSL_DIR/include" -B "$SSL_DIR/lib"
         done; done
     - uses: actions/upload-artifact@v4.4.0
       with:
         name: bsd-arm64
-        path: dist
+        path: .mkn/manifest
+        include-hidden-files: true  # .mkn/
         retention-days: 3
 
   windows:
@@ -136,16 +130,14 @@ jobs:
         res/ci/pin.sh apply
         $CURL_GET -o mkn.exe ${PATH_GET}/mkn.exe
         WARGS="-EHsc -std:c++20 -O2 -DNDEBUG -MD"
-        KEY="os=win;arch=x86_64;cxxrt=msvc;crt=md"
-        for mode in static shared; do  # https2 is POSIX only
-          m=-K; [ $mode = static ] || m=-S
-          ./mkn clean build -dt $m -a "$WARGS" -g 0
-          python res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" @ $mode bin/build
+        for m in -K -S; do  # https2 is POSIX only
+          ./mkn clean build manifest -dt $m -a "$WARGS" -g 0
         done
     - uses: actions/upload-artifact@v4.4.0
       with:
         name: win-x86_64
-        path: dist
+        path: .mkn/manifest
+        include-hidden-files: true  # .mkn/
         retention-days: 3
 
   publish:
@@ -162,8 +154,7 @@ jobs:
         ref: ${{ env.REF }}
     - uses: actions/download-artifact@v5
       with:
-        path: dist
-        merge-multiple: true
+        path: dist  # a directory per platform, each with its mkn.manifest.yml
     - id: version
       run: |
         set -euo pipefail
@@ -174,8 +165,10 @@ jobs:
         git commit -qam "$version: dependency versions pinned" || true
         git tag -a "$version" -m "$version"
         git push origin "refs/tags/$version"
-        python3 res/ci/manifest.py merge dist/mkn.manifest.yml "$version" "$(git rev-parse HEAD)" dist/*.json
-        rm dist/*.json
+        mkdir release
+        find dist -type f ! -name mkn.manifest.yml -exec cp {} release/ \;  # the libraries
+        COMMIT=$(git rev-parse HEAD) yq ea '. as $i ireduce ({}; . * $i) | .commit = strenv(COMMIT)' \
+          dist/*/mkn.manifest.yml > release/mkn.manifest.yml
         echo "version=$version" >> "$GITHUB_OUTPUT"
         case "$version" in *-*) echo "prerelease=true";; *) echo "prerelease=false";; esac >> "$GITHUB_OUTPUT"
     - uses: softprops/action-gh-release@v2
@@ -184,4 +177,4 @@ jobs:
         name: ${{ steps.version.outputs.version }}
         prerelease: ${{ steps.version.outputs.prerelease }}
         make_latest: ${{ steps.version.outputs.prerelease == 'false' }}
-        files: dist/*
+        files: release/*
