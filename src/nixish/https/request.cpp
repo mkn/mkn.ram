@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <sstream>
 #include <string>
+#include <vector>
 
 void mkn::ram::https::Requester::send(std::string const& h, std::string const& req,
                                       uint16_t const& p, std::stringstream& ss, SSL* ssl) {
@@ -54,20 +55,18 @@ void mkn::ram::https::Requester::send(std::string const& h, std::string const& r
   SSL_set_fd(ssl, sck);
   if (SSL_connect(ssl) == -1) KEXCEPTION("HTTPS REQUEST INIT FAILED");
   SSL_write(ssl, req.c_str(), req.size());
-  char buffer[MKN_RAM_TCP_REQUEST_BUFFER];
-  int64_t d = 0, i = 0;
-  do {
-    bzero(buffer, MKN_RAM_TCP_REQUEST_BUFFER);
-    d = SSL_read(ssl, buffer, MKN_RAM_TCP_REQUEST_BUFFER - 1);
+  // on the heap: too big for a thread's stack (512KB on macOS)
+  std::vector<char> buffer(MKN_RAM_TCP_REQUEST_BUFFER);
+  while (true) {
+    int const d = SSL_read(ssl, buffer.data(), static_cast<int>(buffer.size()));
     if (d == 0) break;
     if (d < 0) {
-      short se = 0;
-      SSL_get_error(ssl, se);
-      if (se) KLOG(ERR) << "SSL_get_error: " << se;
+      if (int const se = SSL_get_error(ssl, d); se != SSL_ERROR_ZERO_RETURN)
+        KLOG(ERR) << "SSL_get_error: " << se;
       break;
     }
-    for (i = 0; i < d; i++) ss << buffer[i];
-  } while (true);
+    ss.write(buffer.data(), d);
+  }
   ::close(sck);
 }
 
