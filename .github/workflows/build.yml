@@ -40,9 +40,7 @@ jobs:
         set -ex
         export SSL_DIR=$(dirname $(dirname $(find /opt/homebrew/Cellar/openssl@3 | grep "libssl\.a")))
         $CURL_GET -o mkn ${PATH_GET}/mkn_arm_osx && chmod +x mkn
-        KLOG=3 ./mkn clean build -dtOp test -a "-std=c++20 -fPIC" -g 3 -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
-        ulimit -c 0
-        KLOG=3 lldb --batch -o run -k "thread backtrace all" -k "quit 1" -- bin/test/mkn.ram
+        KLOG=3 ./mkn clean build run -dtOp test -a "-std=c++20 -fPIC" -b "${SSL_DIR}/include" -B "${SSL_DIR}/lib"
 
   windows:
     runs-on: windows-latest
