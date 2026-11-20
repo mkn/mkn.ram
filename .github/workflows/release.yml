@@ -23,8 +23,8 @@ jobs:
         ref: ${{ env.REF }}
     - id: version
       run: |
-        version=$(sed -n 's/^version: *\([^ #]*\).*/\1/p' mkn.yaml)
-        if [ -z "$version" ] || [ "$version" = master ]; then
+        version=$(yq '.version' mkn.yaml)
+        if [ -z "$version" ] || [ "$version" = null ] || [ "$version" = master ]; then
           echo "mkn.yaml version must be a release on latest, not '$version'"; exit 1
         fi
         if git ls-remote --exit-code --tags origin "refs/tags/$version" > /dev/null; then
