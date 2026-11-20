@@ -1,51 +1,181 @@
 name: release
 
-# A PR merged into latest publishes mkn.yaml's version. Dependency versions left as `latest`
-#  (property <dep>.version: latest, e.g. mkn.kul.version) are pinned to that dependency's newest
-#  release tag (github.com/mkn/<dep>) in a commit on top of the merge commit; the tag goes on that
-#  commit, the latest branch keeps `latest`. A pre-release version (e.g. 0.1.0-beta.1) publishes a
-#  GitHub pre-release, never marked latest. Nothing is built here, build.yml tests the PR.
+# Release binaries, see res/ci/manifest.py: every PR into master or latest builds them, a PR merged into
+#  latest publishes them as mkn.yaml's version: that tag, a GitHub release marked latest, mkn.manifest.yml.
+#  Dependency versions left as `latest` (property <dep>.version: latest) are pinned to the dependency's
+#  newest release tag (res/ci/pin.sh) in every build and in a commit on top of the merge commit, which gets
+#  the tag; the latest branch keeps `latest`. A pre-release version (e.g. 0.1.0-beta.1) publishes a GitHub
+#  pre-release, never marked latest. Run by hand it only builds.
+#  Profiles: @ (top level) everywhere, https2 (with https) on POSIX, each static and shared.
 
 on:
   pull_request:
-    branches: [ latest ]
-    types: [ closed ]
+    branches: [ master, latest ]
+    types: [ opened, synchronize, reopened, closed ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'closed' }}
+  cancel-in-progress: true
+
+env:
+  CURL_GET: curl -fL --retry 3 --retry-delay 2
+  PATH_GET: https://github.com/mkn/mkn/releases/download/latest
+  ARGS: -std=c++20 -fPIC -O2 -DNDEBUG  # explicit: mkn's -O adds -march=native
+  # a merged PR builds its merge commit, an open one GitHub's merge of it
+  REF: ${{ github.event.action == 'closed' && github.event.pull_request.merge_commit_sha || '' }}
+  PUBLISH: ${{ github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'latest' }}
 
 jobs:
-  publish:
-    if: github.event.pull_request.merged
+  pins:
+    if: github.event.action != 'closed' || (github.event.pull_request.merged && github.base_ref == 'latest')
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      pins: ${{ steps.pins.outputs.pins }}
     steps:
     - uses: actions/checkout@v6
       with:
-        ref: ${{ github.event.pull_request.merge_commit_sha }}
+        ref: ${{ env.REF }}
+    - id: pins
+      run: |
+        if [ "$PUBLISH" = true ]; then
+          version=$(yq '.version' mkn.yaml)
+          if [ -z "$version" ] || [ "$version" = null ] || [ "$version" = master ]; then
+            echo "mkn.yaml version must be a release on latest, not '$version'"; exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$version" > /dev/null; then
+            echo "tag $version exists, bump mkn.yaml version"; exit 1
+          fi
+        fi
+        pins=$(res/ci/pin.sh resolve)
+        echo "$pins"
+        { echo "pins<<EOF"; echo "$pins"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+
+  linux:
+    needs: pins
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - { runner: ubuntu-22.04, image: "quay.io/pypa/manylinux_2_28_x86_64", mkn: mkn_manylinux, arch: x86_64 }
+        - { runner: ubuntu-26.04-arm, image: "quay.io/pypa/manylinux_2_28_aarch64", mkn: mkn_manylinux_arm, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.image }}
+    env:
+      PINS: ${{ needs.pins.outputs.pins }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ env.REF }}
+    - run: |
+        set -ex
+        dnf install -y epel-release && dnf install -y openssl3-devel  # OpenSSL 3, the system one is 1.1.1
+        res/ci/pin.sh apply
+        $CURL_GET -o mkn ${PATH_GET}/${{ matrix.mkn }} && chmod +x mkn
+        PY=$(command -v python3 || ls /opt/python/cp312-cp312/bin/python3)
+        KEY="os=nix;arch=${{ matrix.arch }};cxxrt=libstdc++;libc=manylinux_2_28"
+        SSL="-b /usr/include/openssl3 -B /usr/lib64/openssl3"
+        for profile in @ https2; do for mode in static shared; do
+          p=; dir=bin/build; [ $profile = @ ] || { p="-p $profile"; dir=bin/$profile; }
+          m=-K; [ $mode = static ] || m=-S
+          ./mkn clean build -dt $m $p -a "$ARGS" -g 0 $SSL
+          $PY res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" $profile $mode $dir
+        done; done
+    - uses: actions/upload-artifact@v4.4.0
+      with:
+        name: nix-${{ matrix.arch }}
+        path: dist
+        retention-days: 3
+
+  macos:
+    needs: pins
+    runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      PINS: ${{ needs.pins.outputs.pins }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ env.REF }}
+    - run: |
+        set -ex
+        res/ci/pin.sh apply
+        $CURL_GET -o mkn ${PATH_GET}/mkn_arm_osx && chmod +x mkn
+        KEY="os=bsd;arch=arm64;cxxrt=libc++;macos=13.0"
+        SSL_DIR=$(brew --prefix openssl@3)  # stable opt/ path, not the versioned Cellar one
+        for profile in @ https2; do for mode in static shared; do
+          p=; dir=bin/build; [ $profile = @ ] || { p="-p $profile"; dir=bin/$profile; }
+          m=-K; [ $mode = static ] || m=-S
+          ./mkn clean build -dt $m $p -a "$ARGS" -g 0 -b "$SSL_DIR/include" -B "$SSL_DIR/lib"
+          python3 res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" $profile $mode $dir
+        done; done
+    - uses: actions/upload-artifact@v4.4.0
+      with:
+        name: bsd-arm64
+        path: dist
+        retention-days: 3
+
+  windows:
+    needs: pins
+    runs-on: windows-latest
+    env:
+      PINS: ${{ needs.pins.outputs.pins }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ env.REF }}
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: amd64
+    - shell: bash
+      env:
+        MKN_CL_PREFERRED: 1
+      run: |
+        set -ex
+        rm -f /usr/bin/link /bin/link  # Git's link interferes with cl's link.exe
+        res/ci/pin.sh apply
+        $CURL_GET -o mkn.exe ${PATH_GET}/mkn.exe
+        WARGS="-EHsc -std:c++20 -O2 -DNDEBUG -MD"
+        KEY="os=win;arch=x86_64;cxxrt=msvc;crt=md"
+        for mode in static shared; do  # https2 is POSIX only
+          m=-K; [ $mode = static ] || m=-S
+          ./mkn clean build -dt $m -a "$WARGS" -g 0
+          python res/ci/manifest.py collect dist "$KEY" "$(./mkn -v | cut -d' ' -f1)" @ $mode bin/build
+        done
+    - uses: actions/upload-artifact@v4.4.0
+      with:
+        name: win-x86_64
+        path: dist
+        retention-days: 3
+
+  publish:
+    needs: [ pins, linux, macos, windows ]
+    if: github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'latest'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PINS: ${{ needs.pins.outputs.pins }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ env.REF }}
+    - uses: actions/download-artifact@v5
+      with:
+        path: dist
+        merge-multiple: true
     - id: version
       run: |
         set -euo pipefail
         version=$(yq '.version' mkn.yaml)
-        if [ -z "$version" ] || [ "$version" = null ] || [ "$version" = master ]; then
-          echo "mkn.yaml version must be a release on latest, not '$version'"; exit 1
-        fi
-        if git ls-remote --exit-code --tags origin "refs/tags/$version" > /dev/null; then
-          echo "tag $version exists, bump mkn.yaml version"; exit 1
-        fi
-        for key in $(yq '.property // {} | to_entries | .[] | select(.key == "*.version" and .value == "latest") | .key' mkn.yaml); do
-          dep=${key%.version}
-          pin=$(git ls-remote --tags --refs --sort=-v:refname "https://github.com/mkn/$dep" \
-            | sed -n 's#.*refs/tags/\([0-9]*\.[0-9]*\.[0-9]*\)$#\1#p' | head -1)
-          if [ -z "$pin" ]; then echo "no release tag found for $dep"; exit 1; fi
-          echo "$key: $pin"
-          # sed changes only that line, yq -i would reformat the file
-          sed -i "s/^\( *${key//./\\.}: *\)latest\b/\1$pin/" mkn.yaml
-          [ "$(KEY="$key" yq '.property[strenv(KEY)]' mkn.yaml)" = "$pin" ]
-        done
+        res/ci/pin.sh apply
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git commit -qam "$version: dependency versions pinned" || true
         git tag -a "$version" -m "$version"
         git push origin "refs/tags/$version"
+        python3 res/ci/manifest.py merge dist/mkn.manifest.yml "$version" "$(git rev-parse HEAD)" dist/*.json
+        rm dist/*.json
         echo "version=$version" >> "$GITHUB_OUTPUT"
         case "$version" in *-*) echo "prerelease=true";; *) echo "prerelease=false";; esac >> "$GITHUB_OUTPUT"
     - uses: softprops/action-gh-release@v2
@@ -54,3 +184,4 @@ jobs:
         name: ${{ steps.version.outputs.version }}
         prerelease: ${{ steps.version.outputs.prerelease }}
         make_latest: ${{ steps.version.outputs.prerelease == 'false' }}
+        files: dist/*
