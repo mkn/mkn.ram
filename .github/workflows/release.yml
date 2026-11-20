@@ -166,7 +166,7 @@ jobs:
         git tag -a "$version" -m "$version"
         git push origin "refs/tags/$version"
         mkdir release
-        cp dist/*/* release/  # the libraries, every platform's mkn.manifest.yml merged below
+        find dist -type f ! -name mkn.manifest.yml -exec cp {} release/ \;  # the libraries
         COMMIT=$(git rev-parse HEAD) yq ea '. as $i ireduce ({}; . * $i) | .commit = strenv(COMMIT)' \
           dist/*/mkn.manifest.yml > release/mkn.manifest.yml
         echo "version=$version" >> "$GITHUB_OUTPUT"
