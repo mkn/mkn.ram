@@ -1,0 +1,41 @@
+name: release
+
+# A PR merged into latest publishes mkn.yaml's version: that tag on the merge commit and a GitHub
+#  release marked latest. A pre-release version (e.g. 0.1.0-beta.1) publishes a GitHub pre-release,
+#  never marked latest. Nothing is built here (no binaries yet), build.yml tests the PR.
+
+on:
+  pull_request:
+    branches: [ latest ]
+    types: [ closed ]
+
+jobs:
+  publish:
+    if: github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      REF: ${{ github.event.pull_request.merge_commit_sha }}
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ env.REF }}
+    - id: version
+      run: |
+        version=$(sed -n 's/^version: *\([^ #]*\).*/\1/p' mkn.yaml)
+        if [ -z "$version" ] || [ "$version" = master ]; then
+          echo "mkn.yaml version must be a release on latest, not '$version'"; exit 1
+        fi
+        if git ls-remote --exit-code --tags origin "refs/tags/$version" > /dev/null; then
+          echo "tag $version exists, bump mkn.yaml version"; exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        case "$version" in *-*) echo "prerelease=true";; *) echo "prerelease=false";; esac >> "$GITHUB_OUTPUT"
+    - uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: ${{ steps.version.outputs.version }}
+        target_commitish: ${{ env.REF }}
+        prerelease: ${{ steps.version.outputs.prerelease }}
+        make_latest: ${{ steps.version.outputs.prerelease == 'false' }}

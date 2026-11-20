@@ -1,6 +1,10 @@
 #! clean build -dtSa "-O2 -fPIC" -p test -l -pthread
 
 name: mkn.ram
+version: master  # on the latest branch a release, e.g. 0.1.0: merged there it is tagged and published
+property:
+  # dependency versions, only here: master on master, released versions on latest
+  mkn.kul.version: master
 
 parent: lib
 
@@ -15,7 +19,7 @@ profile:
 
 - name: lib
   parent: base
-  dep: mkn.kul
+  dep: mkn.kul#${mkn.kul.version}
   if_arg:
     win_shared: -DMKN_KUL_SHARED -DMKN_KUL_EXPORT
 
