@@ -95,8 +95,7 @@ void mkn::ram::https::Server::loop(std::map<int, uint8_t>& fds) KTHROW(kul::tcp:
         SSL_set_fd(ssl_clients[newlisock], newlisock);
         int16_t ssl_err = SSL_accept(ssl_clients[newlisock]);
         if (ssl_err <= 0) {
-          short se = 0;
-          SSL_get_error(ssl_clients[newlisock], se);
+          int const se = SSL_get_error(ssl_clients[newlisock], ssl_err);
           SSL_shutdown(ssl_clients[newlisock]);
           SSL_free(ssl_clients[newlisock]);
           ::close(newlisock);

@@ -333,8 +333,15 @@ class SocketServer : public ASocketServer<T> {
     }
     return p;
   }
+  // A blocking socket, as on Linux: BSD/macOS accept() inherits the listening socket's O_NONBLOCK,
+  //  so SSL_accept would fail with SSL_ERROR_WANT_READ when the ClientHello is not there yet
   virtual int accept(int const& fd) {
-    return ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
+    int const sck = ::accept(lisock, (struct sockaddr*)&cli_addr[fd], &clilen);
+#if defined(O_NONBLOCK)
+    if (int const iof = sck < 0 ? -1 : fcntl(sck, F_GETFL, 0); iof != -1 && (iof & O_NONBLOCK))
+      fcntl(sck, F_SETFL, iof & ~O_NONBLOCK);
+#endif  // O_NONBLOCK
+    return sck;
   }
   virtual void validAccept(std::map<int, uint8_t>& fds, int const& newlisock, int const& nfd) {
     MKN_KUL_DBG_FUNC_ENTER;
