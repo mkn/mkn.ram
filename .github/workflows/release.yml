@@ -21,7 +21,7 @@ concurrency:
 
 env:
   CURL_GET: curl -fL --retry 3 --retry-delay 2
-  PATH_GET: https://github.com/mkn/mkn/releases/download/latest
+  PATH_GET: https://github.com/mkn/mkn/releases/latest/download
   ARGS: -std=c++20 -fPIC -O2 -DNDEBUG  # explicit: mkn's -O adds -march=native
   # a merged PR builds its merge commit, an open one GitHub's merge of it
   REF: ${{ github.event.action == 'closed' && github.event.pull_request.merge_commit_sha || '' }}
