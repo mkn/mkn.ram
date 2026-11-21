@@ -108,6 +108,9 @@ class Server : public mkn::ram::http::Server {
   }
   void setChain(mkn::kul::File const& f);
   Server& init();
+  // a server TLS context with `crt`/`key` loaded and checked, and cipher list `cs` if set
+  static SSL_CTX* CONTEXT(mkn::kul::File const& crt, mkn::kul::File const& key,
+                          std::string const& cs = "");
   virtual void stop() override;
 };
 

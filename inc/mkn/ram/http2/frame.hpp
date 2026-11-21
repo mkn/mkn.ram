@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _MKN_RAM_HTTP2_FRAME_HPP_
 #define _MKN_RAM_HTTP2_FRAME_HPP_
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -65,6 +66,23 @@ constexpr uint8_t PADDED = 0x8;
 constexpr uint8_t PRIORITY = 0x20;
 }  // namespace flag
 
+// RFC 7540 7
+enum class Error : uint32_t {
+  NONE = 0x0,
+  PROTOCOL = 0x1,
+  INTERNAL = 0x2,
+  FLOW_CONTROL = 0x3,
+  SETTINGS_TIMEOUT = 0x4,
+  STREAM_CLOSED = 0x5,
+  FRAME_SIZE = 0x6,
+  REFUSED_STREAM = 0x7,
+  CANCEL = 0x8,
+  COMPRESSION = 0x9,
+};
+
+// RFC 7540 6.9.1 - largest legal flow-control window
+constexpr int64_t MAX_WINDOW_SIZE = 0x7FFFFFFF;
+
 // RFC 7540 3.5
 inline std::string const& CONNECTION_PREFACE() {
   static std::string const s = "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n";
@@ -90,6 +108,12 @@ inline void WRITE_U24(std::string& s, uint32_t v) {
 }
 inline void WRITE_U31(std::string& s, uint32_t v) {
   s.push_back(static_cast<char>((v >> 24) & 0x7F));
+  s.push_back(static_cast<char>((v >> 16) & 0xFF));
+  s.push_back(static_cast<char>((v >> 8) & 0xFF));
+  s.push_back(static_cast<char>(v & 0xFF));
+}
+inline void WRITE_U32(std::string& s, uint32_t v) {
+  s.push_back(static_cast<char>((v >> 24) & 0xFF));
   s.push_back(static_cast<char>((v >> 16) & 0xFF));
   s.push_back(static_cast<char>((v >> 8) & 0xFF));
   s.push_back(static_cast<char>(v & 0xFF));
@@ -129,6 +153,51 @@ inline std::string BUILD(Type type, uint8_t flags, uint32_t stream_id,
   h.flags = flags;
   h.stream_id = stream_id;
   return h.toString() + payload;
+}
+
+// Strips the PADDED pad-length prefix and trailing padding (DATA/HEADERS), in place.
+// Returns false if the padding is malformed (a PROTOCOL_ERROR per RFC 7540 6.1/6.2).
+inline bool UNPAD(Header const& h, std::string& payload) {
+  if (!(h.flags & flag::PADDED)) return true;
+  if (payload.empty()) return false;
+  size_t const pad = static_cast<uint8_t>(payload[0]);
+  if (pad + 1 > payload.size()) return false;
+  payload = payload.substr(1, payload.size() - 1 - pad);
+  return true;
+}
+
+// Reduces a HEADERS/CONTINUATION payload to its header block fragment, in place.
+inline bool HEADER_FRAGMENT(Header const& h, std::string& payload) {
+  if (!UNPAD(h, payload)) return false;
+  if (h.type == Type::HEADERS && (h.flags & flag::PRIORITY)) {
+    if (payload.size() < 5) return false;
+    payload.erase(0, 5);
+  }
+  return true;
+}
+
+// A complete header block as HEADERS followed by as many CONTINUATION frames as
+// `max_frame` (the peer's SETTINGS_MAX_FRAME_SIZE) requires - RFC 7540 6.2/6.10.
+inline std::string HEADER_BLOCK(uint32_t stream_id, std::string const& block, bool end_stream,
+                                size_t max_frame) {
+  std::string out;
+  size_t pos = 0;
+  do {
+    size_t const n = std::min(max_frame, block.size() - pos);
+    bool const first = pos == 0, last = pos + n >= block.size();
+    uint8_t const flags = static_cast<uint8_t>((last ? flag::END_HEADERS : 0) |
+                                               ((first && end_stream) ? flag::END_STREAM : 0));
+    out += BUILD(first ? Type::HEADERS : Type::CONTINUATION, flags, stream_id,
+                 block.substr(pos, n));
+    pos += n;
+  } while (pos < block.size());
+  return out;
+}
+
+inline std::string RST_STREAM(uint32_t stream_id, Error e) {
+  std::string payload;
+  WRITE_U32(payload, static_cast<uint32_t>(e));
+  return BUILD(Type::RST_STREAM, 0, stream_id, payload);
 }
 
 namespace settings {
@@ -182,6 +251,13 @@ struct GoAway {
     g.error_code = READ_U32(b + 4);
     g.debug = payload.substr(8);
     return g;
+  }
+
+  static std::string BUILD(uint32_t last_stream_id, Error e, std::string const& debug = "") {
+    std::string payload;
+    WRITE_U31(payload, last_stream_id);
+    WRITE_U32(payload, static_cast<uint32_t>(e));
+    return frame::BUILD(Type::GOAWAY, 0, 0, payload + debug);
   }
 };
 

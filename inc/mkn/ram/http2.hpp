@@ -28,8 +28,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-// HTTP/2 client (RFC 7540) - TLS+ALPN "h2" only, client-initiated streams only.
-// See mkn/ram/os/nixish/http2.hpp for the Client that actually opens connections
+// HTTP/2 (RFC 7540) client and server - TLS+ALPN "h2" only, no server push.
+// See mkn/ram/os/nixish/http2.hpp for the Client and Server that own connections
 // and mkn/ram/http2/{frame,hpack}.hpp for the wire-format/compression layers.
 #ifndef _MKN_RAM_HTTP2_HPP_
 #define _MKN_RAM_HTTP2_HPP_
@@ -130,6 +130,6 @@ class Response {
 
 #if !defined(_WIN32)
 #include "mkn/ram/os/nixish/http2.hpp"
-#endif /* !defined(_WIN32) - HTTP/2 client is POSIX-only for now */
+#endif /* !defined(_WIN32) - HTTP/2 is POSIX-only for now */
 
 #endif /* _MKN_RAM_HTTP2_HPP_ */

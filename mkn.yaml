@@ -50,6 +50,10 @@ profile:
   parent: https2
   main: tst/http2.cpp
 
+- name: test.http2.server
+  parent: https2
+  main: tst/http2_server.cpp
+
 - name: usage
   parent: https
   main: tst/usage.cpp
