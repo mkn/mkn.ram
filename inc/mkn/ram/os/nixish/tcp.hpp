@@ -364,33 +364,43 @@ class SocketServer : public ASocketServer<T> {
   ~SocketServer() {
     for (int i = 0; i < MKN_RAM_TCP_MAX_CLIENT; i++) ::close(m_fds[i].fd);
   }
-  virtual void bind(int sockOpt = MKN_RAM_TCP_BIND_SOCKTOPTS) KTHROW(kul::Exception) {
-    lisock = socket(AF_INET, SOCK_STREAM, 0);
+  // a non-blocking listen-ready socket bound to `port` on all interfaces, `addr` filled in
+  static int BIND(uint16_t const& port, struct sockaddr_in& addr,
+                  int sockOpt = MKN_RAM_TCP_BIND_SOCKTOPTS) KTHROW(kul::Exception) {
+    int sck = socket(AF_INET, SOCK_STREAM, 0);
+    if (sck < 0) KEXCEPTION("Socket Server error opening socket");
     int iso = 1;
-    int rc = setsockopt(lisock, SOL_SOCKET, sockOpt, (char*)&iso, sizeof(iso));
+    int rc = setsockopt(sck, SOL_SOCKET, sockOpt, (char*)&iso, sizeof(iso));
     if (rc < 0) {
       KERR << std::to_string(errno) << " - " << std::string(strerror(errno));
+      ::close(sck);
       KEXCEPTION("Socket Server error on setsockopt");
     }
 
 #if defined(O_NONBLOCK)
-    if (-1 == (iso = fcntl(lisock, F_GETFL, 0))) iso = 0;
-    rc = fcntl(lisock, F_SETFL, iso | O_NONBLOCK);
+    if (-1 == (iso = fcntl(sck, F_GETFL, 0))) iso = 0;
+    rc = fcntl(sck, F_SETFL, iso | O_NONBLOCK);
 #else
-    rc = ioctl(lisock, FIONBIO, (char*)&iso);
+    rc = ioctl(sck, FIONBIO, (char*)&iso);
 #endif
-    if (rc < 0) KEXCEPTION("Socket Server error on ioctl");
-    bzero((char*)&serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = !kul::byte::isBigEndian()
-                             ? htons(this->port())
-                             : mkn::kul::byte::LittleEndian::UINT32(this->port());
-    int16_t e = 0;
-    if ((e = ::bind(lisock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
+    if (rc < 0) {
+      ::close(sck);
+      KEXCEPTION("Socket Server error on ioctl");
+    }
+    bzero((char*)&addr, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port =
+        !kul::byte::isBigEndian() ? htons(port) : mkn::kul::byte::LittleEndian::UINT32(port);
+    if (::bind(sck, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
       KERR << std::to_string(errno) << " - " << std::string(strerror(errno));
+      ::close(sck);
       KEXCEPTION("Socket Server error on binding, errno: " + std::to_string(errno));
     }
+    return sck;
+  }
+  virtual void bind(int sockOpt = MKN_RAM_TCP_BIND_SOCKTOPTS) KTHROW(kul::Exception) {
+    lisock = BIND(this->port(), serv_addr, sockOpt);
   }
   virtual void start() KTHROW(mkn::ram::tcp::Exception) {
     MKN_KUL_DBG_FUNC_ENTER;

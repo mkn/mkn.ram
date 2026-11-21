@@ -48,6 +48,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _MKN_RAM_HTTP2_READ_BUFFER_ 65536
 #endif /* _MKN_RAM_HTTP2_READ_BUFFER_ */
 
+// SETTINGS_MAX_CONCURRENT_STREAMS the server advertises per connection; streams
+// opened beyond it are refused with RST_STREAM(REFUSED_STREAM)
+#ifndef _MKN_RAM_HTTP2_MAX_CONCURRENT_STREAMS_
+#define _MKN_RAM_HTTP2_MAX_CONCURRENT_STREAMS_ 128
+#endif /* _MKN_RAM_HTTP2_MAX_CONCURRENT_STREAMS_ */
+
 // RFC 7541 4.2 - default HPACK dynamic table size cap (both encode and decode sides)
 #ifndef _MKN_RAM_HTTP2_HPACK_TABLE_SIZE_
 #define _MKN_RAM_HTTP2_HPACK_TABLE_SIZE_ 4096

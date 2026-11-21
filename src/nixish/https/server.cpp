@@ -126,22 +126,33 @@ void mkn::ram::https::Server::setChain(mkn::kul::File const& f) {
     KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
 }
 
-mkn::ram::https::Server& mkn::ram::https::Server::init() {
+SSL_CTX* mkn::ram::https::Server::CONTEXT(mkn::kul::File const& crt, mkn::kul::File const& key,
+                                           std::string const& cs) {
   MKN_KUL_DBG_FUNC_ENTER;
   if (!crt) KEXCEPTION("HTTPS Server crt file does not exist: " + crt.full());
   if (!key) KEXCEPTION("HTTPS Server key file does not exist: " + key.full());
   SSL_library_init();
   SSL_load_error_strings();
   OpenSSL_add_ssl_algorithms();
-  ctx = SSL_CTX_new(MKN_RAM_HTTPS_SERVER_METHOD());
+  SSL_CTX* ctx = SSL_CTX_new(MKN_RAM_HTTPS_SERVER_METHOD());
   if (!ctx) KEXCEPTION("HTTPS Server SSL_CTX failed SSL_CTX_new");
+  auto fail = [&](std::string const& msg) {
+    SSL_CTX_free(ctx);
+    KEXCEPTION(msg);
+  };
   if (SSL_CTX_use_certificate_file(ctx, crt.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
-    KEXCEPTION("HTTPS Server SSL_CTX_use_certificate_file failed");
+    fail("HTTPS Server SSL_CTX_use_certificate_file failed");
   if (SSL_CTX_use_PrivateKey_file(ctx, key.mini().c_str(), SSL_FILETYPE_PEM) <= 0)
-    KEXCEPTION("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
-  if (!SSL_CTX_check_private_key(ctx)) KEXCEPTION("HTTPS Server SSL_CTX_check_private_key failed");
+    fail("HTTPS Server SSL_CTX_use_PrivateKey_file failed");
+  if (!SSL_CTX_check_private_key(ctx)) fail("HTTPS Server SSL_CTX_check_private_key failed");
   if (!cs.empty() && !SSL_CTX_set_cipher_list(ctx, cs.c_str()))
-    KEXCEPTION("HTTPS Server SSL_CTX_set_cipher_listctx failed");
+    fail("HTTPS Server SSL_CTX_set_cipher_listctx failed");
+  return ctx;
+}
+
+mkn::ram::https::Server& mkn::ram::https::Server::init() {
+  MKN_KUL_DBG_FUNC_ENTER;
+  ctx = CONTEXT(crt, key, cs);
   return *this;
 }
 

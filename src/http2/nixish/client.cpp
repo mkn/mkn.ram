@@ -62,13 +62,19 @@ mkn::ram::http2::frame::Header mkn::ram::http2::Client::readFrameHeader() {
   return frame::Header::PARSE(reinterpret_cast<uint8_t const*>(h.data()));
 }
 
-void mkn::ram::http2::Client::handleSettings(frame::Header const& fh, std::string const& payload) {
+void mkn::ram::http2::Client::handleSettings(frame::Header const& fh, std::string const& payload,
+                                             Exchange& ex) {
   if (fh.flags & frame::flag::ACK) return;  // peer acknowledging our SETTINGS
   for (auto const& e : frame::settings::PARSE(payload)) {
     if (e.first == frame::settings::MAX_FRAME_SIZE)
       _peerMaxFrameSize = e.second;
-    else if (e.first == frame::settings::INITIAL_WINDOW_SIZE)
+    else if (e.first == frame::settings::INITIAL_WINDOW_SIZE) {
+      if (e.second > frame::MAX_WINDOW_SIZE)
+        KEXCEPT(Exception, "HTTP2: peer SETTINGS_INITIAL_WINDOW_SIZE too large, host: " + _host);
+      // RFC 7540 6.9.2 - a change applies to the windows of all open streams
+      ex.sendWindow += static_cast<int64_t>(e.second) - _peerInitialWindowSize;
       _peerInitialWindowSize = e.second;
+    }
   }
   sslWrite(frame::BUILD(frame::Type::SETTINGS, frame::flag::ACK, 0));
 }
@@ -79,11 +85,12 @@ void mkn::ram::http2::Client::handlePing(frame::Header const& fh, std::string co
 }
 
 void mkn::ram::http2::Client::handleWindowUpdate(frame::Header const& fh,
-                                                 std::string const& payload) {
+                                                 std::string const& payload, Exchange& ex) {
   uint32_t const inc = frame::WINDOW_UPDATE_INCREMENT(payload);
-  if (fh.stream_id == 0) _connSendWindow += inc;
-  // per-stream send-window tracking is intentionally not modelled: request bodies
-  // are the exception for this client, not the norm - see plan/README for follow-up.
+  if (fh.stream_id == 0)
+    _connSendWindow += inc;
+  else if (fh.stream_id == ex.id)
+    ex.sendWindow += inc;
 }
 
 void mkn::ram::http2::Client::maybeSendConnectionWindowUpdate() {
@@ -133,10 +140,79 @@ mkn::ram::http2::Client& mkn::ram::http2::Client::connect() {
   return *this;
 }
 
+void mkn::ram::http2::Client::readFrame(Exchange& ex) {
+  frame::Header const fh = readFrameHeader();
+  std::string payload = fh.length ? sslReadExact(fh.length) : std::string();
+
+  switch (fh.type) {
+    case frame::Type::SETTINGS:
+      handleSettings(fh, payload, ex);
+      break;
+    case frame::Type::PING:
+      handlePing(fh, payload);
+      break;
+    case frame::Type::WINDOW_UPDATE:
+      handleWindowUpdate(fh, payload, ex);
+      break;
+    case frame::Type::HEADERS:
+    case frame::Type::CONTINUATION: {
+      if (fh.stream_id != ex.id) break;
+      if (!frame::HEADER_FRAGMENT(fh, payload))
+        KEXCEPT(Exception, "HTTP2: malformed HEADERS/CONTINUATION frame");
+      ex.headerFragment += payload;
+      // END_STREAM rides on HEADERS but the stream only ends once the block is complete
+      if (fh.type == frame::Type::HEADERS) ex.endAfterHeaders = fh.flags & frame::flag::END_STREAM;
+      if (fh.flags & frame::flag::END_HEADERS) {
+        for (auto const& h : _decoder.decode(ex.headerFragment)) {
+          if (h.first == ":status")
+            ex.res.status(static_cast<uint16_t>(std::stoi(h.second)));
+          else
+            ex.res.header(h.first, h.second);
+        }
+        ex.headerFragment.clear();
+        if (ex.endAfterHeaders) ex.done = true;
+      }
+      break;
+    }
+    case frame::Type::DATA: {
+      _connRecvConsumed += fh.length;
+      maybeSendConnectionWindowUpdate();
+      if (fh.stream_id != ex.id) break;
+      if (!frame::UNPAD(fh, payload)) KEXCEPT(Exception, "HTTP2: malformed padded DATA frame");
+      ex.res.appendBody(payload.data(), payload.size());
+      ex.recvConsumed += static_cast<int64_t>(fh.length);
+      if (fh.flags & frame::flag::END_STREAM)
+        ex.done = true;
+      else if (ex.recvConsumed > _MKN_RAM_HTTP2_INITIAL_WINDOW_SIZE_ / 2) {
+        sslWrite(frame::BUILD(
+            frame::Type::WINDOW_UPDATE, 0, ex.id,
+            frame::WINDOW_UPDATE_PAYLOAD(static_cast<uint32_t>(ex.recvConsumed))));
+        ex.recvConsumed = 0;
+      }
+      break;
+    }
+    case frame::Type::RST_STREAM: {
+      if (fh.stream_id != ex.id) break;
+      uint32_t const code =
+          payload.size() >= 4 ? frame::READ_U32(reinterpret_cast<uint8_t const*>(payload.data()))
+                              : 0;
+      KEXCEPT(Exception, "HTTP2: stream reset by peer, error=" + std::to_string(code));
+    }
+    case frame::Type::GOAWAY: {
+      auto const ga = frame::GoAway::PARSE(payload);
+      KEXCEPT(Exception, "HTTP2: GOAWAY from peer, error=" + std::to_string(ga.error_code));
+    }
+    default:
+      break;  // PRIORITY / PUSH_PROMISE (disabled via our ENABLE_PUSH=0) / unknown - ignore
+  }
+}
+
 mkn::ram::http2::Response mkn::ram::http2::Client::request(Request const& req) {
   if (!_connected) connect();
 
-  uint32_t const streamId = _nextStreamId;
+  Exchange ex;
+  ex.id = _nextStreamId;
+  ex.sendWindow = _peerInitialWindowSize;
   _nextStreamId += 2;
 
   hpack::Headers pseudo = {
@@ -147,105 +223,32 @@ mkn::ram::http2::Response mkn::ram::http2::Client::request(Request const& req) {
   };
   for (auto const& h : req.headers()) pseudo.emplace_back(h.first, h.second);
 
-  std::string const headerBlock = hpack::Encoder::encode(pseudo);
-  bool const hasBody = !req.body().empty();
-  uint8_t const headersFlags = frame::flag::END_HEADERS | (hasBody ? 0 : frame::flag::END_STREAM);
+  std::string const& body = req.body();
+  sslWrite(frame::HEADER_BLOCK(ex.id, hpack::Encoder::encode(pseudo), body.empty(),
+                               _peerMaxFrameSize));
 
-  // Encoded request headers exceeding the peer's max frame size (needing CONTINUATION)
-  // is not handled yet - fine for typical request header sizes; left as a follow-up.
-  sslWrite(frame::BUILD(frame::Type::HEADERS, headersFlags, streamId, headerBlock));
-
-  if (hasBody) {
-    std::string const& body = req.body();
-    size_t sent = 0;
-    while (sent < body.size()) {
-      size_t const chunk = std::min(static_cast<size_t>(_peerMaxFrameSize), body.size() - sent);
-      bool const last = (sent + chunk) >= body.size();
-      sslWrite(frame::BUILD(frame::Type::DATA, last ? frame::flag::END_STREAM : 0, streamId,
-                            body.substr(sent, chunk)));
-      sent += chunk;
+  // RFC 7540 6.9 - DATA may only be sent while both the connection and stream send
+  // windows are open; otherwise wait on the peer's WINDOW_UPDATEs. The peer may also
+  // answer (and end the stream) before the body is fully sent.
+  size_t sent = 0;
+  while (sent < body.size() && !ex.done) {
+    int64_t const window = std::min(_connSendWindow, ex.sendWindow);
+    if (window <= 0) {
+      readFrame(ex);
+      continue;
     }
+    size_t const chunk = std::min({static_cast<size_t>(_peerMaxFrameSize), body.size() - sent,
+                                   static_cast<size_t>(window)});
+    bool const last = (sent + chunk) >= body.size();
+    sslWrite(frame::BUILD(frame::Type::DATA, last ? frame::flag::END_STREAM : 0, ex.id,
+                          body.substr(sent, chunk)));
+    sent += chunk;
+    _connSendWindow -= static_cast<int64_t>(chunk);
+    ex.sendWindow -= static_cast<int64_t>(chunk);
   }
 
-  Response res;
-  std::string headerFragment;
-  bool streamDone = false;
-  int64_t streamRecvConsumed = 0;
-
-  while (!streamDone) {
-    frame::Header const fh = readFrameHeader();
-    std::string const payload = fh.length ? sslReadExact(fh.length) : std::string();
-
-    switch (fh.type) {
-      case frame::Type::SETTINGS:
-        handleSettings(fh, payload);
-        break;
-      case frame::Type::PING:
-        handlePing(fh, payload);
-        break;
-      case frame::Type::WINDOW_UPDATE:
-        handleWindowUpdate(fh, payload);
-        break;
-      case frame::Type::HEADERS:
-      case frame::Type::CONTINUATION: {
-        std::string frag = payload;
-        if (fh.type == frame::Type::HEADERS && (fh.flags & frame::flag::PADDED)) {
-          if (frag.empty()) KEXCEPT(Exception, "HTTP2: malformed padded HEADERS frame");
-          uint8_t const padLen = static_cast<uint8_t>(frag[0]);
-          frag = frag.substr(1, frag.size() - 1 - padLen);
-        }
-        if (fh.type == frame::Type::HEADERS && (fh.flags & frame::flag::PRIORITY)) {
-          if (frag.size() < 5) KEXCEPT(Exception, "HTTP2: malformed HEADERS frame (priority)");
-          frag = frag.substr(5);
-        }
-        headerFragment += frag;
-        if (fh.flags & frame::flag::END_HEADERS) {
-          for (auto const& h : _decoder.decode(headerFragment)) {
-            if (h.first == ":status")
-              res.status(static_cast<uint16_t>(std::stoi(h.second)));
-            else
-              res.header(h.first, h.second);
-          }
-          headerFragment.clear();
-        }
-        if (fh.flags & frame::flag::END_STREAM) streamDone = true;
-        break;
-      }
-      case frame::Type::DATA: {
-        std::string data = payload;
-        if (fh.flags & frame::flag::PADDED) {
-          if (data.empty()) KEXCEPT(Exception, "HTTP2: malformed padded DATA frame");
-          uint8_t const padLen = static_cast<uint8_t>(data[0]);
-          data = data.substr(1, data.size() - 1 - padLen);
-        }
-        res.appendBody(data.data(), data.size());
-        streamRecvConsumed += static_cast<int64_t>(fh.length);
-        _connRecvConsumed += fh.length;
-        maybeSendConnectionWindowUpdate();
-        if (streamRecvConsumed > _MKN_RAM_HTTP2_INITIAL_WINDOW_SIZE_ / 2) {
-          sslWrite(frame::BUILD(
-              frame::Type::WINDOW_UPDATE, 0, streamId,
-              frame::WINDOW_UPDATE_PAYLOAD(static_cast<uint32_t>(streamRecvConsumed))));
-          streamRecvConsumed = 0;
-        }
-        if (fh.flags & frame::flag::END_STREAM) streamDone = true;
-        break;
-      }
-      case frame::Type::RST_STREAM: {
-        uint32_t const code =
-            payload.size() >= 4 ? frame::READ_U32(reinterpret_cast<uint8_t const*>(payload.data()))
-                                : 0;
-        KEXCEPT(Exception, "HTTP2: stream reset by peer, error=" + std::to_string(code));
-      }
-      case frame::Type::GOAWAY: {
-        auto const ga = frame::GoAway::PARSE(payload);
-        KEXCEPT(Exception, "HTTP2: GOAWAY from peer, error=" + std::to_string(ga.error_code));
-      }
-      default:
-        break;  // PRIORITY / PUSH_PROMISE (disabled via our ENABLE_PUSH=0) / unknown - ignore
-    }
-  }
-  return res;
+  while (!ex.done) readFrame(ex);
+  return std::move(ex.res);
 }
 
 void mkn::ram::http2::Client::close() {
